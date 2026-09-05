@@ -1,6 +1,20 @@
 # 中华食肆 · 厨房工作台
 
-本地工作版 0.1，面向团队自己的 WorkBuddy 环境；不是最终比赛交付。只做创意工作台，不涉及 Jacky 的生产工作台，也未制作“做同款”分发入口。
+本地工作版 0.2，面向团队自己的 WorkBuddy 环境；不是最终比赛交付。只做创意工作台，不涉及 Jacky 的生产工作台，也未制作“做同款”分发入口。
+
+## 拍照识别：从 WorkBuddy 对话开始
+
+1. 解压完整包，在 WorkBuddy 中加载 `skills/zhonghua-shisi` 的「中华食肆 Skill」。首次安装是必需的，本包没有替你操作账号或安装技能。
+2. 双击包内 **启动厨房.command**（macOS，需 Node.js 22+），或者把完整包目录告诉 WorkBuddy，让它按 Skill 打开厨房。源码开发请使用 **release 目录**作为完整包目录，与启动文件保持一致。
+3. 从 **http://127.0.0.1:43117/** 打开。进入「我的厨房 → 用 WorkBuddy 识别」，选择厨房与盘点/补货，点「准备接收照片识别」。
+4. 在同一个 WorkBuddy 对话上传冰箱/调料照片，或发送已核对的听写文字。Skill 提取后会自动交回；正常流程不用复制 prompt 或 JSON。
+5. 回到页面查看待确认食材，核对数量、对应原料和批次后，点确认入库。识别结果到达不等于已经入库。
+
+需要你确认 WorkBuddy 可使用识图模型、可在指定工作台目录写文件和运行配套脚本。如果无法加载 Skill、没有 Node 或权限被拒绝，请停止对应步骤，不把模拟结果当真识别。本次代码测试覆盖本地交接与候选事务，**完整 WorkBuddy 实机识图仍需用真实照片验收**。
+
+照片留在 WorkBuddy 对话中；连接只传递食材候选，不读取模型密钥或正式库存，不调用开放平台 API。连接只监听本机，不能将这个 localhost 链接发给别人或直接在另一台手机上使用。未来复用者也须在自己的 WorkBuddy 上传照片并运行自己的本地包，不共用你的数据或账号。
+
+注意：本地连接入口与旧的 file:// HTML、开发预览是不同浏览器来源，**旧库存仍在旧页面，不会自动迁移**。请保留旧页面与备份；本版没有整库恢复 UI。不要把备份作为食材候选导入。
 
 ## 先体验一餐
 
@@ -11,7 +25,7 @@
 5. 到“百味图”查看成品记录，再回冰箱核对数量；从菜品详情可导出这一条独立百味图 HTML。
 6. 关闭并在相同浏览器、相同文件路径重新打开，验证库存、步骤和历史保留。这个实机步骤仍需在最终 WorkBuddy 承载环境验收。
 
-样例不影响真实厨房。真实厨房默认空，所有录入先进入候选区；照片由 WorkBuddy 对话识别，使用“导入食材 JSON”显式交接，不是假装网页已能调用 WorkBuddy。设备听写得到文字后可发给对话；网页没有内置麦克风识别或视觉 API。
+样例不影响真实厨房。直接双击 HTML 仍可手动体验闭环，但自动接收需要从上方本地连接入口打开。设备听写得到文字后可发给 WorkBuddy；网页没有内置麦克风识别或视觉 API。手动 JSON 导入只作为备用。
 
 ## 真实厨房
 
@@ -26,7 +40,9 @@
 
 ## 数据与事务
 
-唯一真源：IndexedDB，数据库名 zhonghua-shisi-kitchen-v1。inventory、candidates、sessions、meta 四个 object store，每个以 real / demo 分区。写操作在同一个覆盖四个 store 的 readwrite 事务中提交；不向 CSV、localStorage 或服务器双写库存。
+唯一真源：IndexedDB，独立 HTML 的数据库名为 zhonghua-shisi-kitchen-v1；本地连接模式额外附带完整包的 workspaceId，以免同一端口使用另一份工作台时混用。inventory、candidates、sessions、meta 四个 object store，每个以 real / demo 分区。写操作在同一个覆盖四个 store 的 readwrite 事务中提交；不向 CSV、localStorage 或服务器双写库存。
+
+连接队列不是第二份库存：未接收候选暂存于完整包的 .kitchen-bridge/queue.json；网页事务成功后回执并清除候选正文。localStorage 只存浏览器投递身份。每个 ticket 固定厨房、方式和幂等 ID，取消/过期不跨轮复用；清空厨房同时取消相应投递并保存忽略标记，避免旧请求回流。整个 .kitchen-bridge/ 是私人运行数据，不进入 ZIP 或 Git。
 
 - 候选决策以 requestId + candidateId 去重，拒绝/确认结果保留。
 - 库存更新要求批次 revision 匹配。
@@ -48,19 +64,22 @@ npm test
 npm run build
 npm run build:html
 npm run package:local
+npm run kitchen:start
+npm run kitchen:status
+npm run kitchen:stop
 ```
 
 第一份是正常 Web 构建；第二份把 React、界面、菜谱和三张游戏插画内嵌进 release/中华食肆.html，不依赖 CDN、远程字体或 API Key。不要把开发工具链的 node_modules 装进 WorkBuddy。
 
 ## 随附 Skill
 
-skills/zhonghua-shisi/SKILL.md 为可携带的最小“中华食肆 Skill”，包含候选协议和三道菜的主题资产说明。请在实际 WorkBuddy 中按其支持的方式导入/加载。这里只生成文件，未自动安装，也未验证模板市场格式。
+skills/zhonghua-shisi/SKILL.md 为可携带的“中华食肆 Skill”，包含本地交接脚本、候选协议和三道菜的主题资产说明。脚本不依赖 npm 包，只需 Node.js。请在实际 WorkBuddy 中按其支持的方式导入/加载。这里只生成文件，未自动安装，也未验证模板市场格式。
 
-照片或转写文字 → Skill 返回 JSON → HTML 明确导入 → 人工确认。每次新输入都需要交接；对话不知道网页最新库存。需要对话分析库存时，由用户选择分享自己导出的数据。
+照片或核对文字 → Skill 提取并自动提交 → HTML 自动接收候选 → 人工确认。对话仍不知道网页最新库存；需要对话分析库存时，由用户主动分享自己导出的数据。脚本 start 启动本地后台连接，stop 只停止连接，不删除库存；更新包后应停止旧连接再启动新版。
 
 ## 本次验证边界
 
-- 自动化覆盖规则、导入、库存事务、重复完成、异常回滚、连接关闭重开（使用 fake-indexeddb）。
+- 自动化覆盖规则、导入、库存事务、重复完成、异常回滚，以及真实本地 HTTP 交接/队列重启/非法请求（IndexedDB 使用 fake-indexeddb）。
 - Web 构建 / 独立 HTML 构建、TypeScript、基本 HTTP 编译检查另记在 docs/IMPLEMENTATION-STATUS.md。
 - 未把模拟数据库测试冒充真实浏览器磁盘持久化。file://、WorkBuddy 内嵌页面、手机及离线重开都需要分别验收。
 - 未宣称已验收 360px/键盘/触屏；已实现响应式布局和可访问组件，实机检查待做。

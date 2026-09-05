@@ -47,6 +47,12 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { IndexedDbStore } from '@/lib/store';
+import {
+  BRIDGE_URL,
+  databaseName,
+  stageDelivery,
+} from '@/lib/workbuddy-bridge';
+import { useWorkBuddyBridge } from '@/lib/use-workbuddy-bridge';
 import { renderBaiweiEntry } from '@/lib/archive-export';
 import {
   names,
@@ -88,7 +94,7 @@ import {
   type Session,
 } from '@/lib/kitchen';
 
-const db = new IndexedDbStore();
+const db = new IndexedDbStore(databaseName());
 const pages = [
   { id: 'today', name: '今日一餐', icon: CookingPot },
   { id: 'inventory', name: '我的厨房', icon: Refrigerator },
@@ -715,6 +721,25 @@ export default function Home() {
       setBusy(false);
     }
   };
+  const bridge = useWorkBuddyBridge({
+    dataset,
+    notify: setMessage,
+    receive: async (entry) => {
+      if (datasetRef.current !== entry.envelope.dataset || lock.current)
+        return false;
+      let added = 0;
+      const saved = await mutate((state) => {
+        added = stageDelivery(state, entry);
+      });
+      if (saved && added > 0)
+        setMessage('WorkBuddy 识别结果已到候选区，请核对后入库。');
+      if (saved && added > 0 && dialog === 'workbuddy') {
+        setDialog(null);
+        setPage('inventory');
+      }
+      return saved;
+    },
+  });
   // Progressive enhancement only: navigation changes the same visible tab; never grants inventory write access.
   useEffect(() => {
     type Context = {
@@ -833,12 +858,6 @@ export default function Home() {
       setPage('today');
     }
   };
-  const workbuddyPrompt =
-    '请按中华食肆 Skill 识别我上传的厨房照片，或提取我确认过的文字。只输出食材候选 JSON，不写正式库存。schemaVersion=1.0；requestId 每次新输入唯一；source=workbuddy-image 或 workbuddy-voice-transcript；createdAt 使用 ISO 日期；warnings 为数组；candidates 每项包含 candidateId、displayName、rawMention（文字时须原文片段）、warnings。明确的数量才填 amount+unit（个/盒/袋/克/毫升/份）；没有数量时不要猜。不要推断新鲜度、保质期、盒内枚数。dataset=' +
-    dataset +
-    '；mode=' +
-    mode +
-    '。我会复制 JSON 到 HTML 候选区再人工确认。';
   return (
     <Tabs
       value={page}
@@ -1711,7 +1730,7 @@ export default function Home() {
               ? '先生成候选，再由你确认批次和数量。'
               : dialog === 'import'
                 ? '粘贴或选择 WorkBuddy 输出的 JSON。不会直接写入正式库存。'
-                : '这一版使用显式交接：对话识别 → 复制 JSON → 本页导入。不是自动连接。'}
+                : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
           </DialogDescription>
           {error && dialog !== 'import' && (
             <p role="alert" className="warning-text">
@@ -1856,46 +1875,117 @@ export default function Home() {
             </>
           ) : (
             <>
-              <ol className="instructions">
-                <li>
-                  把冰箱照片发到 WorkBuddy
-                  对话；或先用设备听写，把转写文字确认好再发送。
-                </li>
-                <li>使用随附的“中华食肆 Skill”，也可复制下方说明一起发送。</li>
-                <li>
-                  复制返回的 JSON，在本页“导入食材 JSON”中粘贴，再逐项确认。
-                </li>
-              </ol>
-              <textarea
-                className="json-text"
-                readOnly
-                value={workbuddyPrompt}
-                aria-label="发给 WorkBuddy 的说明"
-              />
+              <output className="notice">
+                {bridge.connection === 'connected'
+                  ? bridge.status?.active
+                    ? '正在等待 WorkBuddy 的识别结果'
+                    : '本地连接已就绪'
+                  : bridge.connection === 'checking'
+                    ? '正在检查本地连接…'
+                    : bridge.connection === 'standalone'
+                      ? '当前是独立页面，尚未连接 WorkBuddy'
+                      : '本地连接中断，未接收的结果会保留'}
+              </output>
+              {bridge.connection === 'standalone' ? (
+                <>
+                  <p>
+                    首次使用，请在 WorkBuddy 加载随包的「中华食肆
+                    Skill」，让它打开这份完整包里的厨房工作台。它会启动本地连接，并给出入口。
+                  </p>
+                  <p className="muted">
+                    连接启动后，从下方入口打开。旧文件页面的库存仍保留在原浏览器地址，不会自动迁移到新入口。
+                  </p>
+                  <a
+                    className="primary"
+                    href={BRIDGE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    打开已启动的本地工作台 <ArrowUpRight size={17} />
+                  </a>
+                </>
+              ) : (
+                <>
+                  <ol className="instructions">
+                    <li>在这里准备接收，锁定本次厨房和盘点方式。</li>
+                    <li>
+                      在 WorkBuddy 对话上传照片，使用「中华食肆
+                      Skill」识别。听写文字也可以。
+                    </li>
+                    <li>回到这里核对食材与数量。你确认前，库存不会变化。</li>
+                  </ol>
+                  {bridge.status?.active && (
+                    <p className="muted">
+                      本次接收：
+                      {bridge.status.active.dataset === 'real'
+                        ? '真实厨房'
+                        : '样例厨房'}{' '}
+                      ·{' '}
+                      {bridge.status.active.mode === 'stocktake'
+                        ? '盘点校准'
+                        : '补货'}
+                      。等待有效期 30 分钟；修改上方选项不会改变已开始的任务。
+                    </p>
+                  )}
+                  {bridge.problem && (
+                    <p role="alert" className="warning-text">
+                      {bridge.problem}
+                    </p>
+                  )}
+                  <div className="actions">
+                    <button
+                      className="primary"
+                      disabled={
+                        bridge.busy ||
+                        bridge.connection !== 'connected' ||
+                        !!bridge.status?.active ||
+                        !!bridge.status?.otherActive
+                      }
+                      onClick={() => void bridge.begin(dataset, mode)}
+                    >
+                      <Camera size={17} />
+                      {bridge.status?.active
+                        ? '等待照片识别…'
+                        : '准备接收照片识别'}
+                    </button>
+                    {bridge.status?.active && (
+                      <button
+                        className="secondary"
+                        disabled={bridge.busy}
+                        onClick={() => void bridge.cancel()}
+                      >
+                        取消本次等待
+                      </button>
+                    )}
+                    {bridge.status?.otherActive && (
+                      <p className="muted">
+                        另一个浏览器正在等待识别，请先完成或取消那次任务。
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
               <div className="actions">
                 <button
-                  className="secondary"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(workbuddyPrompt);
-                      setMessage('说明已复制，请发到 WorkBuddy 对话。');
-                    } catch {
-                      setError(
-                        '当前页面不能自动复制，请选中上方文字手动复制。',
-                      );
-                    }
+                  className="text-button"
+                  onClick={() => {
+                    setDialog(null);
+                    setPage('inventory');
                   }}
                 >
-                  复制说明
+                  查看待确认食材
                 </button>
-                <button className="primary" onClick={() => setDialog('import')}>
-                  已有结果，去导入
+                <button
+                  className="text-button"
+                  onClick={() => setDialog('import')}
+                >
+                  备用：手动导入已有结果
                 </button>
               </div>
               <p className="muted">
-                照片 /
-                听写由对话或设备处理，需要其对应权限与网络。本网页不会调用你的
-                WorkBuddy 账户，也没有内置 API Key。
+                照片只在你主动上传的 WorkBuddy
+                对话中识别，需要其模型能力与网络。此连接只传递候选，不读取照片、账号或正式库存；本页不调用
+                WorkBuddy API。
               </p>
             </>
           )}
@@ -2126,9 +2216,27 @@ export default function Home() {
               disabled={busy || (!reset && !!session)}
               onClick={async () => {
                 const doReset = reset;
+                const targetDataset = datasetRef.current;
+                let ignored: string[];
+                try {
+                  ignored = await bridge.beforeReset(targetDataset);
+                } catch {
+                  setError(
+                    '请先恢复本地连接，再清空，避免旧识别结果重新出现。',
+                  );
+                  return;
+                }
                 if (
                   await mutate(
                     (state) => {
+                      if (state.dataset !== targetDataset)
+                        throw new Error('厨房已切换，未清空数据。');
+                      const tombstones = [
+                        ...new Set([
+                          ...(state.bridgeIgnoredTicketIds || []),
+                          ...ignored,
+                        ]),
+                      ];
                       if (doReset) {
                         if (state.dataset !== 'demo')
                           throw new Error('只能重置样例。');
@@ -2141,12 +2249,20 @@ export default function Home() {
                           (c) => c.status !== 'pending',
                         );
                       }
+                      state.bridgeIgnoredTicketIds = tombstones;
                     },
                     doReset
                       ? '样例已重置，真实厨房未改变。'
                       : '当前库存已清空，已完成百味图保留。',
                   )
                 ) {
+                  try {
+                    await bridge.afterReset(targetDataset, ignored);
+                  } catch {
+                    setMessage(
+                      '本机清空已完成。旧识别已在本机标记忽略，连接恢复后会补回执。',
+                    );
+                  }
                   setReset(false);
                   setClear(false);
                 }

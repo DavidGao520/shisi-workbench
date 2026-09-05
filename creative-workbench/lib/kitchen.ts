@@ -70,6 +70,7 @@ export type KitchenState = {
   sessions: Session[];
   reviews: Record<string, Review>;
   preferences: Preferences;
+  bridgeIgnoredTicketIds?: string[];
 };
 export const uid = () => globalThis.crypto.randomUUID();
 export const today = () => {

@@ -1,4 +1,11 @@
-import { readFile, writeFile, mkdir, copyFile, cp } from 'node:fs/promises';
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  copyFile,
+  cp,
+  chmod,
+} from 'node:fs/promises';
 import { resolve, basename } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 const output = resolve(root, 'release');
@@ -40,6 +47,11 @@ for (const file of [
 await cp(resolve(root, 'skills'), resolve(output, 'skills'), {
   recursive: true,
 });
+await copyFile(
+  resolve(root, 'scripts/启动厨房.command'),
+  resolve(output, '启动厨房.command'),
+);
+await chmod(resolve(output, '启动厨房.command'), 0o755);
 console.log(
   'Self-contained HTML written: ' +
     resolve(output, '中华食肆.html') +

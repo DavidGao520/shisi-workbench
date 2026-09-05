@@ -39,3 +39,5 @@ next-env.d.ts
 /dist-local/
 /release/
 *.tsbuildinfo
+/.kitchen-bridge/
+/release/.kitchen-bridge/

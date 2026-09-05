@@ -5,12 +5,15 @@ import { zipSync, unzipSync } from 'fflate';
 const root = resolve(import.meta.dirname, '..');
 const paths = [
   '中华食肆.html',
+  '启动厨房.command',
   'README.md',
   'ASSET-SOURCES.md',
   'IMPLEMENTATION-STATUS.md',
   'skills/zhonghua-shisi/SKILL.md',
   'skills/zhonghua-shisi/references/inventory-contract.md',
   'skills/zhonghua-shisi/references/theme-assets.md',
+  'skills/zhonghua-shisi/references/local-bridge.md',
+  'skills/zhonghua-shisi/scripts/kitchen-bridge.mjs',
 ];
 const entries = Object.fromEntries(
   await Promise.all(
@@ -20,7 +23,14 @@ const entries = Object.fromEntries(
     ]),
   ),
 );
-const zipped = zipSync(entries, { level: 6 });
+const archiveEntries = {
+  ...entries,
+  '启动厨房.command': [
+    entries['启动厨房.command'],
+    { os: 3, attrs: 0o100755 << 16 },
+  ],
+};
+const zipped = zipSync(archiveEntries, { level: 6 });
 // The first entry intentionally has a Chinese name; assert the portable UTF-8 flag.
 if (
   !(
@@ -39,7 +49,7 @@ for (const path of paths) {
   )
     throw new Error('Archive round trip failed: ' + path);
 }
-const destination = resolve(root, '中华食肆-创意工作台-v0.1.zip');
+const destination = resolve(root, '中华食肆-创意工作台-v0.2.zip');
 await writeFile(destination, zipped);
 console.log(
   'Verified UTF-8 ZIP with ' +
