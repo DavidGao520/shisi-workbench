@@ -38,6 +38,8 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { SeasoningChecklist } from '@/components/seasoning-checklist';
+import { needsSeasoningOnboarding } from '@/lib/seasoning-setup';
 import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
@@ -657,6 +659,7 @@ export default function Home() {
     [detail, setDetail] = useState<string | null>(null),
     [reset, setReset] = useState(false),
     [clear, setClear] = useState(false);
+  const [seasoningOpen, setSeasoningOpen] = useState(false);
   const [mode, setMode] = useState<Mode>('stocktake'),
     [raw, setRaw] = useState(''),
     [manualName, setManualName] = useState('番茄'),
@@ -846,6 +849,20 @@ export default function Home() {
     s?.inventory.filter((b) =>
       b.amount === undefined ? b.amountBand !== '用完' : b.amount > 0,
     ).length || 0;
+  const showSeasoningSetup =
+    !!s &&
+    needsSeasoningOnboarding(s) &&
+    (page === 'today' || page === 'inventory');
+  const finishSeasonings = (added: number, skipped: boolean) => {
+    setSeasoningOpen(false);
+    setPage('inventory');
+    setMessage(
+      skipped
+        ? '已跳过调料设置。以后可在“我的厨房”打开调料清单。'
+        : added +
+            ' 种调料已记录。其他食材可以继续用 WorkBuddy 照片或听写文字录入。',
+    );
+  };
   const changeDataset = (d: Dataset) => {
     if (!busy) {
       setState(undefined);
@@ -853,6 +870,7 @@ export default function Home() {
       setMessage('');
       setDialog(null);
       setDetail(null);
+      setSeasoningOpen(false);
       datasetRef.current = d;
       setDataset(d);
       setPage('today');
@@ -981,6 +999,24 @@ export default function Home() {
           </section>
         ) : (
           <>
+            {showSeasoningSetup && (
+              <section
+                className="paper seasoning-onboarding"
+                aria-labelledby="seasoning-welcome"
+              >
+                <p className="eyebrow">新厨房 · 先备好调料</p>
+                <h2 id="seasoning-welcome">家里的油盐酱醋，不用再拍一遍</h2>
+                <p>先勾选调料，再用 WorkBuddy 录入冰箱里的其他食材。</p>
+                <SeasoningChecklist
+                  key={dataset}
+                  state={s}
+                  busy={busy}
+                  mutate={mutate}
+                  done={finishSeasonings}
+                  firstRun
+                />
+              </section>
+            )}
             <TabsContent value="today">
               {session && (
                 <div className="resume-strip">
@@ -998,44 +1034,67 @@ export default function Home() {
                   </button>
                 </div>
               )}
-              <section className="start-panel">
-                <div>
-                  <p className="eyebrow">
-                    {inventoryUsed
-                      ? '厨房里，已有 ' + inventoryUsed + ' 批食材'
-                      : '你的冰箱，还没开始记录'}
-                  </p>
-                  <h2>
-                    {inventoryUsed ? '用手边的，做一顿好的' : '先把食材摆上桌'}
-                  </h2>
-                  <p>
-                    {inventoryUsed
-                      ? '只有确认过的食材才会出现在推荐里。'
-                      : '食材、油盐和饮用水都需要确认，不会默认你已经拥有。'}
-                  </p>
-                </div>
-                <div className="actions">
-                  <button
-                    className="primary"
-                    onClick={() => {
-                      setPage('inventory');
-                      setDialog('manual');
-                    }}
-                  >
-                    <Plus size={18} />
-                    {inventoryUsed ? '添点食材' : '开始盘点'}
-                  </button>
-                  {dataset === 'demo' && !s.candidates.length && (
+              {!showSeasoningSetup && (
+                <section className="start-panel">
+                  <div>
+                    <p className="eyebrow">
+                      {inventoryUsed
+                        ? '厨房里，已有 ' + inventoryUsed + ' 批食材'
+                        : '你的冰箱，还没开始记录'}
+                    </p>
+                    <h2>
+                      {inventoryUsed
+                        ? '用手边的，做一顿好的'
+                        : '先把食材摆上桌'}
+                    </h2>
+                    <p>
+                      {inventoryUsed
+                        ? '只有确认过的食材才会出现在推荐里。'
+                        : '食材、油盐和饮用水都需要确认，不会默认你已经拥有。'}
+                    </p>
+                  </div>
+                  <div className="actions">
+                    <button
+                      className="primary"
+                      onClick={() => {
+                        setPage('inventory');
+                        setDialog('workbuddy');
+                      }}
+                    >
+                      <Camera size={18} />
+                      {inventoryUsed
+                        ? '继续用 WorkBuddy 录入食材'
+                        : '拍照 / 听写录入食材'}
+                    </button>
+                    {dataset === 'demo' && !s.candidates.length && (
+                      <button
+                        className="secondary"
+                        disabled={busy}
+                        onClick={loadSample}
+                      >
+                        载入七项样例
+                      </button>
+                    )}
+                  </div>
+                </section>
+              )}
+              {dataset === 'real' &&
+                !s.seasoningSetup &&
+                !showSeasoningSetup && (
+                  <div className="seasoning-invitation paper">
+                    <div>
+                      <h3>把常用调料也记上</h3>
+                      <p>油盐酱醋直接勾选，不用拍照；已有记录不会重复添加。</p>
+                    </div>
                     <button
                       className="secondary"
                       disabled={busy}
-                      onClick={loadSample}
+                      onClick={() => setSeasoningOpen(true)}
                     >
-                      载入七项样例
+                      打开调料清单
                     </button>
-                  )}
-                </div>
-              </section>
+                  </div>
+                )}
               <section className="preferences paper">
                 <div className="row-between">
                   <h3>今天这一餐</h3>
@@ -1121,7 +1180,7 @@ export default function Home() {
                       ? '请选择可用厨具。'
                       : s.preferences.allergens.includes('鸡蛋')
                         ? '首批三道都含鸡蛋，已全部排除。可以浏览菜谱，但不能开始跟做。'
-                        : '检查数量、单位、时间与忌口。缺少两项以上必需食材的菜不会凑数推荐。'}
+                        : '检查数量、单位、时间与忌口。缺少两项以上食材的菜不会凑数推荐；已勾选的调料仍需核对用量。'}
                   </p>
                   <button
                     className="secondary"
@@ -1174,8 +1233,9 @@ export default function Home() {
                             {missing
                               .map(
                                 (m) =>
-                                  names[m.id] +
-                                  ' ' +
+                                  (m.presenceOnly
+                                    ? names[m.id] + '已备，核对 '
+                                    : names[m.id] + ' ') +
                                   Math.max(0, m.need - m.have) +
                                   ' ' +
                                   m.unit,
@@ -1239,23 +1299,34 @@ export default function Home() {
                 <div className="actions">
                   <button
                     className="primary"
+                    onClick={() => setDialog('workbuddy')}
+                  >
+                    <Camera size={17} />用 WorkBuddy 录入食材
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      setDialog(null);
+                      setSeasoningOpen(true);
+                    }}
+                  >
+                    <Check size={17} />
+                    调料清单
+                  </button>
+                  <button
+                    className="text-button"
                     onClick={() => setDialog('manual')}
                   >
                     <Plus size={17} />
-                    手动录入
+                    手动补充
                   </button>
                   <button
-                    className="secondary"
+                    className="text-button"
                     onClick={() => setDialog('import')}
                   >
                     <FileJson size={17} />
-                    导入食材 JSON
-                  </button>
-                  <button
-                    className="secondary"
-                    onClick={() => setDialog('workbuddy')}
-                  >
-                    <Camera size={17} />用 WorkBuddy 识别
+                    备用：导入 JSON
                   </button>
                 </div>
                 <button
@@ -1321,7 +1392,7 @@ export default function Home() {
                 </>
               )}
               <div className="section-head">
-                <h2>已确认的冰箱</h2>
+                <h2>已确认的厨房库存</h2>
                 <span>{s.inventory.length} 个批次 · 未拍到的不会自动删除</span>
               </div>
               {!s.inventory.length ? (
@@ -1705,6 +1776,42 @@ export default function Home() {
         </footer>
       </main>
       <Dialog
+        open={seasoningOpen}
+        onOpenChange={(value) => {
+          if (!busy) setSeasoningOpen(value);
+        }}
+      >
+        <DialogContent className="kitchen-dialog" showCloseButton={false}>
+          <button
+            className="dialog-close icon-button"
+            aria-label="关闭调料清单"
+            disabled={busy}
+            onClick={() => setSeasoningOpen(false)}
+          >
+            <X />
+          </button>
+          <DialogTitle>家里有哪些调料？</DialogTitle>
+          <DialogDescription>
+            油盐酱醋直接勾选，不用拍照。这里是
+            {dataset === 'real' ? '真实厨房' : '样例厨房'}，未勾选的不会加入。
+          </DialogDescription>
+          {error && (
+            <p className="warning-text" role="alert">
+              {error}
+            </p>
+          )}
+          {s && seasoningOpen && (
+            <SeasoningChecklist
+              key={dataset}
+              state={s}
+              busy={busy}
+              mutate={mutate}
+              done={finishSeasonings}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
         open={dialog !== null}
         onOpenChange={(v) => {
           if (!v) setDialog(null);
@@ -2039,12 +2146,14 @@ export default function Home() {
                     <small className={!i.enough ? 'warning-text' : ''}>
                       {i.enough
                         ? '已备齐'
-                        : i.unknown
-                          ? '数量 / 单位待确认'
-                          : '还缺 ' +
-                            Math.max(0, i.need - i.have) +
-                            ' ' +
-                            i.unit}
+                        : i.presenceOnly
+                          ? '已备 · 用量待核对'
+                          : i.unknown
+                            ? '数量 / 单位待确认'
+                            : '还缺 ' +
+                              Math.max(0, i.need - i.have) +
+                              ' ' +
+                              i.unit}
                     </small>
                   </div>
                 ))}

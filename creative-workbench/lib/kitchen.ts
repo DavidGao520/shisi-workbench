@@ -1,8 +1,15 @@
 import { names, recipes, RECIPE_VERSION, type Recipe } from './recipes';
+import { isSeasoning, PRESENT_QUANTITY, seasoningNames } from './seasonings';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
 export const units = ['个', '盒', '袋', '克', '毫升', '份'] as const;
-export const bands = ['充足', '少量', '即将用完', '用完'] as const;
+export const bands = [
+  PRESENT_QUANTITY,
+  '充足',
+  '少量',
+  '即将用完',
+  '用完',
+] as const;
 export type Quantity = { amount?: number; unit?: string; amountBand?: string };
 export type Candidate = Quantity & {
   key: string;
@@ -71,6 +78,12 @@ export type KitchenState = {
   reviews: Record<string, Review>;
   preferences: Preferences;
   bridgeIgnoredTicketIds?: string[];
+  seasoningSetup?: {
+    version: 1;
+    completedAt: string;
+    skipped: boolean;
+    receipts: string[];
+  } | null;
 };
 export const uid = () => globalThis.crypto.randomUUID();
 export const today = () => {
@@ -89,6 +102,7 @@ export function emptyState(dataset: Dataset): KitchenState {
     candidates: [],
     sessions: [],
     reviews: {},
+    seasoningSetup: null,
     preferences: {
       servings: 1,
       minutes: 20,
@@ -157,6 +171,10 @@ export function validateDate(d?: string) {
     fail('请输入有效的到期日期。');
 }
 const aliases: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(seasoningNames).map(([id, name]) => [name, id]),
+  ),
+  糖: 'sugar',
   番茄: 'tomato',
   西红柿: 'tomato',
   鸡蛋: 'egg',
@@ -396,6 +414,10 @@ export function matching(
       unknown: eligible.some(
         (b) => b.amount === undefined || b.unit !== i.unit,
       ),
+      // Presence helps discovery, but never proves that the required grams/ml are available.
+      presenceOnly:
+        isSeasoning(i.id) &&
+        eligible.some((b) => b.amountBand === PRESENT_QUANTITY),
     };
   });
 }
@@ -441,7 +463,7 @@ export function recommendations(s: KitchenState, date = today()) {
         0.1 * preference;
       return { recipe: r, matches, missing, score };
     })
-    .filter((x) => x.missing.length < 2)
+    .filter((x) => x.missing.filter((i) => !i.presenceOnly).length < 2)
     .sort(
       (a, b) =>
         b.score - a.score || a.recipe.id.localeCompare(b.recipe.id, 'en'),

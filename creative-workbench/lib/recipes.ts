@@ -1,3 +1,4 @@
+import { seasoningNames } from './seasonings';
 export const RECIPE_VERSION = '2026-09-05-draft.1';
 export const names: Record<string, string> = {
   tomato: '番茄',
@@ -12,6 +13,7 @@ export const names: Record<string, string> = {
   tofu: '豆腐',
   potato: '土豆',
   other: '其他食材',
+  ...seasoningNames,
 };
 export type Recipe = {
   id: string;
