@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Local candidate delivery only. No model API, shell execution, or inventory access.
+// Local candidate delivery and offline speech transcription. No inventory access.
 import { createServer } from 'node:http';
 import {
   randomUUID,
@@ -11,6 +11,7 @@ import { readFile, writeFile, mkdir, rename, lstat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { createLocalSpeech } from './local-speech.mjs';
 
 export const PROTOCOL = 'zhonghua-shisi-bridge-1';
 export const PORT = 43117;
@@ -173,12 +174,15 @@ function secretMatches(header, token) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** @param {{ workspace: string, port?: number, now?: () => number, speech?: { status: () => Promise<unknown>, transcribe: (req: any, signal: AbortSignal) => Promise<unknown> } }} options */
 export async function startBridge({
   workspace,
   port = PORT,
   now = () => Date.now(),
+  speech,
 }) {
   const root = resolve(workspace);
+  const voice = speech || createLocalSpeech(root);
   let html;
   for (const path of [
     join(root, '中华食肆.html'),
@@ -278,7 +282,20 @@ export async function startBridge({
         if (!secretMatches(req.headers.authorization, token))
           fail('连接凭证无效，请用配套脚本操作。', 401);
       } else if (!uuid(client)) fail('请从本机工作台页面访问。', 403);
-      if (req.method === 'GET' && path === '/bridge/agent-status') {
+      if (req.method === 'GET' && path === '/voice/status') {
+        json(200, await voice.status());
+      } else if (req.method === 'POST' && path === '/voice/transcribe') {
+        const abort = new AbortController();
+        const cancel = () => {
+          if (!res.writableEnded) abort.abort();
+        };
+        res.once('close', cancel);
+        try {
+          json(200, await voice.transcribe(req, abort.signal));
+        } finally {
+          res.removeListener('close', cancel);
+        }
+      } else if (req.method === 'GET' && path === '/bridge/agent-status') {
         const t = active();
         json(200, {
           protocol: PROTOCOL,

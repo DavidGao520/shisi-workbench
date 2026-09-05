@@ -1,6 +1,6 @@
 {
   "name": "sites-project",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -12,13 +12,14 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
-    "lint:app": "oxlint app lib components/seasoning-checklist.tsx tests scripts skills/zhonghua-shisi/scripts standalone vite.standalone.config.ts",
+    "lint:app": "oxlint app lib components/seasoning-checklist.tsx components/voice-intake.tsx tests scripts skills/zhonghua-shisi/scripts standalone vite.standalone.config.ts",
     "test": "tsx --test tests/*.test.ts",
     "package:local": "npm run build:html && node scripts/package-release.mjs",
     "build:html": "vite build --config vite.standalone.config.ts && node scripts/bundle-single.mjs",
     "kitchen:start": "node skills/zhonghua-shisi/scripts/kitchen-bridge.mjs start --workspace release",
     "kitchen:status": "node skills/zhonghua-shisi/scripts/kitchen-bridge.mjs status --workspace release",
-    "kitchen:stop": "node skills/zhonghua-shisi/scripts/kitchen-bridge.mjs stop --workspace release"
+    "kitchen:stop": "node skills/zhonghua-shisi/scripts/kitchen-bridge.mjs stop --workspace release",
+    "voice:setup": "node skills/zhonghua-shisi/scripts/setup-voice.mjs release"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

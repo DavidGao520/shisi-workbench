@@ -6,6 +6,7 @@ const root = resolve(import.meta.dirname, '..');
 const paths = [
   '中华食肆.html',
   '启动厨房.command',
+  '初始化语音.command',
   'README.md',
   'ASSET-SOURCES.md',
   'IMPLEMENTATION-STATUS.md',
@@ -14,6 +15,9 @@ const paths = [
   'skills/zhonghua-shisi/references/theme-assets.md',
   'skills/zhonghua-shisi/references/local-bridge.md',
   'skills/zhonghua-shisi/scripts/kitchen-bridge.mjs',
+  'skills/zhonghua-shisi/scripts/local-speech.mjs',
+  'skills/zhonghua-shisi/scripts/transcribe.py',
+  'skills/zhonghua-shisi/scripts/setup-voice.mjs',
 ];
 const entries = Object.fromEntries(
   await Promise.all(
@@ -27,6 +31,10 @@ const archiveEntries = {
   ...entries,
   '启动厨房.command': [
     entries['启动厨房.command'],
+    { os: 3, attrs: 0o100755 << 16 },
+  ],
+  '初始化语音.command': [
+    entries['初始化语音.command'],
     { os: 3, attrs: 0o100755 << 16 },
   ],
 };
@@ -49,7 +57,7 @@ for (const path of paths) {
   )
     throw new Error('Archive round trip failed: ' + path);
 }
-const destination = resolve(root, '中华食肆-创意工作台-v0.3.zip');
+const destination = resolve(root, '中华食肆-创意工作台-v0.4.zip');
 await writeFile(destination, zipped);
 console.log(
   'Verified UTF-8 ZIP with ' +

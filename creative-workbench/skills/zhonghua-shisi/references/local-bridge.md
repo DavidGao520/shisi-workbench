@@ -2,6 +2,8 @@
 
 这是当前用户电脑的本地连接，不是 WorkBuddy 官方 HTML SDK，不会调用账号 API。只处理用户在本次对话提供的照片/核对文字。依赖 WorkBuddy 可用的识图模型、文件与命令授权、Node.js 22+。不要将 CodeBuddy CLI、其他模型或定时任务冒充 WorkBuddy 识别。
 
+0.4 增加独立网页语音通道：`/voice/status` / `/voice/transcribe` 受相同本机来源和请求头检查保护，调用固定的本机 Python / Whisper 程序，不读取库存、不使用照片 ticket、不冒充 WorkBuddy 模型。音频限制 3 MB / 一分钟，最多一个转写子进程，超时 / 取消终止；音频不落盘。语音模型与环境在完整包 `.kitchen-voice/`，不进入分发包。
+
 ## 定位与启动
 
 完整工作台目录包含 `中华食肆.html`，或开发目录内 `release/中华食肆.html`。Skill 脚本可从安装位置运行，但 `--workspace` 必须指向用户选择的完整工作台目录，不是安装 Skill 的目录。以下占位路径须替换成已确认的绝对路径，参数分开传递并正确引用空格与中文。

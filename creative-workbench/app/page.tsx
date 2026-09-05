@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   Leaf,
   Camera,
+  Mic,
   Download,
   Clock3,
   Check,
@@ -38,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
+import { VoiceIntake } from '@/components/voice-intake';
 import { needsSeasoningOnboarding } from '@/lib/seasoning-setup';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -652,7 +654,9 @@ export default function Home() {
     [error, setError] = useState('');
   const lock = useRef(false),
     datasetRef = useRef<Dataset>('real');
-  const [dialog, setDialog] = useState<'manual' | 'workbuddy' | null>(null),
+  const [dialog, setDialog] = useState<'manual' | 'workbuddy' | 'voice' | null>(
+      null,
+    ),
     [detail, setDetail] = useState<string | null>(null),
     [reset, setReset] = useState(false),
     [clear, setClear] = useState(false);
@@ -1054,6 +1058,16 @@ export default function Home() {
                       className="primary"
                       onClick={() => {
                         setPage('inventory');
+                        setDialog('voice');
+                      }}
+                    >
+                      <Mic size={18} />
+                      语音录入食材
+                    </button>
+                    <button
+                      className="secondary"
+                      onClick={() => {
+                        setPage('inventory');
                         setDialog('workbuddy');
                       }}
                     >
@@ -1295,6 +1309,13 @@ export default function Home() {
                 <div className="actions">
                   <button
                     className="primary"
+                    onClick={() => setDialog('voice')}
+                  >
+                    <Mic size={17} />
+                    语音录入
+                  </button>
+                  <button
+                    className="secondary"
                     onClick={() => setDialog('workbuddy')}
                   >
                     <Camera size={17} />用 WorkBuddy 录入食材
@@ -1817,12 +1838,16 @@ export default function Home() {
           <DialogTitle>
             {dialog === 'manual'
               ? '把手边食材记下来'
-              : '让 WorkBuddy 看看你的厨房'}
+              : dialog === 'voice'
+                ? '说一说，食材就记下来了'
+                : '让 WorkBuddy 看看你的厨房'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'manual'
               ? '先生成候选，再由你确认批次和数量。'
-              : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
+              : dialog === 'voice'
+                ? '在这里录音，自动识别食材和数量。核对清单后，确认一次就入库。'
+                : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
           </DialogDescription>
           {error && (
             <p role="alert" className="warning-text">
@@ -1906,6 +1931,21 @@ export default function Home() {
                 <ArrowUpRight size={17} />
               </button>
             </form>
+          ) : dialog === 'voice' ? (
+            s && (
+              <VoiceIntake
+                key={dataset + ':' + mode}
+                state={s}
+                mode={mode}
+                busy={busy}
+                mutate={mutate}
+                done={(count) => {
+                  setDialog(null);
+                  setPage('inventory');
+                  setMessage('已确认 ' + count + ' 种食材入库。');
+                }}
+              />
+            )
           ) : (
             <>
               <output className="notice">
@@ -2009,10 +2049,6 @@ export default function Home() {
                   查看待确认食材
                 </button>
               </div>
-              <p className="muted">
-                网页麦克风录入尚未接通。当前只能由 WorkBuddy
-                对话发起识别，本页自动接收候选，不会自动唤起对话任务。
-              </p>
               <p className="muted">
                 照片只在你主动上传的 WorkBuddy
                 对话中识别，需要其模型能力与网络。此连接只传递候选，不读取照片、账号或正式库存；本页不调用

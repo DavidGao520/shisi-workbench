@@ -33,16 +33,23 @@ void test('removing technical import preserves manual input, WorkBuddy receipt a
   assert.match(source, /zhonghua-shisi-backup/);
 });
 
-void test('unimplemented webpage microphone is not advertised as delivered', async () => {
+void test('webpage voice entry mounts the recording and confirmation component', async () => {
   const source = await page();
   assert.equal(
     source.includes('拍照 / 听写录入食材'),
     false,
     'do not claim a webpage dictation entry exists',
   );
+  assert.equal(source.includes('网页麦克风录入尚未接通'), false);
+  assert.equal(source.includes("setDialog('voice')"), true);
+  assert.equal(source.includes('<VoiceIntake'), true);
+  const voice = await readFile(
+    new URL('../components/voice-intake.tsx', import.meta.url),
+    'utf8',
+  );
   assert.equal(
-    source.includes('网页麦克风录入尚未接通'),
-    true,
-    'state the missing capability honestly',
+    voice.includes('location.origin !== BRIDGE_URL'),
+    false,
+    'URL slash must not disable the real local origin',
   );
 });

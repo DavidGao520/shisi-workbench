@@ -1,6 +1,6 @@
 # 食材候选协议 1.0
 
-自动连接模式使用 local-bridge.md：提取文件允许省略 requestId / createdAt / dataset / mode，由用户在网页创建的 ticket 固定；自动连接还允许 candidates: [] 表达未识别到食材。下方完整包仍用于网页备用手动导入，不要求用户在正常流程搬运 JSON。
+自动连接模式使用 local-bridge.md：提取文件允许省略 requestId / createdAt / dataset / mode，由用户在网页创建的 ticket 固定；自动连接还允许 candidates: [] 表达未识别到食材。下方是内部协议示例，网页已移除手动 JSON 导入，不要求用户搬运 JSON。网页语音独立产生 gateway-text 候选，不使用本对话的 ticket；仍由页面确认后才入庫。
 
 完整包示例：
 
