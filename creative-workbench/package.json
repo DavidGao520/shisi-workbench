@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint:app": "oxlint app lib tests scripts standalone vite.standalone.config.ts",
     "test": "tsx --test tests/*.test.ts",
+    "package:local": "npm run build:html && node scripts/package-release.mjs",
     "build:html": "vite build --config vite.standalone.config.ts && node scripts/bundle-single.mjs"
   },
   "dependencies": {
@@ -48,6 +49,7 @@
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
     "fake-indexeddb": "^6.2.5",
+    "fflate": "^0.8.3",
     "oxfmt": "0.61.0",
     "oxlint": "1.76.0",
     "oxlint-tsgolint": "7.0.2001",

@@ -47,6 +47,7 @@ npm run typecheck
 npm test
 npm run build
 npm run build:html
+npm run package:local
 ```
 
 第一份是正常 Web 构建；第二份把 React、界面、菜谱和三张游戏插画内嵌进 release/中华食肆.html，不依赖 CDN、远程字体或 API Key。不要把开发工具链的 node_modules 装进 WorkBuddy。

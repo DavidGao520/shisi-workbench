@@ -35,6 +35,7 @@
 | 单 HTML 模块解析 | 通过 | 恰好一个内嵌模块，JS 语法可解析，游戏插画以 data URL 内嵌 |
 | 本地 HTTP 编译检查 | HTTP 200，localhost:5177 | 开发路由可编译返回；没有据此宣称按钮都完成了浏览器实机验收 |
 | Skill quick_validate.py | 通过 | Skill 文件结构和元数据有效；不代表 WorkBuddy 加载实测 |
+| npm run package:local | 通过 | ZIP 明确标记 UTF-8 中文文件名，7 个文件压缩后逐字节往返一致 |
 
 全仓 npm run lint 尚有 Sites 脚手架原有 components/ui 与 hooks 的静态问题。未修改供应组件或全局关闭规则来掩盖它们，另提供 lint:app 精确覆盖本次业务代码。独立图片使用 img 是本地单文件与用户上传图片的必要选择，已在文件顶部说明局部规则例外。
 
