@@ -1,0 +1,2162 @@
+'use client';
+/* oxlint-disable next/no-img-element -- Embedded game artwork and local photos must work in the standalone HTML without an image server. */
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import {
+  ChefHat,
+  Refrigerator,
+  BookOpen,
+  CookingPot,
+  Plus,
+  ArrowUpRight,
+  Leaf,
+  Camera,
+  FileJson,
+  Download,
+  Clock3,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  RotateCcw,
+  X,
+  Pause,
+  Play,
+  Search,
+} from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import { IndexedDbStore } from '@/lib/store';
+import { renderBaiweiEntry } from '@/lib/archive-export';
+import {
+  names,
+  recipes,
+  safetyNote,
+  safetySource,
+  cookingSteps,
+  type Recipe,
+} from '@/lib/recipes';
+import { art } from '@/lib/art';
+import {
+  activeSession,
+  archive,
+  bands,
+  completeCooking,
+  confirmCandidate,
+  demoImport,
+  emptyState,
+  isExpired,
+  matching,
+  parseImport,
+  quantityText,
+  recommendations,
+  rejectCandidate,
+  remainingPlan,
+  reviewRecipe,
+  reviewed,
+  stage,
+  startCooking,
+  stepSession,
+  uid,
+  units,
+  type Candidate,
+  type Consumption,
+  type Dataset,
+  type KitchenState,
+  type Mode,
+  type Quantity,
+  type Session,
+} from '@/lib/kitchen';
+
+const db = new IndexedDbStore();
+const pages = [
+  { id: 'today', name: '今日一餐', icon: CookingPot },
+  { id: 'inventory', name: '我的厨房', icon: Refrigerator },
+  { id: 'cooking', name: '做菜模式', icon: ChefHat },
+  { id: 'archive', name: '百味图', icon: BookOpen },
+];
+const ingredientOptions = Object.entries(names).map(([value, label]) => ({
+  value,
+  label,
+}));
+type ChoiceOption = { value: string; label: string };
+function Choice({
+  label,
+  value,
+  onChange,
+  options,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: ChoiceOption[];
+  disabled?: boolean;
+}) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label id={id}>{label}</label>
+      <Select
+        value={value}
+        disabled={disabled}
+        onValueChange={(v) => {
+          if (v !== null) onChange(String(v));
+        }}
+      >
+        <SelectTrigger aria-labelledby={id} className="choice-trigger">
+          <SelectValue>
+            {options.find((o) => o.value === value)?.label || '请选择'}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+function Tick({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  const id = useId();
+  return (
+    <label className="tick" htmlFor={id}>
+      <Checkbox
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={(v) => onChange(!!v)}
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+function download(name: string, content: string, type = 'application/json') {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function exportEntry(r: Recipe, session: Session, dataset: Dataset) {
+  download(
+    '中华食肆-百味图-' + r.title + '.html',
+    renderBaiweiEntry(r, session, dataset),
+    'text/html',
+  );
+}
+async function photoData(file: File): Promise<string> {
+  if (
+    !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+    file.size > 12 * 1024 * 1024
+  )
+    throw new Error('请上传 12 MB 以内的 JPG、PNG 或 WebP 照片。');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const scale = Math.min(1, 1000 / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(img.width * scale));
+    canvas.height = Math.max(1, Math.round(img.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('照片处理失败，请换一张或跳过照片。');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.78);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+type Mutate = (
+  fn: (s: KitchenState) => void,
+  message?: string,
+) => Promise<boolean>;
+function CandidateEditor({
+  candidate: c,
+  s,
+  busy,
+  mutate,
+}: {
+  candidate: Candidate;
+  s: KitchenState;
+  busy: boolean;
+  mutate: Mutate;
+}) {
+  const [ingredient, setIngredient] = useState(c.canonicalIngredientId || '');
+  const [name, setName] = useState(c.displayName),
+    [amount, setAmount] = useState(
+      c.amount === undefined ? '' : String(c.amount),
+    ),
+    [unit, setUnit] = useState(c.unit || '克');
+  const [kind, setKind] = useState(c.amountBand ? 'band' : 'exact'),
+    [band, setBand] = useState(c.amountBand || '少量'),
+    [expiry, setExpiry] = useState(''),
+    [target, setTarget] = useState('');
+  const batches = s.inventory.filter(
+      (b) => b.canonicalIngredientId === ingredient,
+    ),
+    batch = batches.find((b) => b.id === target);
+  return (
+    <article className="candidate">
+      <div className="row-between">
+        <h3>{c.displayName}</h3>
+        <span className="tag amber">
+          待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
+        </span>
+      </div>
+      {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
+      <div className="form-grid">
+        <Choice
+          label="对应食材"
+          value={ingredient}
+          onChange={(v) => {
+            setIngredient(v);
+            setTarget('');
+          }}
+          options={ingredientOptions}
+        />
+        <label className="field">
+          显示名称
+          <input
+            value={name}
+            maxLength={60}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <Choice
+          label="数量形式"
+          value={kind}
+          onChange={setKind}
+          options={[
+            { value: 'exact', label: '精确数量' },
+            { value: 'band', label: '数量不确定' },
+          ]}
+        />
+        {kind === 'exact' ? (
+          <div className="quantity-pair">
+            <label className="field">
+              数量
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
+            <Choice
+              label="单位"
+              value={unit}
+              onChange={setUnit}
+              options={units.map((v) => ({ value: v, label: v }))}
+            />
+          </div>
+        ) : (
+          <Choice
+            label="数量档"
+            value={band}
+            onChange={setBand}
+            options={bands.map((v) => ({ value: v, label: v }))}
+          />
+        )}
+        <label className="field">
+          到期日期（不知道可留空）
+          <input
+            type="date"
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value)}
+          />
+        </label>
+        <Choice
+          label={c.mode === 'stocktake' ? '校准哪一批？' : '添加到哪里？'}
+          value={target}
+          onChange={(v) => {
+            setTarget(v);
+            const b = batches.find((x) => x.id === v);
+            if (b) setExpiry(b.expiryDate || '');
+          }}
+          options={[
+            { value: 'new', label: '明确新建一个批次' },
+            ...batches.map((b) => ({
+              value: b.id,
+              label:
+                b.displayName +
+                ' · ' +
+                quantityText(b) +
+                (b.expiryDate ? ' · ' + b.expiryDate : ''),
+            })),
+          ]}
+        />
+      </div>
+      {c.warnings.length > 0 && (
+        <p className="warning-text">{c.warnings.join('；')}</p>
+      )}
+      <div className="actions">
+        <button
+          className="primary"
+          disabled={
+            busy ||
+            !ingredient ||
+            !target ||
+            (kind === 'exact' && amount === '')
+          }
+          onClick={() =>
+            mutate(
+              (state) =>
+                confirmCandidate(state, c.key, {
+                  name,
+                  ingredientId: ingredient,
+                  quantity:
+                    kind === 'exact'
+                      ? { amount: Number(amount), unit }
+                      : { amountBand: band },
+                  expiryDate: expiry || undefined,
+                  targetId: target === 'new' ? undefined : target,
+                  targetRevision: batch?.revision,
+                }),
+              '已确认入库。',
+            )
+          }
+        >
+          <Check size={17} />
+          确认这一项
+        </button>
+        <button
+          className="text-button"
+          disabled={busy}
+          onClick={() =>
+            mutate(
+              (state) => rejectCandidate(state, c.key),
+              '已拒绝，不会进入库存。',
+            )
+          }
+        >
+          不记录这项
+        </button>
+      </div>
+    </article>
+  );
+}
+function ReviewForm({
+  s,
+  session,
+  busy,
+  mutate,
+  done,
+  onError,
+}: {
+  s: KitchenState;
+  session: Session;
+  busy: boolean;
+  mutate: Mutate;
+  done: () => void;
+  onError: (v: string) => void;
+}) {
+  const r = recipes.find((r) => r.id === session.recipeId)!;
+  const [rows, setRows] = useState<Consumption[]>(
+    () =>
+      session.reviewDraft?.consumption || remainingPlan(s, r, session.servings),
+  );
+  const [rating, setRating] = useState(session.reviewDraft?.rating || 0),
+    [memory, setMemory] = useState(session.reviewDraft?.memory || ''),
+    [photo, setPhoto] = useState(session.reviewDraft?.photo || ''),
+    [confirmed, setConfirmed] = useState(false),
+    [photoBusy, setPhotoBusy] = useState(false);
+  const updateRow = (id: string, q: Quantity) => {
+    setRows((prev) =>
+      prev.map((row) => (row.batchId === id ? { ...row, remaining: q } : row)),
+    );
+    setConfirmed(false);
+  };
+  const [extra, setExtra] = useState('');
+  return (
+    <section className="paper review-form">
+      <p className="eyebrow">掌柜复盘</p>
+      <h2>这一餐，做得怎么样？</h2>
+      <p className="muted">
+        尚未扣减库存。请核对用过的食材，以及现在实际还剩多少。
+      </p>
+      <div className="review-grid">
+        <div>
+          <label className="photo-upload">
+            <Camera />
+            <span>{photo ? '更换成品照' : '留张成品照（可跳过）'}</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy || photoBusy}
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setPhotoBusy(true);
+                try {
+                  setPhoto(await photoData(f));
+                } catch (err) {
+                  onError(String((err as Error).message));
+                } finally {
+                  setPhotoBusy(false);
+                }
+              }}
+            />
+          </label>
+          {photo && (
+            <>
+              <img className="review-photo" src={photo} alt="本次成品照预览" />
+              <button className="text-button" onClick={() => setPhoto('')}>
+                移除照片
+              </button>
+            </>
+          )}
+          <p className="muted">只在本机保存，不上传、不由 AI 判断味道。</p>
+          <label className="field">
+            我的评分（必填）
+            <div className="rating">
+              {[1, 2, 3, 4, 5].map((v) => (
+                <button
+                  type="button"
+                  key={v}
+                  aria-label={v + ' 分'}
+                  aria-pressed={rating === v}
+                  onClick={() => setRating(v)}
+                >
+                  <Star
+                    fill={v <= rating ? '#bc8435' : 'none'}
+                    color="#bc8435"
+                  />
+                </button>
+              ))}
+              <span>{rating ? rating + ' / 5' : '还没评分'}</span>
+            </div>
+          </label>
+          <label className="field">
+            留一句家庭记忆或下次改进（可选）
+            <textarea
+              value={memory}
+              maxLength={2000}
+              onChange={(e) => setMemory(e.target.value)}
+              placeholder="比如：这一口，像小时候家里的晚饭。"
+            />
+          </label>
+        </div>
+        <div>
+          <h3>确认实际剩余</h3>
+          <p className="muted">
+            以下按菜谱预填，可修改。没有用到的批次可移除；不会自动扣未列出的食材。
+          </p>
+          {rows.map((row) => {
+            const b = s.inventory.find((b) => b.id === row.batchId);
+            if (!b)
+              return (
+                <p key={row.batchId} className="warning-text">
+                  原批次不存在，请重新核对。
+                </p>
+              );
+            return (
+              <div className="consume-row" key={row.batchId}>
+                <div>
+                  <strong>{b.displayName}</strong>
+                  <small>原有 {quantityText(b)}</small>
+                </div>
+                {row.remaining.amount !== undefined ? (
+                  <label className="remaining-field">
+                    <span className="sr-only">{b.displayName}实际剩余量</span>
+                    <input
+                      aria-label={b.displayName + '实际剩余量'}
+                      type="number"
+                      min="0"
+                      max={b.amount}
+                      step="any"
+                      value={
+                        Number.isNaN(row.remaining.amount)
+                          ? ''
+                          : row.remaining.amount
+                      }
+                      onChange={(e) =>
+                        updateRow(b.id, {
+                          amount:
+                            e.target.value === ''
+                              ? NaN
+                              : Number(e.target.value),
+                          unit: b.unit,
+                        })
+                      }
+                    />
+                    <span>{b.unit}</span>
+                  </label>
+                ) : (
+                  <Choice
+                    label="剩余量"
+                    value={row.remaining.amountBand || '少量'}
+                    onChange={(v) => updateRow(b.id, { amountBand: v })}
+                    options={bands.map((v) => ({ value: v, label: v }))}
+                  />
+                )}
+                <button
+                  className="icon-button"
+                  aria-label={'未使用' + b.displayName + '，从消耗清单移除'}
+                  onClick={() => {
+                    setRows(rows.filter((x) => x.batchId !== b.id));
+                    setConfirmed(false);
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            );
+          })}
+          <div className="actions">
+            <Choice
+              label="另用到一个批次"
+              value={extra}
+              onChange={setExtra}
+              options={s.inventory
+                .filter((b) => !rows.some((x) => x.batchId === b.id))
+                .map((b) => ({
+                  value: b.id,
+                  label: b.displayName + ' · ' + quantityText(b),
+                }))}
+            />
+            <button
+              className="secondary"
+              disabled={!extra}
+              onClick={() => {
+                const b = s.inventory.find((b) => b.id === extra);
+                if (b)
+                  setRows([
+                    ...rows,
+                    {
+                      batchId: b.id,
+                      expectedRevision: b.revision,
+                      remaining:
+                        b.amount !== undefined
+                          ? { amount: b.amount, unit: b.unit }
+                          : { amountBand: b.amountBand },
+                    },
+                  ]);
+                setExtra('');
+                setConfirmed(false);
+              }}
+            >
+              加入核对
+            </button>
+          </div>
+          <button
+            className="text-button"
+            onClick={() => {
+              setRows(remainingPlan(s, r, session.servings));
+              setConfirmed(false);
+            }}
+          >
+            按最新库存重新预填（会覆盖本次核对修改）
+          </button>
+        </div>
+      </div>
+      <Tick
+        label="我已核对实际消耗；确认后才扣减库存并收录百味图。"
+        checked={confirmed}
+        onChange={setConfirmed}
+      />
+      <div className="actions">
+        <button
+          className="primary"
+          disabled={busy || photoBusy || !rating || !confirmed}
+          onClick={async () => {
+            if (
+              await mutate(
+                (state) =>
+                  completeCooking(state, session.id, {
+                    rating,
+                    memory,
+                    photo: photo || undefined,
+                    consumption: rows,
+                  }),
+                '这一餐已收录，库存已更新。',
+              )
+            )
+              done();
+          }}
+        >
+          确认完成，收录百味图
+          <ArrowUpRight size={17} />
+        </button>
+        <button
+          className="secondary"
+          disabled={busy || photoBusy}
+          onClick={() =>
+            mutate((state) => {
+              const v = activeSession(state);
+              if (v?.id === session.id)
+                v.reviewDraft = {
+                  rating,
+                  memory,
+                  photo: photo || undefined,
+                  consumption: rows,
+                };
+            }, '复盘草稿已保存，下次可以继续。')
+          }
+        >
+          保存草稿，稍后确认
+        </button>
+      </div>
+    </section>
+  );
+}
+export default function Home() {
+  const [page, setPage] = useState('today'),
+    [dataset, setDataset] = useState<Dataset>('real'),
+    [s, setState] = useState<KitchenState>(),
+    [busy, setBusy] = useState(false),
+    [message, setMessage] = useState(''),
+    [error, setError] = useState('');
+  const lock = useRef(false),
+    datasetRef = useRef<Dataset>('real');
+  const [dialog, setDialog] = useState<
+      'manual' | 'import' | 'workbuddy' | null
+    >(null),
+    [detail, setDetail] = useState<string | null>(null),
+    [reset, setReset] = useState(false),
+    [clear, setClear] = useState(false);
+  const [mode, setMode] = useState<Mode>('stocktake'),
+    [raw, setRaw] = useState(''),
+    [manualName, setManualName] = useState('番茄'),
+    [manualAmount, setManualAmount] = useState(''),
+    [manualUnit, setManualUnit] = useState('克');
+  const [search, setSearch] = useState(''),
+    [reviewer, setReviewer] = useState(''),
+    [reviewChecks, setReviewChecks] = useState(false),
+    [foodChecked, setFoodChecked] = useState(false);
+  const [now, setNow] = useState(() => Date.now()),
+    [timerMinutes, setTimerMinutes] = useState('3');
+  const reload = useCallback(async (d: Dataset) => {
+    try {
+      const data = await db.read(d);
+      if (datasetRef.current === d) setState(data);
+    } catch (e) {
+      setError('本机保存不可用：' + (e as Error).message);
+    }
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    void db.read(dataset).then(
+      (data) => {
+        if (!cancelled) setState(data);
+      },
+      (reason) => {
+        if (!cancelled) setError('本机保存不可用：' + String(reason));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [dataset]);
+  useEffect(() => {
+    const refresh = () => void reload(datasetRef.current);
+    window.addEventListener('focus', refresh);
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      clearInterval(t);
+    };
+  }, [reload]);
+  const mutate: Mutate = async (fn, msg) => {
+    if (lock.current) return false;
+    lock.current = true;
+    setBusy(true);
+    setError('');
+    const current = datasetRef.current;
+    try {
+      const result = await db.change(current, fn);
+      if (datasetRef.current === current) {
+        setState(result);
+        if (msg) setMessage(msg);
+      }
+      return true;
+    } catch (e) {
+      setError((e as Error).message || '保存失败，未显示为成功。');
+      await reload(current);
+      return false;
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  };
+  // Progressive enhancement only: navigation changes the same visible tab; never grants inventory write access.
+  useEffect(() => {
+    type Context = {
+      registerTool: (
+        tool: {
+          name: string;
+          description: string;
+          inputSchema: object;
+          annotations: object;
+          execute: (input: unknown) => unknown;
+        },
+        options: { signal: AbortSignal },
+      ) => unknown;
+    };
+    const context = (document as Document & { modelContext?: Context })
+      .modelContext;
+    if (!context?.registerTool) return;
+    const abort = new AbortController();
+    try {
+      Promise.resolve(
+        context.registerTool(
+          {
+            name: 'open_kitchen_view',
+            description:
+              'Open a visible kitchen view. Does not read private inventory or confirm writes.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                view: { type: 'string', enum: pages.map((p) => p.id) },
+              },
+              required: ['view'],
+              additionalProperties: false,
+            },
+            annotations: { readOnlyHint: false, untrustedContentHint: false },
+            execute(input) {
+              const v = input as { view?: unknown };
+              if (
+                !v ||
+                Object.keys(v).some((k) => k !== 'view') ||
+                !pages.some((p) => p.id === v.view)
+              )
+                throw new Error('Invalid view');
+              setPage(String(v.view));
+              return { opened: v.view };
+            },
+          },
+          { signal: abort.signal },
+        ),
+      ).catch(() => {});
+    } catch {
+      /* Unsupported optional registry does not block local UI. */
+    }
+    return () => abort.abort();
+  }, []);
+  const session = s ? activeSession(s) : undefined,
+    entries = s ? archive(s) : [],
+    rec = s ? recommendations(s) : [];
+  const recipe = detail ? recipes.find((r) => r.id === detail) : undefined;
+  const openRecipe = (r: Recipe) => {
+    setDetail(r.id);
+    setReviewChecks(false);
+    setFoodChecked(false);
+  };
+  const setPref = (key: keyof KitchenState['preferences'], value: unknown) =>
+    mutate((state) => {
+      state.preferences = { ...state.preferences, [key]: value };
+    });
+  const togglePref = (
+    key: 'allergens' | 'equipment' | 'dislikedIngredients',
+    value: string,
+    checked: boolean,
+  ) => {
+    if (s)
+      void setPref(
+        key,
+        checked
+          ? [...s.preferences[key].filter((x) => x !== value), value]
+          : s.preferences[key].filter((x) => x !== value),
+      );
+  };
+  const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
+  const loadSample = async () => {
+    if (!s || dataset !== 'demo') return;
+    if (
+      await mutate((state) => {
+        stage(state, parseImport(demoImport(), 'demo', 'stocktake'));
+        state.preferences.equipment = ['炒锅', '汤锅'];
+      }, '七项样例已进入候选区，请确认后入库。')
+    )
+      setPage('inventory');
+  };
+  const confirmSample = () =>
+    mutate((state) => {
+      for (const c of state.candidates.filter(
+        (c) => c.status === 'pending' && c.source === 'demo',
+      ))
+        confirmCandidate(state, c.key, {
+          name: c.displayName,
+          ingredientId: c.canonicalIngredientId!,
+          quantity: { amount: c.amount, unit: c.unit },
+        });
+    }, '样例食材已由你确认，可以查看三道推荐。');
+  const inventoryUsed =
+    s?.inventory.filter((b) =>
+      b.amount === undefined ? b.amountBand !== '用完' : b.amount > 0,
+    ).length || 0;
+  const changeDataset = (d: Dataset) => {
+    if (!busy) {
+      setState(undefined);
+      setError('');
+      setMessage('');
+      setDialog(null);
+      setDetail(null);
+      datasetRef.current = d;
+      setDataset(d);
+      setPage('today');
+    }
+  };
+  const workbuddyPrompt =
+    '请按中华食肆 Skill 识别我上传的厨房照片，或提取我确认过的文字。只输出食材候选 JSON，不写正式库存。schemaVersion=1.0；requestId 每次新输入唯一；source=workbuddy-image 或 workbuddy-voice-transcript；createdAt 使用 ISO 日期；warnings 为数组；candidates 每项包含 candidateId、displayName、rawMention（文字时须原文片段）、warnings。明确的数量才填 amount+unit（个/盒/袋/克/毫升/份）；没有数量时不要猜。不要推断新鲜度、保质期、盒内枚数。dataset=' +
+    dataset +
+    '；mode=' +
+    mode +
+    '。我会复制 JSON 到 HTML 候选区再人工确认。';
+  return (
+    <Tabs
+      value={page}
+      onValueChange={(v) => setPage(String(v))}
+      orientation="vertical"
+      className="kitchen-app"
+      style={{ display: 'block' }}
+    >
+      <aside className="rail">
+        <div className="brand">
+          <span className="brand-seal">食</span>
+          <div>
+            中华食肆<small>从游戏的一餐，到生活的一餐</small>
+          </div>
+        </div>
+        <TabsList className="side-tabs">
+          {pages.map((p) => (
+            <TabsTrigger key={p.id} value={p.id}>
+              <p.icon />
+              {p.name}
+              {p.id === 'inventory' && pending.length > 0 && (
+                <span className="nav-count">{pending.length}</span>
+              )}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <div className="rail-note">
+          <Leaf size={25} />
+          <p>
+            好好吃饭，
+            <br />
+            把日子慢慢做香。
+          </p>
+          <small>国宴队 · 中华食肆</small>
+        </div>
+      </aside>
+      <main className="workspace">
+        <header className="topbar">
+          <span>
+            {dataset === 'demo' ? '体验样例厨房' : '我的家庭厨房'}{' '}
+            <span className="dot" />
+            {s ? '本机保存' : '正在打开本机数据库'}
+          </span>
+          <div className="actions">
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() =>
+                changeDataset(dataset === 'real' ? 'demo' : 'real')
+              }
+            >
+              {dataset === 'real' ? '先逛逛样例厨房' : '返回我的真实厨房'}
+              <ArrowUpRight size={14} />
+            </button>
+          </div>
+        </header>
+        {dataset === 'demo' && (
+          <div className="dataset-banner">
+            <strong>体验样例</strong>
+            <span>独立库存、独立百味图，不影响真实厨房。</span>
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() => setReset(true)}
+            >
+              <RotateCcw size={14} />
+              重置样例
+            </button>
+          </div>
+        )}
+        <div className="intro">
+          <div>
+            <p className="eyebrow">
+              {dataset === 'demo'
+                ? '练习做一餐，不必真的开火'
+                : '从手边食材开始'}
+            </p>
+            <h1>{pages.find((p) => p.id === page)?.name}</h1>
+            <p>
+              {page === 'today'
+                ? '冰箱有啥，今天吃啥。挑一道手边就能做的家常菜。'
+                : page === 'inventory'
+                  ? '先确认，再入库。每一批食材，都由你说了算。'
+                  : page === 'cooking'
+                    ? '一步一步来，做完以后再核对冰箱。'
+                    : '在游戏里收集味道，在生活里留住食忆。'}
+            </p>
+          </div>
+          <span className="chapter">壹 / 家常</span>
+        </div>
+        {error && (
+          <div role="alert" className="notice error">
+            <span>{error}</span>
+            <button
+              className="text-button"
+              onClick={() => {
+                setError('');
+                void reload(dataset);
+              }}
+            >
+              重新读取
+            </button>
+          </div>
+        )}
+        {message && (
+          <output className="notice" aria-live="polite">
+            <span>{message}</span>
+            <button
+              className="icon-button"
+              aria-label="关闭提示"
+              onClick={() => setMessage('')}
+            >
+              <X size={16} />
+            </button>
+          </output>
+        )}
+        {!s ? (
+          <section className="paper">
+            <h2>正在打开你的厨房</h2>
+            <p>若当前承载环境拒绝本地存储，会显示错误，不会另建一套库存。</p>
+          </section>
+        ) : (
+          <>
+            <TabsContent value="today">
+              {session && (
+                <div className="resume-strip">
+                  <CookingPot />
+                  <span>
+                    还有一餐{' '}
+                    {recipes.find((r) => r.id === session.recipeId)?.title}{' '}
+                    未完成，已保存当前进度。
+                  </span>
+                  <button
+                    className="secondary"
+                    onClick={() => setPage('cooking')}
+                  >
+                    继续这一餐
+                  </button>
+                </div>
+              )}
+              <section className="start-panel">
+                <div>
+                  <p className="eyebrow">
+                    {inventoryUsed
+                      ? '厨房里，已有 ' + inventoryUsed + ' 批食材'
+                      : '你的冰箱，还没开始记录'}
+                  </p>
+                  <h2>
+                    {inventoryUsed ? '用手边的，做一顿好的' : '先把食材摆上桌'}
+                  </h2>
+                  <p>
+                    {inventoryUsed
+                      ? '只有确认过的食材才会出现在推荐里。'
+                      : '食材、油盐和饮用水都需要确认，不会默认你已经拥有。'}
+                  </p>
+                </div>
+                <div className="actions">
+                  <button
+                    className="primary"
+                    onClick={() => {
+                      setPage('inventory');
+                      setDialog('manual');
+                    }}
+                  >
+                    <Plus size={18} />
+                    {inventoryUsed ? '添点食材' : '开始盘点'}
+                  </button>
+                  {dataset === 'demo' && !s.candidates.length && (
+                    <button
+                      className="secondary"
+                      disabled={busy}
+                      onClick={loadSample}
+                    >
+                      载入七项样例
+                    </button>
+                  )}
+                </div>
+              </section>
+              <section className="preferences paper">
+                <div className="row-between">
+                  <h3>今天这一餐</h3>
+                  <span className="muted">
+                    首批都是家常蛋菜 · 非完整营养餐单
+                  </span>
+                </div>
+                <div className="preference-fields">
+                  <Choice
+                    label="几个人吃"
+                    value={String(s.preferences.servings)}
+                    onChange={(v) => void setPref('servings', Number(v))}
+                    options={[1, 2].map((v) => ({
+                      value: String(v),
+                      label: v + ' 人',
+                    }))}
+                    disabled={busy}
+                  />
+                  <Choice
+                    label="最多花多久"
+                    value={String(s.preferences.minutes)}
+                    onChange={(v) => void setPref('minutes', Number(v))}
+                    options={[10, 20, 30].map((v) => ({
+                      value: String(v),
+                      label: v + ' 分钟',
+                    }))}
+                    disabled={busy}
+                  />
+                  <div>
+                    <span className="field-label">
+                      可用厨具（另需炉灶、刀、砧板和碗）
+                    </span>
+                    <div className="actions">
+                      {['炒锅', '汤锅'].map((v) => (
+                        <Tick
+                          key={v}
+                          label={v}
+                          checked={s.preferences.equipment.includes(v)}
+                          disabled={busy}
+                          onChange={(b) => togglePref('equipment', v, b)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="constraint-row">
+                  <span>需要避开：</span>
+                  {['鸡蛋', '大豆', '小麦'].map((v) => (
+                    <Tick
+                      key={v}
+                      label={v + '过敏'}
+                      checked={s.preferences.allergens.includes(v)}
+                      disabled={busy}
+                      onChange={(b) => togglePref('allergens', v, b)}
+                    />
+                  ))}
+                  <Tick
+                    label="不吃青椒"
+                    checked={s.preferences.dislikedIngredients.includes(
+                      'green_pepper',
+                    )}
+                    disabled={busy}
+                    onChange={(b) =>
+                      togglePref('dislikedIngredients', 'green_pepper', b)
+                    }
+                  />
+                </div>
+              </section>
+              <div className="section-head">
+                <h2>手边食材，能做这些</h2>
+                <span>规则推荐 · 最多三道</span>
+              </div>
+              {!rec.length ? (
+                <div className="empty-state">
+                  <CookingPot size={34} />
+                  <h3>
+                    {inventoryUsed
+                      ? '暂时没有符合条件的推荐'
+                      : '先确认食材，再给你推荐'}
+                  </h3>
+                  <p>
+                    {!s.preferences.equipment.length
+                      ? '请选择可用厨具。'
+                      : s.preferences.allergens.includes('鸡蛋')
+                        ? '首批三道都含鸡蛋，已全部排除。可以浏览菜谱，但不能开始跟做。'
+                        : '检查数量、单位、时间与忌口。缺少两项以上必需食材的菜不会凑数推荐。'}
+                  </p>
+                  <button
+                    className="secondary"
+                    onClick={() => setPage('inventory')}
+                  >
+                    去我的厨房
+                  </button>
+                </div>
+              ) : (
+                <div className="recipe-grid">
+                  {rec.map(({ recipe: r, matches, missing }) => (
+                    <article className="recipe-card" key={r.id}>
+                      <button
+                        className="dish-cover image-button"
+                        onClick={() => openRecipe(r)}
+                        aria-label={'查看' + r.title}
+                      >
+                        <img
+                          src={art[r.image]}
+                          alt={
+                            r.image === 'tomato'
+                              ? '来自游戏的番茄食材插画'
+                              : r.title + '游戏插画'
+                          }
+                        />
+                        <span
+                          className={
+                            'dish-badge ' + (missing.length ? 'amber' : '')
+                          }
+                        >
+                          {missing.length ? '还需确认食材' : '食材已齐'}
+                        </span>
+                      </button>
+                      <div className="recipe-body">
+                        <p className="eyebrow">
+                          {r.equipment === '汤锅' ? '一碗暖汤' : '家常小炒'} ·{' '}
+                          {r.minutes} 分钟
+                        </p>
+                        <h2>{r.title}</h2>
+                        <p>{r.subtitle}</p>
+                        <div className="match-note">
+                          {matches
+                            .filter((m) => m.enough)
+                            .map((m) => names[m.id])
+                            .join(' · ') || '暂无足量匹配'}
+                        </div>
+                        {missing.length > 0 && (
+                          <p className="warning-text">
+                            还缺 / 待确认：
+                            {missing
+                              .map(
+                                (m) =>
+                                  names[m.id] +
+                                  ' ' +
+                                  Math.max(0, m.need - m.have) +
+                                  ' ' +
+                                  m.unit,
+                              )
+                              .join('、')}
+                          </p>
+                        )}
+                        <button
+                          className="recipe-link"
+                          onClick={() => openRecipe(r)}
+                        >
+                          看看怎么做
+                          <ArrowUpRight size={17} />
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div className="section-head">
+                <h2>按菜名找做法</h2>
+                <label className="search">
+                  <Search size={16} />
+                  <input
+                    aria-label="搜索菜名"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="菜名，如番茄"
+                  />
+                </label>
+              </div>
+              <div className="recipe-index">
+                {recipes
+                  .filter(
+                    (r) =>
+                      r.title.includes(search) ||
+                      (search === '番茄' && r.id === 'tomato_egg'),
+                  )
+                  .map((r) => (
+                    <button
+                      className="index-item"
+                      key={r.id}
+                      onClick={() => openRecipe(r)}
+                    >
+                      <img src={art[r.image]} alt="" />
+                      <div>
+                        <strong>{r.title}</strong>
+                        <small>
+                          {reviewed(s, r)
+                            ? '已由 ' + s.reviews[r.id].by + ' 人工审校'
+                            : '做法草稿 · 待人工审校'}
+                        </small>
+                      </div>
+                      <ChevronRight size={18} />
+                    </button>
+                  ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="inventory">
+              <div className="inventory-tools">
+                <div className="actions">
+                  <button
+                    className="primary"
+                    onClick={() => setDialog('manual')}
+                  >
+                    <Plus size={17} />
+                    手动录入
+                  </button>
+                  <button
+                    className="secondary"
+                    onClick={() => setDialog('import')}
+                  >
+                    <FileJson size={17} />
+                    导入食材 JSON
+                  </button>
+                  <button
+                    className="secondary"
+                    onClick={() => setDialog('workbuddy')}
+                  >
+                    <Camera size={17} />用 WorkBuddy 识别
+                  </button>
+                </div>
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    download(
+                      '中华食肆-' + dataset + '-备份.json',
+                      JSON.stringify(
+                        {
+                          format: 'zhonghua-shisi-backup',
+                          version: 1,
+                          exportedAt: new Date().toISOString(),
+                          state: s,
+                        },
+                        null,
+                        2,
+                      ),
+                    )
+                  }
+                >
+                  <Download size={16} />
+                  完整备份
+                </button>
+              </div>
+              <p className="muted storage-note">
+                保存在当前浏览器环境。清理浏览器数据可能丢失记录；换设备不会自动同步。备份包含私人库存和成品照，请自行保管。
+              </p>
+              {dataset === 'demo' && !s.candidates.length && (
+                <button
+                  className="secondary"
+                  onClick={loadSample}
+                  disabled={busy}
+                >
+                  载入七项样例食材
+                </button>
+              )}
+              {pending.length > 0 && (
+                <>
+                  <div className="section-head">
+                    <h2>桌上还有 {pending.length} 项，等你确认</h2>
+                    {dataset === 'demo' &&
+                      pending.some((c) => c.source === 'demo') && (
+                        <button
+                          className="secondary"
+                          disabled={busy}
+                          onClick={confirmSample}
+                        >
+                          确认全部样例食材
+                        </button>
+                      )}
+                  </div>
+                  <div className="candidate-list">
+                    {pending.map((c) => (
+                      <CandidateEditor
+                        key={c.key}
+                        candidate={c}
+                        s={s}
+                        busy={busy}
+                        mutate={mutate}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="section-head">
+                <h2>已确认的冰箱</h2>
+                <span>{s.inventory.length} 个批次 · 未拍到的不会自动删除</span>
+              </div>
+              {!s.inventory.length ? (
+                <div className="empty-state">
+                  <Refrigerator size={34} />
+                  <h3>冰箱还空着</h3>
+                  <p>
+                    从一两个你确定有的食材开始。照片识别结果也要先经过你的确认。
+                  </p>
+                </div>
+              ) : (
+                <div className="inventory-grid">
+                  {s.inventory.map((b) => (
+                    <article
+                      className={
+                        'inventory-item ' + (isExpired(b) ? 'expired' : '')
+                      }
+                      key={b.id}
+                    >
+                      <div className="row-between">
+                        <h3>{b.displayName}</h3>
+                        <span className="ingredient-mark">
+                          {b.displayName.slice(0, 1)}
+                        </span>
+                      </div>
+                      <p className="inventory-amount">{quantityText(b)}</p>
+                      <small>
+                        {isExpired(b)
+                          ? '已过期 · 不计入推荐'
+                          : b.expiryDate
+                            ? '到期 ' + b.expiryDate
+                            : '未记录到期日期 · 不代表新鲜度'}
+                      </small>
+                      <div className="row-between">
+                        <span className="muted">批次 {b.id.slice(0, 6)}</span>
+                        <button
+                          className="text-button"
+                          disabled={busy}
+                          onClick={() =>
+                            mutate((state) => {
+                              const id = uid();
+                              stage(state, [
+                                {
+                                  key: JSON.stringify([id, 'edit']),
+                                  candidateId: 'edit',
+                                  requestId: id,
+                                  displayName: b.displayName,
+                                  canonicalIngredientId:
+                                    b.canonicalIngredientId,
+                                  amount: b.amount,
+                                  unit: b.unit,
+                                  amountBand: b.amountBand,
+                                  warnings: [
+                                    '请在下方选择原批次进行盘点校准。',
+                                  ],
+                                  mode: 'stocktake',
+                                  source: 'manual-form',
+                                  status: 'pending',
+                                },
+                              ]);
+                            }, '已创建盘点候选，请指定原批次后确认。')
+                          }
+                        >
+                          校准余量
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+              <div className="actions bottom-actions">
+                <button className="primary" onClick={() => setPage('today')}>
+                  看看今天吃什么
+                  <ArrowUpRight size={17} />
+                </button>
+                <button
+                  className="text-button danger"
+                  disabled={busy}
+                  onClick={() => setClear(true)}
+                >
+                  清空当前厨房库存
+                </button>
+              </div>
+            </TabsContent>
+            <TabsContent value="cooking">
+              {!session ? (
+                <div className="empty-state">
+                  <ChefHat size={40} />
+                  <h2>今天，想做哪一道？</h2>
+                  <p>先选一道菜，确认食材和做法，再一步一步跟着做。</p>
+                  <button className="primary" onClick={() => setPage('today')}>
+                    去选一道菜
+                  </button>
+                </div>
+              ) : session.status === 'reviewing' ? (
+                <ReviewForm
+                  key={session.id}
+                  s={s}
+                  session={session}
+                  busy={busy}
+                  mutate={mutate}
+                  done={() => setPage('archive')}
+                  onError={setError}
+                />
+              ) : (
+                <section className="cooking-layout">
+                  <div className="cooking-art">
+                    <img
+                      src={
+                        art[
+                          recipes.find((r) => r.id === session.recipeId)!.image
+                        ]
+                      }
+                      alt="菜品或食材插画"
+                    />
+                    <p className="eyebrow">
+                      {dataset === 'demo'
+                        ? '体验演练 · 无需真的开火'
+                        : '已确认的一餐'}{' '}
+                      · {session.servings} 人份
+                    </p>
+                    <h2>
+                      {recipes.find((r) => r.id === session.recipeId)!.title}
+                    </h2>
+                    <p className="muted">
+                      食材与步骤用量按本次人数调整；实际加热时间会受锅具和份量影响，请自行确认熟度。
+                    </p>
+                    <button
+                      className="text-button"
+                      onClick={() =>
+                        openRecipe(
+                          recipes.find((r) => r.id === session.recipeId)!,
+                        )
+                      }
+                    >
+                      查看食材与来源
+                    </button>
+                  </div>
+                  <div className="paper step-panel">
+                    <div className="row-between">
+                      <span className="eyebrow">
+                        第 {session.step + 1} 步 /{' '}
+                        {
+                          recipes.find((r) => r.id === session.recipeId)!.steps
+                            .length
+                        }{' '}
+                        步
+                      </span>
+                      <button
+                        className="text-button"
+                        disabled={busy}
+                        onClick={() =>
+                          mutate(
+                            (state) => {
+                              const v = activeSession(state);
+                              if (!v) return;
+                              if (v.status === 'paused') {
+                                v.status = 'cooking';
+                                if (v.timerRemaining)
+                                  v.timerEnd = Date.now() + v.timerRemaining;
+                                delete v.timerRemaining;
+                              } else {
+                                v.status = 'paused';
+                                if (v.timerEnd)
+                                  v.timerRemaining = Math.max(
+                                    0,
+                                    v.timerEnd - Date.now(),
+                                  );
+                                delete v.timerEnd;
+                              }
+                            },
+                            session.status === 'paused'
+                              ? '已继续，进度保留。'
+                              : '已暂停，可以关闭页面后再来。',
+                          )
+                        }
+                      >
+                        {session.status === 'paused' ? (
+                          <Play size={16} />
+                        ) : (
+                          <Pause size={16} />
+                        )}{' '}
+                        {session.status === 'paused' ? '继续' : '暂停并保存'}
+                      </button>
+                    </div>
+                    <Progress
+                      aria-label="跟做进度"
+                      value={
+                        (session.step /
+                          recipes.find((r) => r.id === session.recipeId)!.steps
+                            .length) *
+                        100
+                      }
+                    />
+                    <h2 className="step-text">
+                      {session.status === 'paused'
+                        ? '已经暂停，锅边的事先照顾好。'
+                        : cookingSteps(
+                            recipes.find((r) => r.id === session.recipeId)!,
+                            session.servings,
+                          )[session.step]}
+                    </h2>
+                    <p className="safety-note">
+                      {safetyNote}{' '}
+                      <a href={safetySource} target="_blank" rel="noreferrer">
+                        安全提示来源
+                      </a>
+                    </p>
+                    <div className="timer">
+                      <Clock3 size={21} />
+                      {session.timerEnd || session.timerRemaining ? (
+                        <>
+                          <strong>
+                            {Math.ceil(
+                              Math.max(
+                                0,
+                                session.timerEnd
+                                  ? session.timerEnd - now
+                                  : session.timerRemaining || 0,
+                              ) / 60000,
+                            )}{' '}
+                            分钟
+                          </strong>
+                          <span>
+                            {session.timerEnd && now >= session.timerEnd
+                              ? '时间到了，请自行检查熟度。'
+                              : '提醒计时中 · 切后台可能延迟通知'}
+                          </span>
+                          <button
+                            className="text-button"
+                            onClick={() =>
+                              mutate((state) => {
+                                const v = activeSession(state);
+                                if (v) {
+                                  delete v.timerEnd;
+                                  delete v.timerRemaining;
+                                }
+                              })
+                            }
+                          >
+                            取消
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <label>
+                            <span className="sr-only">提醒分钟数</span>
+                            <input
+                              aria-label="提醒分钟数"
+                              type="number"
+                              min="1"
+                              max="120"
+                              value={timerMinutes}
+                              onChange={(e) => setTimerMinutes(e.target.value)}
+                            />
+                          </label>
+                          <span>分钟后提醒</span>
+                          <button
+                            className="secondary"
+                            disabled={busy || session.status === 'paused'}
+                            onClick={() =>
+                              mutate((state) => {
+                                const n = Number(timerMinutes);
+                                if (!Number.isFinite(n) || n < 1 || n > 120)
+                                  throw new Error('提醒时间应为 1–120 分钟。');
+                                const v = activeSession(state);
+                                if (v) v.timerEnd = Date.now() + n * 60000;
+                              })
+                            }
+                          >
+                            开始计时
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="step-actions">
+                      <button
+                        className="secondary"
+                        disabled={
+                          busy ||
+                          session.step === 0 ||
+                          session.status === 'paused'
+                        }
+                        onClick={() =>
+                          mutate((state) =>
+                            stepSession(state, session.id, session.step - 1),
+                          )
+                        }
+                      >
+                        <ChevronLeft size={17} />
+                        上一步
+                      </button>
+                      <button
+                        className="primary"
+                        disabled={busy || session.status === 'paused'}
+                        onClick={() =>
+                          mutate((state) =>
+                            stepSession(state, session.id, session.step + 1),
+                          )
+                        }
+                      >
+                        {session.step ===
+                        recipes.find((r) => r.id === session.recipeId)!.steps
+                          .length -
+                          1
+                          ? '做完了，核对实际消耗'
+                          : '这一步好了'}
+                        <ChevronRight size={17} />
+                      </button>
+                    </div>
+                    <p className="muted">
+                      进度已在本机保存。此时还没有扣减库存。
+                    </p>
+                  </div>
+                </section>
+              )}
+            </TabsContent>
+            <TabsContent value="archive">
+              <div className="archive-heading">
+                <span>百 味 图</span>
+                <div>
+                  已收录 <strong>{entries.length}</strong> 道 · 共{' '}
+                  {entries.reduce((n, e) => n + e.history.length, 0)} 次
+                  {dataset === 'demo' ? '样例演练' : '实做'}
+                </div>
+              </div>
+              <div className="recipe-grid">
+                {recipes.map((r) => {
+                  const entry = entries.find((e) => e.recipe.id === r.id);
+                  return (
+                    <article
+                      className={
+                        'recipe-card archive-card ' + (!entry ? 'locked' : '')
+                      }
+                      key={r.id}
+                    >
+                      <button
+                        className="dish-cover image-button"
+                        onClick={() => openRecipe(r)}
+                      >
+                        <img
+                          src={entry?.history[0].photo || art[r.image]}
+                          alt={
+                            entry?.history[0].photo
+                              ? '自己的成品照'
+                              : r.title + '插画'
+                          }
+                        />
+                        <span className="dish-badge">
+                          {entry
+                            ? '已收录 · ' + entry.history.length + ' 次'
+                            : '待你亲手做一回'}
+                        </span>
+                      </button>
+                      <div className="recipe-body">
+                        <p className="eyebrow">
+                          {entry ? '我的食忆' : '从游戏里的味道开始'}
+                        </p>
+                        <h2>{r.title}</h2>
+                        <p>{entry?.history[0].familyMemory || r.subtitle}</p>
+                        <button
+                          className="recipe-link"
+                          onClick={() => openRecipe(r)}
+                        >
+                          {entry ? '翻开这道菜的故事' : '看看食材与做法'}
+                          <ArrowUpRight size={17} />
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+              <p className="storage-note muted">
+                同一道菜重复做，会留下新的历史，不重复增加菜品收录数。只有成功完成的记录才进入百味图。
+              </p>
+            </TabsContent>
+          </>
+        )}
+        <footer className="footer">
+          中华食肆 HTML · 本地工作版 <span>菜谱有来源，食忆属于你。</span>
+        </footer>
+      </main>
+      <Dialog
+        open={dialog !== null}
+        onOpenChange={(v) => {
+          if (!v) setDialog(null);
+        }}
+      >
+        <DialogContent className="kitchen-dialog" showCloseButton={false}>
+          <button
+            className="dialog-close icon-button"
+            aria-label="关闭"
+            onClick={() => setDialog(null)}
+          >
+            <X />
+          </button>
+          <DialogTitle>
+            {dialog === 'manual'
+              ? '把手边食材记下来'
+              : dialog === 'import'
+                ? '导入食材候选'
+                : '让 WorkBuddy 看看你的厨房'}
+          </DialogTitle>
+          <DialogDescription>
+            {dialog === 'manual'
+              ? '先生成候选，再由你确认批次和数量。'
+              : dialog === 'import'
+                ? '粘贴或选择 WorkBuddy 输出的 JSON。不会直接写入正式库存。'
+                : '这一版使用显式交接：对话识别 → 复制 JSON → 本页导入。不是自动连接。'}
+          </DialogDescription>
+          {error && dialog !== 'import' && (
+            <p role="alert" className="warning-text">
+              {error}
+            </p>
+          )}
+          <Choice
+            label="这次是在盘点，还是补货？"
+            value={mode}
+            onChange={(v) => setMode(v as Mode)}
+            options={[
+              { value: 'stocktake', label: '盘点校准（默认，不自动累加）' },
+              { value: 'restock', label: '补货（明确增加食材）' },
+            ]}
+          />
+          {dialog === 'manual' ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const id = uid();
+                const text = JSON.stringify({
+                  schemaVersion: '1.0',
+                  requestId: id,
+                  dataset,
+                  mode,
+                  source: 'manual-form',
+                  createdAt: new Date().toISOString(),
+                  warnings: [],
+                  candidates: [
+                    {
+                      candidateId: 'manual-1',
+                      displayName: manualName,
+                      ...(manualAmount === ''
+                        ? {}
+                        : { amount: Number(manualAmount), unit: manualUnit }),
+                      warnings: [],
+                    },
+                  ],
+                });
+                if (
+                  await mutate(
+                    (state) => stage(state, parseImport(text, dataset, mode)),
+                    '已放到候选区，请确认后入库。',
+                  )
+                ) {
+                  setDialog(null);
+                  setPage('inventory');
+                  setManualAmount('');
+                }
+              }}
+            >
+              <label className="field">
+                食材名称
+                <input
+                  value={manualName}
+                  maxLength={60}
+                  required
+                  onChange={(e) => setManualName(e.target.value)}
+                />
+              </label>
+              <div className="form-grid">
+                <label className="field">
+                  数量（不确定可留空）
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={manualAmount}
+                    onChange={(e) => setManualAmount(e.target.value)}
+                  />
+                </label>
+                <Choice
+                  label="单位"
+                  value={manualUnit}
+                  onChange={setManualUnit}
+                  options={units.map((v) => ({ value: v, label: v }))}
+                />
+              </div>
+              <button className="primary" disabled={busy}>
+                放到候选区
+                <ArrowUpRight size={17} />
+              </button>
+            </form>
+          ) : dialog === 'import' ? (
+            <>
+              <label className="file-label">
+                选择 JSON 文件
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 200000) {
+                        setError('文件太大，请分批导入。');
+                        return;
+                      }
+                      setRaw(await file.text());
+                    }
+                  }}
+                />
+              </label>
+              <label className="field">
+                或者直接粘贴 JSON
+                <textarea
+                  className="json-text"
+                  value={raw}
+                  onChange={(e) => setRaw(e.target.value)}
+                  placeholder={
+                    '{"schemaVersion":"1.0","requestId":"...","candidates":[...]}'
+                  }
+                  maxLength={200001}
+                />
+              </label>
+              <p className="muted">
+                当前：{dataset === 'demo' ? '样例厨房' : '真实厨房'}。缺少
+                dataset / mode
+                时由本页当前选择补齐；文件与当前选择矛盾时拒绝导入。
+              </p>
+              {error && (
+                <p role="alert" className="warning-text">
+                  {error}
+                </p>
+              )}
+              <button
+                className="primary"
+                disabled={busy || !raw.trim()}
+                onClick={async () => {
+                  if (
+                    await mutate(
+                      (state) => stage(state, parseImport(raw, dataset, mode)),
+                      '候选已校验导入，重复项不会重复入库。',
+                    )
+                  ) {
+                    setDialog(null);
+                    setPage('inventory');
+                  }
+                }}
+              >
+                校验并放到候选区
+              </button>
+            </>
+          ) : (
+            <>
+              <ol className="instructions">
+                <li>
+                  把冰箱照片发到 WorkBuddy
+                  对话；或先用设备听写，把转写文字确认好再发送。
+                </li>
+                <li>使用随附的“中华食肆 Skill”，也可复制下方说明一起发送。</li>
+                <li>
+                  复制返回的 JSON，在本页“导入食材 JSON”中粘贴，再逐项确认。
+                </li>
+              </ol>
+              <textarea
+                className="json-text"
+                readOnly
+                value={workbuddyPrompt}
+                aria-label="发给 WorkBuddy 的说明"
+              />
+              <div className="actions">
+                <button
+                  className="secondary"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(workbuddyPrompt);
+                      setMessage('说明已复制，请发到 WorkBuddy 对话。');
+                    } catch {
+                      setError(
+                        '当前页面不能自动复制，请选中上方文字手动复制。',
+                      );
+                    }
+                  }}
+                >
+                  复制说明
+                </button>
+                <button className="primary" onClick={() => setDialog('import')}>
+                  已有结果，去导入
+                </button>
+              </div>
+              <p className="muted">
+                照片 /
+                听写由对话或设备处理，需要其对应权限与网络。本网页不会调用你的
+                WorkBuddy 账户，也没有内置 API Key。
+              </p>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!recipe}
+        onOpenChange={(v) => {
+          if (!v) setDetail(null);
+        }}
+      >
+        <DialogContent
+          className="kitchen-dialog recipe-dialog"
+          showCloseButton={false}
+        >
+          {recipe && s && (
+            <>
+              <button
+                className="dialog-close icon-button"
+                aria-label="关闭菜谱详情"
+                onClick={() => setDetail(null)}
+              >
+                <X />
+              </button>
+              <div className="detail-heading">
+                <img src={art[recipe.image]} alt="游戏插画" />
+                <div>
+                  <p className="eyebrow">中华食肆 · 家常做法</p>
+                  <DialogTitle>{recipe.title}</DialogTitle>
+                  <DialogDescription>
+                    {recipe.minutes} 分钟 · {s.preferences.servings} 人份 ·{' '}
+                    {recipe.equipment}
+                  </DialogDescription>
+                  <span
+                    className={'tag ' + (reviewed(s, recipe) ? '' : 'amber')}
+                  >
+                    {reviewed(s, recipe)
+                      ? '人工审校：' + s.reviews[recipe.id].by
+                      : '做法草稿 · 待人工审校'}
+                  </span>
+                </div>
+              </div>
+              <h3>需要的食材 · {s.preferences.servings} 人份</h3>
+              <div className="ingredient-list">
+                {matching(s, recipe).map((i) => (
+                  <div key={i.id}>
+                    <span>{names[i.id]}</span>
+                    <strong>
+                      {i.need} {i.unit}
+                    </strong>
+                    <small className={!i.enough ? 'warning-text' : ''}>
+                      {i.enough
+                        ? '已备齐'
+                        : i.unknown
+                          ? '数量 / 单位待确认'
+                          : '还缺 ' +
+                            Math.max(0, i.need - i.have) +
+                            ' ' +
+                            i.unit}
+                    </small>
+                  </div>
+                ))}
+              </div>
+              <p className="muted">
+                用量按当前人数调整；步骤中的明确用量同步变化，加热时间不作机械翻倍。第一版不提供食材单位自动换算。
+              </p>
+              <h3>做法与顺序</h3>
+              <ol className="instructions">
+                {cookingSteps(recipe, s.preferences.servings).map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+              <p className="safety-note">{safetyNote}</p>
+              <section className="culture-panel">
+                <p className="eyebrow">从游戏知识到家庭做法 · 附来源</p>
+                <p>{recipe.knowledge}</p>
+                <a href={recipe.source} target="_blank" rel="noreferrer">
+                  做法来源：{recipe.author} ↗
+                </a>
+                <small>
+                  按来源改写为单人家庭版本；不是游戏数值，不宣称菜系起源或“唯一正宗”。
+                </small>
+              </section>
+              {!reviewed(s, recipe) && dataset === 'real' && (
+                <section className="review-gate">
+                  <h3>现实跟做前，先把做法核对一遍</h3>
+                  <p>
+                    这些配方由来源整理，尚未实做。请由有烹饪经验的人核对份量、处理顺序和熟度提示；勾选不会代表平台或专业机构认证。
+                  </p>
+                  <label className="field">
+                    实际审校人
+                    <input
+                      value={reviewer}
+                      maxLength={50}
+                      onChange={(e) => setReviewer(e.target.value)}
+                      placeholder="填写真正完成核对的人"
+                    />
+                  </label>
+                  <Tick
+                    label="我已逐项核对以上份量、步骤与安全提示，确认这版做法适用于实际跟做。"
+                    checked={reviewChecks}
+                    onChange={setReviewChecks}
+                  />
+                  <button
+                    className="secondary"
+                    disabled={busy || !reviewChecks || !reviewer.trim()}
+                    onClick={() =>
+                      mutate(
+                        (state) => reviewRecipe(state, recipe.id, reviewer),
+                        '已记录本人的人工审校，未冒充外部认证。',
+                      )
+                    }
+                  >
+                    记录本次人工审校
+                  </button>
+                </section>
+              )}
+              {error && (
+                <p role="alert" className="warning-text">
+                  {error}
+                </p>
+              )}
+              <Tick
+                label={
+                  dataset === 'demo'
+                    ? '我正在演练样例流程，不把它记为真实做菜。'
+                    : '我已核对食材、到期信息与过敏原，确认具备所需厨具。'
+                }
+                checked={foodChecked}
+                onChange={setFoodChecked}
+              />
+              <button
+                className="primary"
+                disabled={
+                  busy ||
+                  !!session ||
+                  !foodChecked ||
+                  (dataset === 'real' && !reviewed(s, recipe)) ||
+                  !rec.some(
+                    (x) => x.recipe.id === recipe.id && !x.missing.length,
+                  )
+                }
+                onClick={async () => {
+                  const id = uid();
+                  if (
+                    await mutate(
+                      (state) => startCooking(state, recipe.id, id),
+                      '这一餐已开始，步骤会保存在本机。',
+                    )
+                  ) {
+                    setDetail(null);
+                    setPage('cooking');
+                  }
+                }}
+              >
+                {session
+                  ? '已有一餐进行中'
+                  : dataset === 'demo'
+                    ? '开始这道菜的演练'
+                    : '食材备好了，开始做'}
+              </button>
+              {!rec.some(
+                (x) => x.recipe.id === recipe.id && !x.missing.length,
+              ) && (
+                <p className="warning-text">
+                  当前食材数量、厨具、忌口或时间条件不满足；请返回今日一餐核对。
+                </p>
+              )}
+              {s.sessions.filter(
+                (x) => x.recipeId === recipe.id && x.status === 'completed',
+              ).length > 0 && (
+                <section>
+                  <h3>我的制作历史</h3>
+                  {s.sessions
+                    .filter(
+                      (x) =>
+                        x.recipeId === recipe.id && x.status === 'completed',
+                    )
+                    .map((x) => (
+                      <div className="history-item" key={x.id}>
+                        <div>
+                          <strong>{x.userRating} / 5 分</strong>
+                          <small>
+                            {new Date(x.completedAt!).toLocaleString('zh-CN')}
+                          </small>
+                          <p>{x.familyMemory || '这一次，把一餐好好做完。'}</p>
+                          <span className="tag">个人记忆 · 用户自述</span>
+                        </div>
+                        <button
+                          className="secondary"
+                          onClick={() => exportEntry(recipe, x, dataset)}
+                        >
+                          <Download size={16} />
+                          导出这份百味图
+                        </button>
+                      </div>
+                    ))}
+                </section>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <AlertDialog
+        open={reset || clear}
+        onOpenChange={(v) => {
+          if (!v) {
+            setReset(false);
+            setClear(false);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogTitle>
+            {reset ? '重置体验样例？' : '清空当前厨房库存？'}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {reset
+              ? '只清除样例厨房的库存、候选与演练记录。真实厨房完全保留。'
+              : '仅清空当前 ' +
+                (dataset === 'demo' ? '样例' : '真实') +
+                ' 厨房的库存和待确认候选，保留已完成百味图。请先导出完整备份；清空本身不能撤销。进行中的一餐必须先完成。'}
+          </AlertDialogDescription>
+          <div className="actions">
+            <AlertDialogCancel>保留数据</AlertDialogCancel>
+            <button
+              className="primary"
+              disabled={busy || (!reset && !!session)}
+              onClick={async () => {
+                const doReset = reset;
+                if (
+                  await mutate(
+                    (state) => {
+                      if (doReset) {
+                        if (state.dataset !== 'demo')
+                          throw new Error('只能重置样例。');
+                        Object.assign(state, emptyState('demo'));
+                      } else {
+                        if (activeSession(state))
+                          throw new Error('请先完成正在做的一餐。');
+                        state.inventory = [];
+                        state.candidates = state.candidates.filter(
+                          (c) => c.status !== 'pending',
+                        );
+                      }
+                    },
+                    doReset
+                      ? '样例已重置，真实厨房未改变。'
+                      : '当前库存已清空，已完成百味图保留。',
+                  )
+                ) {
+                  setReset(false);
+                  setClear(false);
+                }
+              }}
+            >
+              {reset ? '确认重置样例' : '确认清空库存'}
+            </button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Tabs>
+  );
+}
