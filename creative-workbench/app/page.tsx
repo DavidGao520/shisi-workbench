@@ -10,7 +10,6 @@ import {
   ArrowUpRight,
   Leaf,
   Camera,
-  FileJson,
   Download,
   Clock3,
   Check,
@@ -653,15 +652,12 @@ export default function Home() {
     [error, setError] = useState('');
   const lock = useRef(false),
     datasetRef = useRef<Dataset>('real');
-  const [dialog, setDialog] = useState<
-      'manual' | 'import' | 'workbuddy' | null
-    >(null),
+  const [dialog, setDialog] = useState<'manual' | 'workbuddy' | null>(null),
     [detail, setDetail] = useState<string | null>(null),
     [reset, setReset] = useState(false),
     [clear, setClear] = useState(false);
   const [seasoningOpen, setSeasoningOpen] = useState(false);
   const [mode, setMode] = useState<Mode>('stocktake'),
-    [raw, setRaw] = useState(''),
     [manualName, setManualName] = useState('番茄'),
     [manualAmount, setManualAmount] = useState(''),
     [manualUnit, setManualUnit] = useState('克');
@@ -1064,7 +1060,7 @@ export default function Home() {
                       <Camera size={18} />
                       {inventoryUsed
                         ? '继续用 WorkBuddy 录入食材'
-                        : '拍照 / 听写录入食材'}
+                        : '用 WorkBuddy 拍照录入食材'}
                     </button>
                     {dataset === 'demo' && !s.candidates.length && (
                       <button
@@ -1320,13 +1316,6 @@ export default function Home() {
                   >
                     <Plus size={17} />
                     手动补充
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => setDialog('import')}
-                  >
-                    <FileJson size={17} />
-                    备用：导入 JSON
                   </button>
                 </div>
                 <button
@@ -1828,18 +1817,14 @@ export default function Home() {
           <DialogTitle>
             {dialog === 'manual'
               ? '把手边食材记下来'
-              : dialog === 'import'
-                ? '导入食材候选'
-                : '让 WorkBuddy 看看你的厨房'}
+              : '让 WorkBuddy 看看你的厨房'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'manual'
               ? '先生成候选，再由你确认批次和数量。'
-              : dialog === 'import'
-                ? '粘贴或选择 WorkBuddy 输出的 JSON。不会直接写入正式库存。'
-                : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
+              : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
           </DialogDescription>
-          {error && dialog !== 'import' && (
+          {error && (
             <p role="alert" className="warning-text">
               {error}
             </p>
@@ -1921,65 +1906,6 @@ export default function Home() {
                 <ArrowUpRight size={17} />
               </button>
             </form>
-          ) : dialog === 'import' ? (
-            <>
-              <label className="file-label">
-                选择 JSON 文件
-                <input
-                  type="file"
-                  accept=".json,application/json"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 200000) {
-                        setError('文件太大，请分批导入。');
-                        return;
-                      }
-                      setRaw(await file.text());
-                    }
-                  }}
-                />
-              </label>
-              <label className="field">
-                或者直接粘贴 JSON
-                <textarea
-                  className="json-text"
-                  value={raw}
-                  onChange={(e) => setRaw(e.target.value)}
-                  placeholder={
-                    '{"schemaVersion":"1.0","requestId":"...","candidates":[...]}'
-                  }
-                  maxLength={200001}
-                />
-              </label>
-              <p className="muted">
-                当前：{dataset === 'demo' ? '样例厨房' : '真实厨房'}。缺少
-                dataset / mode
-                时由本页当前选择补齐；文件与当前选择矛盾时拒绝导入。
-              </p>
-              {error && (
-                <p role="alert" className="warning-text">
-                  {error}
-                </p>
-              )}
-              <button
-                className="primary"
-                disabled={busy || !raw.trim()}
-                onClick={async () => {
-                  if (
-                    await mutate(
-                      (state) => stage(state, parseImport(raw, dataset, mode)),
-                      '候选已校验导入，重复项不会重复入库。',
-                    )
-                  ) {
-                    setDialog(null);
-                    setPage('inventory');
-                  }
-                }}
-              >
-                校验并放到候选区
-              </button>
-            </>
           ) : (
             <>
               <output className="notice">
@@ -2017,7 +1943,7 @@ export default function Home() {
                     <li>在这里准备接收，锁定本次厨房和盘点方式。</li>
                     <li>
                       在 WorkBuddy 对话上传照片，使用「中华食肆
-                      Skill」识别。听写文字也可以。
+                      Skill」识别。也可在对话中发送核对过的食材文字。
                     </li>
                     <li>回到这里核对食材与数量。你确认前，库存不会变化。</li>
                   </ol>
@@ -2082,13 +2008,11 @@ export default function Home() {
                 >
                   查看待确认食材
                 </button>
-                <button
-                  className="text-button"
-                  onClick={() => setDialog('import')}
-                >
-                  备用：手动导入已有结果
-                </button>
               </div>
+              <p className="muted">
+                网页麦克风录入尚未接通。当前只能由 WorkBuddy
+                对话发起识别，本页自动接收候选，不会自动唤起对话任务。
+              </p>
               <p className="muted">
                 照片只在你主动上传的 WorkBuddy
                 对话中识别，需要其模型能力与网络。此连接只传递候选，不读取照片、账号或正式库存；本页不调用
