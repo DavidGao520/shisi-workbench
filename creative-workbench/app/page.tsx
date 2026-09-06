@@ -919,7 +919,6 @@ export default function Home() {
                     : '在游戏里收集味道，在生活里留住食忆。'}
             </p>
           </div>
-          <span className="chapter">壹 / 家常</span>
         </div>
         {error && (
           <div role="alert" className="notice error">

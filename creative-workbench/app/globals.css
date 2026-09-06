@@ -185,9 +185,7 @@ small {
   font-size: 12px;
 }
 .intro {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  text-align: center;
   margin: 34px 0 30px;
 }
 .intro p:last-child {
@@ -201,12 +199,6 @@ small {
 }
 .intro .eyebrow {
   margin-bottom: 9px;
-}
-.chapter {
-  writing-mode: vertical-rl;
-  font-family: 'Songti SC', serif;
-  color: #9f8b66;
-  letter-spacing: 5px;
 }
 .start-panel {
   display: flex;
@@ -737,11 +729,27 @@ textarea {
   padding: 8px 10px;
 }
 .inventory-tools {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+}
+.inventory-tools > .actions {
+  grid-column: 2;
+  justify-content: center;
+}
+.inventory-tools > .text-button {
+  grid-column: 3;
+  justify-self: end;
+}
+@media (max-width: 1050px) {
+  .inventory-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inventory-tools > .actions,
+  .inventory-tools > .text-button {
+    grid-column: 1;
+  }
 }
 .seasoning-onboarding {
   margin-bottom: 24px;
