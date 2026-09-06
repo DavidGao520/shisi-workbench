@@ -87,9 +87,11 @@ small {
   padding: 34px 20px;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 .brand {
   display: flex;
+  flex-shrink: 0;
   gap: 10px;
   align-items: center;
   font-family: 'Songti SC', serif;
@@ -119,11 +121,16 @@ small {
   width: 100% !important;
   display: flex;
   flex-direction: column;
+  height: auto;
+  flex: 0 0 auto;
+  align-items: stretch;
+  justify-content: flex-start;
   gap: 8px;
   background: transparent !important;
   padding: 0 !important;
 }
 .side-tabs [data-slot='tabs-trigger'] {
+  height: auto;
   min-height: 49px;
   width: 100%;
   justify-content: flex-start;
@@ -133,7 +140,7 @@ small {
   gap: 13px;
   flex: none;
 }
-.side-tabs [data-active] {
+.side-tabs [data-slot='tabs-trigger'][data-active] {
   background: #a8402e !important;
   color: #fff9e9 !important;
   box-shadow: none !important;
