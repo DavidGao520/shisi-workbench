@@ -68,6 +68,10 @@ import cardSichuanPepper from '../public/art/cards/sichuan_pepper.webp?inline';
 import cardSoySauce from '../public/art/cards/soy_sauce.webp?inline';
 import cardStarAnise from '../public/art/cards/star_anise.webp?inline';
 import cardCilantro from '../public/art/cards/cilantro.webp?inline';
+import cardOil from '../public/art/cards/oil.webp?inline';
+import cardCookingWine from '../public/art/cards/cooking_wine.webp?inline';
+import cardStarch from '../public/art/cards/starch.webp?inline';
+import cardCookedRice from '../public/art/cards/cooked_rice.webp?inline';
 import {
   baiweiPantry,
   type PantryCardFrame,
@@ -159,7 +163,7 @@ export type PantryCardArt = {
   theme: PantryCardFrame;
 };
 
-export const pantryCardArt: Record<string, PantryCardArt> = Object.fromEntries(
+const baiweiPantryCardArt: Record<string, PantryCardArt> = Object.fromEntries(
   baiweiPantry.map((item) => [
     item.id,
     {
@@ -170,3 +174,35 @@ export const pantryCardArt: Record<string, PantryCardArt> = Object.fromEntries(
     },
   ]),
 );
+
+const workbenchSupplementalCardArt: Record<string, PantryCardArt> = {
+  oil: {
+    frame: spiceCardFrame,
+    image: cardOil,
+    kind: 'seasoning',
+    theme: 'spice',
+  },
+  cooking_wine: {
+    frame: spiceCardFrame,
+    image: cardCookingWine,
+    kind: 'seasoning',
+    theme: 'spice',
+  },
+  starch: {
+    frame: spiceCardFrame,
+    image: cardStarch,
+    kind: 'seasoning',
+    theme: 'spice',
+  },
+  cooked_rice: {
+    frame: vegetableCardFrame,
+    image: cardCookedRice,
+    kind: 'ingredient',
+    theme: 'vegetable',
+  },
+};
+
+export const pantryCardArt: Record<string, PantryCardArt> = {
+  ...baiweiPantryCardArt,
+  ...workbenchSupplementalCardArt,
+};
