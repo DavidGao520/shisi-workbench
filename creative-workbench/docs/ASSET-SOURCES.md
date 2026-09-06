@@ -2,6 +2,19 @@
 
 日期：2026-09-05。项目归属：用户与 Jacky，国宴队，《中华食肆》。
 
+## 2026-09-06 新增：70 道百味图
+
+百味图使用 [Chinese-Cuisine beta 0.6](https://github.com/4567lizhen/Chinese-Cuisine/tree/ae825f252ae982ec05d359edff44e226cef2fca2) 的完整 70 道菜单：
+
+- `src/data/dishes.ts` → 菜名、描述、故事原文；不移植游戏价格、效果或收益作为现实数据。
+- `public/assets/dishes/*.webp` → 70 张原图，保存为 `assets/baiwei/dishes/*.webp`。
+- `public/assets/plates/plate_1.webp` → 默认通用盘子，保存为 `assets/baiwei/plates/plate_1.webp`。
+- `src/ui/cardArt.ts` 和 `src/data/recipes.ts` → 仅提取容器分类和插画摆放，不移植游戏配方为现实步骤。21 道自带容器、49 道使用盘子，14 道汤保持 75% 缩放，白米饭为 82%，其他自带容器为 92%。
+
+逐图 Git SHA-1、SHA-256、文件字节数在 `lib/baiwei-dishes.json`；来源提交及盘子哈希在 `docs/baiwei-provenance.json`。全部 71 个原文件读取并验证哈希，无生成、改绘、裁切或压缩。验证文件不等于人工视觉验收。
+
+故事在详情标注为“游戏原作故事”，含传说和文学表达，**尚未逐条核实史实，也不是烹饪或健康建议**。用户的成品照和记忆另外显示，不与原作故事或图画混淆。新增图鉴已取得真正的番茄蛋汤成品插画；下面旧三道菜入口的历史来源记录保持不变。
+
 ## 从游戏迁移了什么
 
 | 工作台目标 | 原素材位置 | 迁移内容 | 不迁移内容 |

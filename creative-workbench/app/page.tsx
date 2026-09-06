@@ -40,6 +40,9 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
 import { VoiceIntake } from '@/components/voice-intake';
+import { BaiweiGallery } from '@/components/baiwei-gallery';
+import '@/components/baiwei-gallery.css';
+import { baiweiImages, baiweiPlate } from '@/lib/baiwei-art';
 import { needsSeasoningOnboarding } from '@/lib/seasoning-setup';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -80,7 +83,6 @@ import {
 import { art } from '@/lib/art';
 import {
   activeSession,
-  archive,
   bands,
   completeCooking,
   confirmCandidate,
@@ -822,7 +824,6 @@ export default function Home() {
     return () => abort.abort();
   }, []);
   const session = s ? activeSession(s) : undefined,
-    entries = s ? archive(s) : [],
     rec = s ? recommendations(s) : [];
   const recipe =
     detail && s
@@ -1634,63 +1635,13 @@ export default function Home() {
               )}
             </TabsContent>
             <TabsContent value="archive">
-              <div className="archive-heading">
-                <span>百 味 图</span>
-                <div>
-                  已收录 <strong>{entries.length}</strong> 道 · 共{' '}
-                  {entries.reduce((n, e) => n + e.history.length, 0)} 次
-                  {dataset === 'demo' ? '样例演练' : '实做'}
-                </div>
-              </div>
-              <div className="recipe-grid">
-                {recipes.map((r) => {
-                  const entry = entries.find((e) => e.recipe.id === r.id);
-                  return (
-                    <article
-                      className={
-                        'recipe-card archive-card ' + (!entry ? 'locked' : '')
-                      }
-                      key={r.id}
-                    >
-                      <button
-                        className="dish-cover image-button"
-                        onClick={() => openRecipe(r)}
-                      >
-                        <img
-                          src={entry?.history[0].photo || art[r.image]}
-                          alt={
-                            entry?.history[0].photo
-                              ? '自己的成品照'
-                              : r.title + '插画'
-                          }
-                        />
-                        <span className="dish-badge">
-                          {entry
-                            ? '已收录 · ' + entry.history.length + ' 次'
-                            : '待你亲手做一回'}
-                        </span>
-                      </button>
-                      <div className="recipe-body">
-                        <p className="eyebrow">
-                          {entry ? '我的食忆' : '从游戏里的味道开始'}
-                        </p>
-                        <h2>{r.title}</h2>
-                        <p>{entry?.history[0].familyMemory || r.subtitle}</p>
-                        <button
-                          className="recipe-link"
-                          onClick={() => openRecipe(r)}
-                        >
-                          {entry ? '翻开这道菜的故事' : '看看食材与做法'}
-                          <ArrowUpRight size={17} />
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-              <p className="storage-note muted">
-                同一道菜重复做，会留下新的历史，不重复增加菜品收录数。只有成功完成的记录才进入百味图。
-              </p>
+              <BaiweiGallery
+                key={dataset}
+                state={s}
+                images={baiweiImages}
+                plate={baiweiPlate}
+                onOpenRecipe={openRecipe}
+              />
             </TabsContent>
           </>
         )}

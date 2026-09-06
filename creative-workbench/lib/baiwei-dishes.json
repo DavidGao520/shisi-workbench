@@ -1,0 +1,1332 @@
+[
+  {
+    "id": "boiled_fish",
+    "name": "水煮鱼",
+    "description": "麻辣滚油锁住鱼片嫩滑，红汤之下暗藏江湖。",
+    "story": "发源于重庆与川南一带的江湖菜，二十世纪八十年代红遍大江南北。滚油泼在花椒辣椒上激出香气，鱼片却只是白水汆熟，麻辣包裹着一口嫩白，正是川人「以味取胜」的江湖气。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/boiled_fish.webp",
+    "imageGitSha": "258e2d5edce703f0876f88bd6ec65cc263e12145",
+    "containerClassification": "shared-plate",
+    "imageSha256": "c482b12b7410ac9a9d2c922471560476f4ad497d44003c8eea54f458c5784741",
+    "imageBytes": 93318
+  },
+  {
+    "id": "braised_pork",
+    "name": "红烧肉",
+    "description": "浓油赤酱，肥而不腻，一块入口尽是烟火气。",
+    "story": "一块红烧肉，半部家常史。苏轼贬居黄州时写下《猪肉颂》——「慢著火，少著水，火候足时它自美」，道尽这道菜的诀窍。浓油赤酱之间，是中国人对烟火日子的偏爱。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/braised_pork.webp",
+    "imageGitSha": "55b4d666a9b6b3ff2fe7519887c3296f2c629ae9",
+    "containerClassification": "shared-plate",
+    "imageSha256": "e0a23635fb84beedda500433650dd7cdc10878b892c03b01f685a5f376efcc50",
+    "imageBytes": 75840
+  },
+  {
+    "id": "braised_trotter",
+    "name": "红烧蹄髈",
+    "description": "软糯脱骨，胶质丰盈，年节桌上的硬菜。",
+    "story": "江南年节桌上的一道硬菜，整只蹄髈红亮登盘，胶质丰盈、软糯脱骨。团圆时分，长辈总要给小辈夹上一筷，取个「蹄」谐「提」、步步高升的好意头。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/braised_trotter.webp",
+    "imageGitSha": "4ecf1fbbc1eea8728e62cbb97e93b192ab5eb7d5",
+    "containerClassification": "shared-plate",
+    "imageSha256": "67eb071dcd31572868728c6ab82ab2f6118d914d599d02617683e0d09a48c31c",
+    "imageBytes": 65218
+  },
+  {
+    "id": "char_siu",
+    "name": "叉烧",
+    "description": "蜜汁烤得焦糖挂壁，瘦中带肥最是销魂。",
+    "story": "粤式烧味的看家本领，名字就来自把腌好的猪肉「叉」起来「烧」。一句「生旧叉烧好过生你」的老话，把广东人对这抹蜜汁焦香的偏爱说到了骨子里。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/char_siu.webp",
+    "imageGitSha": "32169ca879bdc75acf7cd6ac3efaa12c5bca9331",
+    "containerClassification": "shared-plate",
+    "imageSha256": "e1f2120e23d31f7acbc5ee9e349933d386abd66baa57ce308d7a1b767546a134",
+    "imageBytes": 89290
+  },
+  {
+    "id": "cola_chicken_wings",
+    "name": "可乐鸡翅",
+    "description": "可乐收汁，甜咸油亮，小孩子最爱那一口。",
+    "story": "改革开放后可乐进入寻常人家，才有了这道「洋为中用」的家常菜。一罐可乐收汁，甜咸油亮，是许多八零九零后厨房里学会的第一道拿手菜。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/cola_chicken_wings.webp",
+    "imageGitSha": "de468a2ae6b0ce2c5921bc223515cc4f1c236643",
+    "containerClassification": "shared-plate",
+    "imageSha256": "e69c74643315c7e53c50251a213726f02d23ae4f772af9dc98feb5bad03118da",
+    "imageBytes": 77936
+  },
+  {
+    "id": "cold_wood_ear",
+    "name": "凉拌木耳",
+    "description": "爽脆开胃，蒜醋一拌，夏日里的清凉。",
+    "story": "黑木耳自古便是药食同源的山珍，古人称其「益气不饥」。蒜醋一拌，爽脆开胃，是夏日餐桌上最清爽的一味素。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/cold_wood_ear.webp",
+    "imageGitSha": "45e45df5f02a2be79fb22eba6badd5d220b22142",
+    "containerClassification": "shared-plate",
+    "imageSha256": "8011cab2e586a7ecb32769f4acf1ed4cd3928b1a568bb81663e9d0a4c03763f6",
+    "imageBytes": 72366
+  },
+  {
+    "id": "fish_fragrant_pork",
+    "name": "鱼香肉丝",
+    "description": "无鱼而有鱼香，酸甜微辣下饭一绝。",
+    "story": "川菜二十四味型里，「鱼香」最见巧思——泡椒、姜、蒜、糖、醋，本是四川人家烧鱼的调味，却用来炒肉丝，无鱼而尽得鱼鲜，堪称味觉的障眼法。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/fish_fragrant_pork.webp",
+    "imageGitSha": "a97a3a84847898275db84bd97843b53e23112e32",
+    "containerClassification": "shared-plate",
+    "imageSha256": "b15888e1f7ec324f043ddc0e9a2fc44a202d1aa79f4685c6dfc4b06511a4de2f",
+    "imageBytes": 66662
+  },
+  {
+    "id": "fish_head_chili",
+    "name": "剁椒鱼头",
+    "description": "一江剁椒蒸出鲜辣，鱼头嫩得能抿。",
+    "story": "湘菜里的一道红火大菜。相传清代文人黄宗宪避难湖南乡间，主人以鱼头拌辣椒相待，他念念不忘，回乡后加以改良，遂成名馔。一江剁椒蒸出鲜辣，是湖南人无辣不欢的写照。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/fish_head_chili.webp",
+    "imageGitSha": "2eeba59be54d5f16c2f1394a81f35961638274cd",
+    "containerClassification": "shared-plate",
+    "imageSha256": "19fc871aa620e984d3ef92984a41e3998acada89ba9a1061589078812f7e7d42",
+    "imageBytes": 107918
+  },
+  {
+    "id": "golden_egg",
+    "name": "黄金煎蛋",
+    "description": "两面金黄，边焦心嫩，最朴素的满足。",
+    "story": "最朴素的一道菜，也是最难忘的味道。两面煎得金黄，边焦心嫩，是无数人离家后最想念的、灶台边那声「滋啦」。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/golden_egg.webp",
+    "imageGitSha": "dfb869cd93ceb3824a7139ed8653e01a50aa4684",
+    "containerClassification": "shared-plate",
+    "imageSha256": "060af15be0d84b02911fe971a7aa71040df790931486fc4087380c175f765c30",
+    "imageBytes": 38642
+  },
+  {
+    "id": "green_pepper_egg",
+    "name": "青椒炒鸡蛋",
+    "description": "青椒脆嫩，鸡蛋滑香，家常的好搭档。",
+    "story": "一青一黄，脆嫩相衬，是中国厨房里最基本的一课。简单到人人会做，却也最见火候与镬气。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/green_pepper_egg.webp",
+    "imageGitSha": "f4380f82c896aa0b9a8a50c552c38f6d40de9655",
+    "containerClassification": "shared-plate",
+    "imageSha256": "906639e838509b91fa0b2f5ad1f2b6e78232f0a9b3b4007bb36e8eaca16c46af",
+    "imageBytes": 61344
+  },
+  {
+    "id": "green_pepper_pork",
+    "name": "青椒炒肉",
+    "description": "青椒微辣，肉片咸香，最下饭的一盘家常。",
+    "story": "湖南人家几乎顿顿离不了的下饭菜。青椒的微辣裹着肉片的咸香，一勺浇在白饭上，便是最踏实的一餐。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/green_pepper_pork.webp",
+    "imageGitSha": "9a1ac52583286016bc00ff8826eaaeddffb93a5f",
+    "containerClassification": "shared-plate",
+    "imageSha256": "ae203d8c623a2edb229ec37de6f966e6299754654b47b8e7ef8d1765b7c6d18e",
+    "imageBytes": 68612
+  },
+  {
+    "id": "hairy_tofu",
+    "name": "毛豆腐",
+    "description": "徽州一绝，长毛而后煎香，闻着臭吃着鲜。",
+    "story": "徽州一绝，豆腐经毛霉发酵长出雪白绒毛，再煎至两面金黄。相传朱元璋落魄时曾以之充饥，发迹后念念不忘。闻着微臭，入口却鲜，是徽人化腐为奇的智慧。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/hairy_tofu.webp",
+    "imageGitSha": "5ce0a0aa8c3c4d75fef49f1564e7482864a16c39",
+    "containerClassification": "shared-plate",
+    "imageSha256": "c96b127f740c3a8dc6f57de792122632e3f3b26d03cbbd9f58855bbdb9311aa9",
+    "imageBytes": 109380
+  },
+  {
+    "id": "jiuzhuan_intestine",
+    "name": "九转大肠",
+    "description": "鲁菜功夫菜，酸甜咸辣多味俱全。",
+    "story": "鲁菜济南府的功夫名菜。清光绪年间济南「九华楼」杜氏所创，因工序繁复、滋味层次丰富，食客取道家「九炼成丹」之意，赞其「九转大肠」。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/jiuzhuan_intestine.webp",
+    "imageGitSha": "d7a1432ee0daaa8f46ea582d662e220e0c66f1ab",
+    "containerClassification": "shared-plate",
+    "imageSha256": "669070e97438d132a8673458686ed88fa32f1a3058a97f17917c6e6930289df7",
+    "imageBytes": 79114
+  },
+  {
+    "id": "li_hotchpotch",
+    "name": "李鸿章杂烩",
+    "description": "山珍海味一锅烩，丰俭由人的徽派大菜。",
+    "story": "徽菜名肴。相传李鸿章出使海外宴请宾客，中途菜不够，便命厨子将各样余料一锅烩之，宾客尝之大赞，「杂烩」之名遂传海内外，成了丰俭由人的徽派大菜。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/li_hotchpotch.webp",
+    "imageGitSha": "da70a72926ee6050e71610bfc7cd47ca3f3b56e0",
+    "containerClassification": "shared-plate",
+    "imageSha256": "f1b2567c627f424a53075630ba42f043bdf414d051ed5ca540be8eac515ede55",
+    "imageBytes": 99262
+  },
+  {
+    "id": "lions_head",
+    "name": "狮子头",
+    "description": "肥瘦相宜，入口即化，淮扬细工慢炖。",
+    "story": "淮扬细工的代表。相传隋炀帝下扬州观「葵花岗」，御厨以肥瘦肉斩成大丸，形如葵花，后因球面绽如雄狮之头，得名「狮子头」。慢火细炖，入口即化。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/lions_head.webp",
+    "imageGitSha": "e78c8d47e0431d25108641494e63efee77090319",
+    "containerClassification": "shared-plate",
+    "imageSha256": "19dd352aa2dd2757e1cb5537f3546c6e440d92ac93ddde29223d90b32e758f03",
+    "imageBytes": 103886
+  },
+  {
+    "id": "longjing_shrimp",
+    "name": "龙井虾仁",
+    "description": "茶香裹虾，清雅鲜甜，西湖边的文人味。",
+    "story": "杭帮菜的文人味。以清明前的龙井新茶佐河虾仁同烹，相传乾隆下江南时得此灵感。茶香裹虾，清雅鲜甜，一箸尝尽西湖春色。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/longjing_shrimp.webp",
+    "imageGitSha": "aeb24460b78dfa62358e2fd081eb0cc2329e20cc",
+    "containerClassification": "shared-plate",
+    "imageSha256": "be64f135c1027278d41e172874b54cb5f5dc33e1c152f3a4685714e253f1f132",
+    "imageBytes": 83532
+  },
+  {
+    "id": "mapo_tofu",
+    "name": "麻婆豆腐",
+    "description": "麻辣鲜烫，豆腐颤巍巍，川味的灵魂。",
+    "story": "川菜之魂。清同治年间，成都万福桥边陈刘氏因脸上有几点麻子，人称「陈麻婆」，她烧的豆腐麻辣鲜烫、下饭一绝，食客口耳相传，「麻婆豆腐」之名遂响彻百年。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/mapo_tofu.webp",
+    "imageGitSha": "771a9705aae391c4be734eae6fffbead9fc28f43",
+    "containerClassification": "shared-plate",
+    "imageSha256": "ed441df3884a44369df3407bc45ba7ce2cab0fa1f5b191a8e67af21f75d9ae4e",
+    "imageBytes": 102322
+  },
+  {
+    "id": "onion_beef",
+    "name": "洋葱炒牛肉",
+    "description": "洋葱回甜，牛肉滑嫩，铁锅大火的香。",
+    "story": "铁锅大火、镬气十足的一道家常快手菜。洋葱遇热回甜，牛肉滑嫩，一荤一素，最是省时又落胃。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/onion_beef.webp",
+    "imageGitSha": "c48d959123c2ae0d7c2e4fbbbce91935db46d3d2",
+    "containerClassification": "shared-plate",
+    "imageSha256": "1c9df6dba5e422124680275f870ddbf4248d58dc563f04bdf3090d5de2ede86e",
+    "imageBytes": 64340
+  },
+  {
+    "id": "oyster_omelette",
+    "name": "海蛎煎",
+    "description": "海蛎裹蛋，外焦里嫩，闽南夜市的味道。",
+    "story": "闽南与台湾夜市的招牌。相传郑成功收复台湾时军粮短缺，将士以海蛎拌地瓜粉下锅煎食，竟成一味流传至今的乡愁小吃。外焦里嫩，海味十足。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/oyster_omelette.webp",
+    "imageGitSha": "8cc07c0b0917551dda60ef6ea0b98de0f0abd25f",
+    "containerClassification": "shared-plate",
+    "imageSha256": "f955ea645eb3839a98e2dcd641897b4da7041fc188cba8b8001f2f5715a8eeb4",
+    "imageBytes": 109780
+  },
+  {
+    "id": "pineapple_pork",
+    "name": "菠萝咕咾肉",
+    "description": "酸甜挂浆，菠萝解腻，一口一个停不下。",
+    "story": "粤菜经典。相传清代粤厨为迎合外国食客，在酸甜排骨里添了菠萝解腻，食时令人「咕噜咕噜」直咽口水，「咕咾肉」由此得名。酸甜挂浆，一口一个停不下。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/pineapple_pork.webp",
+    "imageGitSha": "f02129c598102b27fc274c73766e8ae2cee08c5b",
+    "containerClassification": "shared-plate",
+    "imageSha256": "00c18d24d7a1c6f4745d95ba936cdada9f274615e6b53eec56078b7dfeb6fa4c",
+    "imageBytes": 87742
+  },
+  {
+    "id": "roast_goose",
+    "name": "烧鹅",
+    "description": "皮脆肉嫩，油光透亮，粤式烧味的招牌。",
+    "story": "粤式烧味的招牌。以荔枝木明火烧烤，皮脆肉嫩、油光透亮，一碟「深井烧鹅」是老广眼中的至味。斩件蘸酸梅酱，是茶楼酒肆里最有排面的一味。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/roast_goose.webp",
+    "imageGitSha": "42675b498a3df5e85897f4261e8c01aed5ddcefb",
+    "containerClassification": "shared-plate",
+    "imageSha256": "3712579537a1f3bdd7263423242e3b4c8ed2a13f77cee083afc49a9c4986c553",
+    "imageBytes": 101560
+  },
+  {
+    "id": "saliva_chicken",
+    "name": "口水鸡",
+    "description": "红油浇白斩，麻辣鲜香，光看就流口水。",
+    "story": "川式凉菜。文豪郭沫若在《洪波曲》中忆及家乡白斩鸡浇红油，辣得人满口生津，「口水鸡」之名由此而来。麻辣鲜香，光看那一层红油便令人垂涎。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/saliva_chicken.webp",
+    "imageGitSha": "a63469853a177575be3f034ce9246ca79bd492bc",
+    "containerClassification": "shared-plate",
+    "imageSha256": "59d236475d0a4edd51e70cef20f1b065de112750d1d0dc103672e198a428c69a",
+    "imageBytes": 77730
+  },
+  {
+    "id": "scallion_sea_cucumber",
+    "name": "葱烧海参",
+    "description": "葱香入味，海参软糯，鲁菜里的功夫。",
+    "story": "鲁菜的功夫菜。北方大葱与胶东海参同烧，以葱之辛香化海参之腥，成就一味浓香软糯。鲁菜善用葱，这道菜便是明证。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/scallion_sea_cucumber.webp",
+    "imageGitSha": "a73f41f3c33f269973650fd73abc281a091acb9c",
+    "containerClassification": "shared-plate",
+    "imageSha256": "d88450482967c9ec3fac1eafbbf88ba66142da5833eb656723aaffdbfa64b526",
+    "imageBytes": 84088
+  },
+  {
+    "id": "shiitake_lettuce",
+    "name": "香菇油麦菜",
+    "description": "菌香清爽，油麦脆嫩，素菜里的鲜。",
+    "story": "一荤香一素脆的清爽搭配。香菇的菌鲜衬着油麦菜的清甜，是大鱼大肉之间最讨喜的一抹绿。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/shiitake_lettuce.webp",
+    "imageGitSha": "988b10cf32427972e203048b6e9eac18b087c8bf",
+    "containerClassification": "shared-plate",
+    "imageSha256": "d369877a53d5264d56c80200320c0af7de5dd5e3d7482c988c8eda959a7cc7ee",
+    "imageBytes": 78148
+  },
+  {
+    "id": "spicy_crayfish",
+    "name": "麻辣小龙虾",
+    "description": "一盆红亮，麻辣鲜香，夏夜的快乐源泉。",
+    "story": "千禧年后席卷全国的夜宵之王。江苏盱眙、湖北潜江皆以之闻名，一盆红亮、麻辣鲜香，配一瓶冰啤，是无数城市夏夜的快乐源泉。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/spicy_crayfish.webp",
+    "imageGitSha": "d82d875b9f990157673499a7d269b8d7231240ad",
+    "containerClassification": "shared-plate",
+    "imageSha256": "aa7e2a75c1f98abc10292cf5c9227d3322b334b269947188daab516bf6b7efc5",
+    "imageBytes": 89926
+  },
+  {
+    "id": "stinky_mandarin_fish",
+    "name": "臭鳜鱼",
+    "description": "闻着臭吃着香，徽州腌鲜的奇绝。",
+    "story": "徽菜里的奇绝。相传旧时徽商贩鱼，长途运输中以淡盐腌渍防腐，鱼身微微发酵，闻着臭、烧出来却异香扑鼻、蒜瓣肉紧实，成就了这道闻臭吃香的腌鲜名菜。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/stinky_mandarin_fish.webp",
+    "imageGitSha": "1fd68c1e7083e3e2c16f6a5458ccaf044cb7b716",
+    "containerClassification": "shared-plate",
+    "imageSha256": "6d7dac93ac553b92397edba02de052cb5860d0f23f1977b867c54b1a1e91272b",
+    "imageBytes": 98070
+  },
+  {
+    "id": "sweet_sour_carp",
+    "name": "糖醋鲤鱼",
+    "description": "外酥里嫩，糖醋琥珀，黄河边的喜庆。",
+    "story": "鲁菜名馔，选黄河肥鲤，炸得外酥里嫩，浇上琥珀色的糖醋汁。黄河鲤鱼向有「鲤鱼跳龙门」的吉兆，逢年过节、宴客待宾，这道菜总要摆上一条，图个喜庆。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/sweet_sour_carp.webp",
+    "imageGitSha": "051071a7b8e79dbeace23ccd1f48fe6323792568",
+    "containerClassification": "shared-plate",
+    "imageSha256": "11e16dec660d37d54b13152144ab1b9f776480f2a66c092a40a767c78dc950ff",
+    "imageBytes": 78598
+  },
+  {
+    "id": "sweet_sour_ribs",
+    "name": "糖醋排骨",
+    "description": "酸甜油亮，骨酥肉香，老少通吃。",
+    "story": "江浙沪一带的浓油赤酱代表。糖与醋在锅里熬成琥珀亮汁，裹住酥香的排骨，酸甜开胃、老少通吃，是许多人家宴客的压桌菜。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/sweet_sour_ribs.webp",
+    "imageGitSha": "96843849ccd53eb43e5a9d1658d6f19d0d512da7",
+    "containerClassification": "shared-plate",
+    "imageSha256": "107aa69a57bb0ac14f6987c3bb3aa1b4da8b4e0ce436e9837a925afbb4f12542",
+    "imageBytes": 66800
+  },
+  {
+    "id": "tomato_egg",
+    "name": "西红柿炒鸡蛋",
+    "description": "国民第一菜，番茄沙甜裹着金黄滑蛋。",
+    "story": "当之无愧的「国民第一菜」。番茄自明清传入，到二十世纪才走上寻常餐桌，与鸡蛋这一炒，红黄相映、酸甜裹滑，几乎成了每个中国人厨房的启蒙菜。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/tomato_egg.webp",
+    "imageGitSha": "6436b1e3372baab9d8026f169efe6d0097a80dd0",
+    "containerClassification": "shared-plate",
+    "imageSha256": "a020c77592f83fe4fdd9dea5a42abb18b0c59f6ed5e0085926792d37fcf92b5c",
+    "imageBytes": 54450
+  },
+  {
+    "id": "twice_cooked_pork",
+    "name": "回锅肉",
+    "description": "肥片卷边，豆瓣浓香，川味下饭王。",
+    "story": "川菜之首，旧时又称「熬锅肉」。人家祭祀后将煮过的刀头肉回锅再炒，配郫县豆瓣与蒜苗，肥片卷成「灯盏窝」，浓香下饭，是川人心中的头一道家乡味。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/twice_cooked_pork.webp",
+    "imageGitSha": "3382ffab14f9d35a58a121378fb8d8a193569396",
+    "containerClassification": "shared-plate",
+    "imageSha256": "55d87566db4242d46c68da7088fb93f579f334e5c2e8dc556bea8fd7b2266559",
+    "imageBytes": 73774
+  },
+  {
+    "id": "west_lake_fish",
+    "name": "西湖醋鱼",
+    "description": "糖醋清淡，鱼肉蒜瓣，烟雨江南的雅。",
+    "story": "杭帮名菜，又名「叔嫂传珍」。相传宋时宋嫂烹鱼时糖醋并用、寓意生活有酸有甜，以此激励小叔上进，后成楼外楼招牌。鱼肉嫩如蒜瓣，一箸尽是烟雨江南的雅。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/west_lake_fish.webp",
+    "imageGitSha": "e0d6c7a0e3b157be01e6a4f57fd7bbfaad149ced",
+    "containerClassification": "shared-plate",
+    "imageSha256": "6ea2301c29aa66f84b4dcf1f67a3c187a7abcec0beee24ff5bc689f4c3cbce4d",
+    "imageBytes": 82048
+  },
+  {
+    "id": "white_cut_chicken",
+    "name": "白切鸡",
+    "description": "皮爽肉滑，姜葱蘸料，最考鸡的本味。",
+    "story": "粤菜里最考本味的一道。「无鸡不成宴」，广东人待客，一只浸得皮爽肉滑的白切鸡最见诚意，仅以姜葱蘸料点味，吃的就是鸡的那口原鲜。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/white_cut_chicken.webp",
+    "imageGitSha": "487c52f180248f6ff6ca7187ab5c4e5916522bd5",
+    "containerClassification": "shared-plate",
+    "imageSha256": "6f303c9456782c8c40cfb0cea44adc201764be28b5c084669ae5d33429c0bd4e",
+    "imageBytes": 69128
+  },
+  {
+    "id": "tomato_egg_soup",
+    "name": "番茄蛋汤",
+    "description": "红黄相映，酸甜暖胃，三分钟的家常温柔。",
+    "story": "国民汤品，几乎每个中国家庭的灶台都煮过。蛋液冲成柳絮般的蛋花，番茄的酸甜化进清汤，加班晚归的深夜，一碗下肚，人就缓过来了。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/tomato_egg_soup.webp",
+    "imageGitSha": "9acf18b060a4d6d87eb119c8556a6d51d9f29689",
+    "containerClassification": "self-contained",
+    "imageSha256": "f51bcc8941598cb7959de83ee1253db4352187fc822225a24d8b03796943be85",
+    "imageBytes": 190588
+  },
+  {
+    "id": "cabbage_tofu_soup",
+    "name": "白菜豆腐汤",
+    "description": "清清白白一碗汤，淡中自有真味。",
+    "story": "老话说「鱼生火，肉生痰，白菜豆腐保平安」。这碗汤是中国人「大味至淡」的饮食哲学：不靠浓油赤酱，白菜的清甜衬着豆腐的软嫩，喝的是个熨帖。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/cabbage_tofu_soup.webp",
+    "imageGitSha": "c2b8ff81ab1d13d286d819ad9a6fd2e19b749820",
+    "containerClassification": "self-contained",
+    "imageSha256": "ea9793a7d50e87611d3c8c58f5c61b097234dc8d515925033875ab7474f0aeff",
+    "imageBytes": 166850
+  },
+  {
+    "id": "carrot_ribs_soup",
+    "name": "红萝卜排骨汤",
+    "description": "慢火细煨，萝卜吸饱肉香，汤色清亮回甘。",
+    "story": "广东人的「老火汤」文化：煲汤是粤人家的日常仪式，讲究「三煲四炖」，火候到了汤才有魂。红萝卜与排骨同煨，甜润不腻，是阿妈留给全家的那口惦记。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/carrot_ribs_soup.webp",
+    "imageGitSha": "574793fb96ecabbdbf08ec6240bdab00346bc870",
+    "containerClassification": "self-contained",
+    "imageSha256": "62964513f2963d858eb7fe7ba783f50750ef318e7e1f11dc97038fdf3f1bb39b",
+    "imageBytes": 182136
+  },
+  {
+    "id": "soybean_trotter_soup",
+    "name": "黄豆猪蹄汤",
+    "description": "胶质浓白，黄豆酥糯，滋补的老味道。",
+    "story": "传统滋补名汤。猪蹄的胶质把汤熬成奶白，黄豆炖得起沙，旧时妇人坐月子、体虚人调养，家里长辈总会端出这一盅——食补的智慧，都在慢火里。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/soybean_trotter_soup.webp",
+    "imageGitSha": "407ef9c73e09ac932d6b207ca4b67d794f14b2d3",
+    "containerClassification": "self-contained",
+    "imageSha256": "068b1a21c5110708d2342adfb8f158d2ac0d0e3c147c8e91659d42bf9b822103",
+    "imageBytes": 151384
+  },
+  {
+    "id": "fish_tofu_soup",
+    "name": "鲫鱼豆腐汤",
+    "description": "汤色奶白，鱼鲜衬豆腐嫩，鲜掉眉毛。",
+    "story": "江南家常名汤。俗话说「千炖豆腐万炖鱼」，鲫鱼先煎后炖，汤色才能熬出奶白。鱼的鲜与豆腐的嫩在一锅里成全彼此，是「鲜」字最朴素的写法。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/fish_tofu_soup.webp",
+    "imageGitSha": "26fd3caba73fd3c1d65e25702c6b4f0365c307af",
+    "containerClassification": "self-contained",
+    "imageSha256": "7825a156ff96d8e77636fb825630e54c6fdc06ecba55de3761e6587b9af4909d",
+    "imageBytes": 147284
+  },
+  {
+    "id": "chicken_mushroom_soup",
+    "name": "香菇鸡汤",
+    "description": "菌香入骨，鸡汤金黄，一碗下肚通体舒泰。",
+    "story": "中国人表达关怀的经典方式——生病时、考试前、远行归来，总有人给你炖一锅鸡汤。香菇的山珍气与整鸡同煨，汤面浮着金黄的油花，喝的是滋补，更是惦念。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/chicken_mushroom_soup.webp",
+    "imageGitSha": "a670c14ea972e256ef0a6840be08a1e362e39481",
+    "containerClassification": "self-contained",
+    "imageSha256": "59314f152f3edb964e67bba0e85331f0415ba1a612e7ab154c034e53fbbfc9a5",
+    "imageBytes": 190844
+  },
+  {
+    "id": "west_lake_beef_soup",
+    "name": "西湖牛肉羹",
+    "description": "蛋花如柳絮拂水，牛肉细滑，羹浓味鲜。",
+    "story": "名字借西湖之雅的一道羹汤，与宋嫂鱼羹一脉相承的江南羹文化，后在粤港茶楼发扬光大。蛋清在羹里拉出柳絮般的丝缕，恰似西湖春柳拂水，一勺入口滑过喉头。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/west_lake_beef_soup.webp",
+    "imageGitSha": "48783d3dd34979652520ea255ce06823e52655c9",
+    "containerClassification": "self-contained",
+    "imageSha256": "1b488dfc138c6b4ee9b6ceced609a383728322ee8fdfffe0e164aaac4d365c70",
+    "imageBytes": 176432
+  },
+  {
+    "id": "steamed_rice",
+    "name": "白米饭",
+    "description": "粒粒分明，饭香扑鼻，中餐的地基。",
+    "story": "「人是铁，饭是钢，一顿不吃饿得慌。」一碗白米饭是中餐真正的地基——再好的菜也要就着它才落胃。中国人种稻七千年，把最朴素的一碗白饭，吃成了「吃饭」这个词本身。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "9%",
+      "top": "9%",
+      "width": "82%",
+      "height": "82%"
+    },
+    "imageFile": "assets/baiwei/dishes/steamed_rice.webp",
+    "imageGitSha": "7845658d77af888e336396b99c881252f92b542b",
+    "containerClassification": "self-contained",
+    "imageSha256": "a56e9f4e5a8165c5c8192f0715b302c202047ef6872d179a50c57f75c6b2c93f",
+    "imageBytes": 76588
+  },
+  {
+    "id": "braised_pork_rice",
+    "name": "卤肉饭",
+    "description": "肥瘦卤肉浇饭，酱香浓郁，古早的满足。",
+    "story": "发源于闽南、兴盛于台湾的古早味。五花肉切丁慢卤，连汁带肉浇在热饭上，酱色渗进每粒米。夜市摊头一碗下肚，是游子最想念的那口「家里的味道」。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "4%",
+      "top": "4%",
+      "width": "92%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/braised_pork_rice.webp",
+    "imageGitSha": "e93f150650b196f8443823dcffcf144e5fcf30de",
+    "containerClassification": "self-contained",
+    "imageSha256": "76ec6a3322862cf5034c441a27e2e3f9dcb2864f9728b245f2fbdb6e356e835a",
+    "imageBytes": 260100
+  },
+  {
+    "id": "clay_pot_rice",
+    "name": "煲仔饭",
+    "description": "饭焦金脆，腊味油润，锅气全在煲底。",
+    "story": "广式煲仔饭的精髓在「饭焦」——贴着煲底那层金黄锅巴，淋上豉油滋滋作响。老广们等的就是揭盖那一刻的镬气，一煲一世界，饭焦才是灵魂。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "4%",
+      "top": "4%",
+      "width": "92%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/clay_pot_rice.webp",
+    "imageGitSha": "36c8cbeedf01c5cf9bcbd39507113950cf96c387",
+    "containerClassification": "self-contained",
+    "imageSha256": "7a7d6a61b8eca6cde12ab17a09d641351eae526c5187909dbb9c3151ccc09a4a",
+    "imageBytes": 242652
+  },
+  {
+    "id": "egg_fried_rice",
+    "name": "蛋炒饭",
+    "description": "金裹银的粒粒香，隔夜饭的华丽转身。",
+    "story": "相传源自隋代越国公杨素爱吃的「碎金饭」——蛋液裹着饭粒炒出金黄，故称金裹银。扬州炒饭更将其发扬光大。看似最简单，最考镬气与手上功夫，是每个中餐学徒的第一课。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "4%",
+      "top": "4%",
+      "width": "92%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/egg_fried_rice.webp",
+    "imageGitSha": "9a2ea2bc2f35a74bbaa3010075e1a9d2be2677a2",
+    "containerClassification": "self-contained",
+    "imageSha256": "69c1558e6a1d0716b19f13f078291ec0c765aea238ded9b9736d901c76a7ddba",
+    "imageBytes": 203346
+  },
+  {
+    "id": "stir_fried_potato",
+    "name": "清炒土豆丝",
+    "description": "刀工见细，清脆爽口，一盘朴素的功夫。",
+    "story": "看似最不起眼，却是检验中餐刀工的第一关——土豆丝要切得粗细如一、根根分明，泡水去粉、大火快炒，出锅才脆而不面。老师傅收徒，先看这一盘。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/stir_fried_potato.webp",
+    "imageGitSha": "64faed17f9eae20198330204c9397bf4586b50dc",
+    "containerClassification": "shared-plate",
+    "imageSha256": "72426fb53d58727806d09f07316b457418178a3ab9a158fae706aaf5a06217be",
+    "imageBytes": 114220
+  },
+  {
+    "id": "mantou",
+    "name": "大白馒头",
+    "description": "暄软雪白，麦香扑鼻，北方餐桌的顶梁柱。",
+    "story": "相传诸葛亮南征渡泸水，以面裹馅代人头祭江，得名「蛮头」，后世演化为馒头。一屉暄软的大白馒头，是北方人「实在」二字的具象——不花哨，管饱，顶事。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/mantou.webp",
+    "imageGitSha": "a58492411ce5fadba400c990896a51fb2c07a123",
+    "containerClassification": "shared-plate",
+    "imageSha256": "1f89f42b98a6892b224e0dfed74a54fd8cce33bcd40fc5382ac0cb0a9b9f8feb",
+    "imageBytes": 76248
+  },
+  {
+    "id": "yangchun_noodle",
+    "name": "阳春面",
+    "description": "清汤挂面撒葱花，一清二白的江南底气。",
+    "story": "旧时上海人把农历十月叫「小阳春」，这碗十文钱的光面便借了雅名。清汤、细面、猪油、葱花，四样简单东西吊出一碗鲜——江南人的讲究，是把最便宜的东西做出最体面的味道。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/yangchun_noodle.webp",
+    "imageGitSha": "3bf9039436f20eb4fe8d4092d7ca8c10d3f0baf8",
+    "containerClassification": "self-contained",
+    "imageSha256": "80ab95b3c27e6fec15a900b13b7779692ac73e95eebd345fa50a2833bb9c7cf7",
+    "imageBytes": 297196
+  },
+  {
+    "id": "egg_fried_noodle",
+    "name": "蛋炒面",
+    "description": "面条裹蛋香，锅气十足，深夜食堂的常客。",
+    "story": "夜市铁板上翻飞的经典——面条下锅猛火颠炒，蛋液一浇滋啦作响，镬气窜起来的瞬间，整条街都知道你饿了。管饱又够味，是加班人和夜猫子共同的深夜救赎。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/egg_fried_noodle.webp",
+    "imageGitSha": "e50b662fb5039cbdfcdf74edca86f5f55538a48e",
+    "containerClassification": "shared-plate",
+    "imageSha256": "052a2252707a06dd5dcfd88775b8a292915c7eda883bbbee52d10c272f6643c7",
+    "imageBytes": 268038
+  },
+  {
+    "id": "ginger_scallion_crab",
+    "name": "姜葱炒蟹",
+    "description": "蟹壳红亮，姜葱辟寒，鲜得理直气壮。",
+    "story": "粤菜处理大闸蟹的豪迈路数——斩件裹薄粉，猛火与姜葱同炒，蟹壳红得发亮。姜的辛温正好中和蟹的寒凉，一辟一衬，把「鲜」字炒得理直气壮。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/ginger_scallion_crab.webp",
+    "imageGitSha": "55e9101cf318a354500cde8e47f88eeff3aed716",
+    "containerClassification": "shared-plate",
+    "imageSha256": "d834b4c1eac78a7e99490518ef43c3c8e97c4e4b6645ad28fe32683ea8c11d0a",
+    "imageBytes": 319990
+  },
+  {
+    "id": "sizzling_squid",
+    "name": "铁板鱿鱼",
+    "description": "滋啦一声浇汁，弹牙焦香，夜市的顶流。",
+    "story": "整条夜市最响的一声「滋啦」——鱿鱼在滚烫铁板上蜷起花刀，酱汁一浇腾起白烟，香气能勾住十米外的行人。弹牙、焦香、够劲，是街头美食的登峰造极。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/sizzling_squid.webp",
+    "imageGitSha": "5425aeac0fa5080dceaa0a981e90e62db72489dd",
+    "containerClassification": "shared-plate",
+    "imageSha256": "c0527a3cd05157359da73d729db0c804fbd9c4cf9d3ce38ccd211efd77c234f7",
+    "imageBytes": 314574
+  },
+  {
+    "id": "garlic_oyster",
+    "name": "蒜蓉生蚝",
+    "description": "蒜蓉金黄铺满蚝肉，一口吞下整片海。",
+    "story": "大排档的镇场之宝。生蚝有「海中牛奶」之名，肥嫩的蚝肉铺上金银蒜蓉，猛火一烤汁水滚沸——嗦上一口，咸鲜甘甜一起涌上来，像把整片海装进了壳里。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/garlic_oyster.webp",
+    "imageGitSha": "07de6575620ded532b6dc6d03fc38d43b86b3bd7",
+    "containerClassification": "shared-plate",
+    "imageSha256": "7f89ace7993f4102a9ab32c6760926bb5baeae05784891c2e9c6061cbd1d7d1e",
+    "imageBytes": 274972
+  },
+  {
+    "id": "steamed_crab",
+    "name": "清蒸大闸蟹",
+    "description": "原味清蒸，膏黄丰腴，鲜的最高礼遇。",
+    "story": "「秋风起，蟹脚痒」，江南人等这一口等一整年。大闸蟹讲究清蒸原味——姜醋碟伺候，先揭壳品膏黄，再细拆蟹肉。李渔自称「蟹奴」，说蟹是「终身一日皆不能忘之」的至味，把清蒸捧为对鲜最高的礼遇。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "4%",
+      "top": "4%",
+      "width": "92%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/steamed_crab.webp",
+    "imageGitSha": "debf8630425186ebcc64cced3330de0e681e6397",
+    "containerClassification": "self-contained",
+    "imageSha256": "55ec926385fdcafdd95c0ba537e2d58ecb755121e31b930580fa49e419d1fe02",
+    "imageBytes": 506034
+  },
+  {
+    "id": "garlic_scallop",
+    "name": "蒜蓉粉丝扇贝",
+    "description": "粉丝吸饱蒜汁蚝鲜，贝壳就是餐盘。",
+    "story": "大排档的巧思：扇贝的壳天生就是一只小碗，粉丝垫底吸饱蒜汁与贝鲜，一壳一口，连汤带肉。看似豪放的烧烤摊菜，实则把「物尽其用」的中式智慧摆上了桌。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/garlic_scallop.webp",
+    "imageGitSha": "f6fa60b3a80e28b13e52b7d9a9fec816f6920abd",
+    "containerClassification": "shared-plate",
+    "imageSha256": "65e315fc0d30001c0a16bd1e277caafa28bf580dfb53a9501aa7f1e1ddd39f23",
+    "imageBytes": 373614
+  },
+  {
+    "id": "sanxian_pot",
+    "name": "三鲜锅",
+    "description": "蛤蜊吐鲜虾提甜，一锅奶白滚三鲜。",
+    "story": "沿海人家的看家汤锅。所谓三鲜，一鲜蛤蜊、二鲜活虾、三鲜是那口吊足了火候的高汤——三股鲜味在锅里撞出奶白，不放味精胜过味精。渔家的道理很朴素：食材够鲜，水都能烧出肉味。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/sanxian_pot.webp",
+    "imageGitSha": "7c524a8a0ef2656ffd0a61d608a47b8db54e87b8",
+    "containerClassification": "self-contained",
+    "imageSha256": "5051306db23aee2d0be52564347eef8addb1a74bba6f3051aac677ab2b4854bb",
+    "imageBytes": 479354
+  },
+  {
+    "id": "omurice",
+    "name": "蛋包饭",
+    "description": "金黄蛋皮裹住炒饭，一刀划开的仪式感。",
+    "story": "舶来又本土化的洋食经典。半熟蛋皮盖上炒饭，一刀划开蛋液缓缓流下——这一刀的仪式感让无数食客举着手机不肯动筷。蛋要嫩、饭要香、酱要正，三样齐了才配叫治愈系。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/omurice.webp",
+    "imageGitSha": "b2b59ebfadee94cf039834a3d099794ce2b982db",
+    "containerClassification": "shared-plate",
+    "imageSha256": "5d201289c4217709b025fcc776d2d1974301b52bfb0b3c2c2e23044c73951f4c",
+    "imageBytes": 278504
+  },
+  {
+    "id": "scallion_noodle",
+    "name": "葱油拌面",
+    "description": "葱熬至焦香，一勺油润透素面。",
+    "story": "上海弄堂的头牌面食。小葱冷油下锅，小火熬到焦黄酥脆，连油带葱浇在光面上一拌——没有浇头胜过浇头。一碗葱油拌面的灵魂全在耐心里：火急一分葱苦，火慢一分油寡。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/scallion_noodle.webp",
+    "imageGitSha": "ee024f7c8e4ebfb13b9a9fd708f99a251f045677",
+    "containerClassification": "shared-plate",
+    "imageSha256": "48873743bfa6852e2d836c4c63e441aa5a3a7b32e4a138c072ded857b1bc71a5",
+    "imageBytes": 412984
+  },
+  {
+    "id": "jianbing",
+    "name": "煎饼果子",
+    "description": "绿豆面摊皮裹薄脆，早点摊的看家绝活。",
+    "story": "天津人的早餐图腾。绿豆面糊在鏊子上旋出薄皮，磕蛋、撒葱、刷酱、裹薄脆，对折两下递到手上，全程不过一分钟。天津人对它的正统性锱铢必较——「煎饼果子加火腿？那是外地人干的事！」",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/jianbing.webp",
+    "imageGitSha": "f103609f56b96fe12c8d5d19a50a408acf584155",
+    "containerClassification": "shared-plate",
+    "imageSha256": "910b1ef623bf4663232ea1b184f17e7cbcc8a79c214487cac20d3c5714f4b02a",
+    "imageBytes": 322938
+  },
+  {
+    "id": "guotie",
+    "name": "锅贴",
+    "description": "冰花脆底连成一片，底焦面软馅多汁。",
+    "story": "煎出「冰花」是锅贴师傅的门面功夫：面浆浇进平底锅，煎到水干结出一片金黄脆网，铲起时连底翻面，脆得能听见响。一面焦香一面暄软，中间锁着滚烫的肉汁——趁热，小心烫。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/guotie.webp",
+    "imageGitSha": "13ba716c3707242691055ef80c6298c720c042bd",
+    "containerClassification": "shared-plate",
+    "imageSha256": "47bd3f1efcd88329a53d8e513b8bb5ee5207a4b251c34ed525ca679fef2c6469",
+    "imageBytes": 368608
+  },
+  {
+    "id": "crispy_chicken",
+    "name": "脆皮炸鸡",
+    "description": "脆壳鼓泡咔嚓作响，肉汁在里面等着。",
+    "story": "夜宵摊的人气王。腌透的鸡腿裹粉下锅，炸到脆壳鼓起金泡，咬下去「咔嚓」一声，热气混着肉汁一起冒出来。中式炸鸡的秘诀在腌不在炸——花椒和姜蒜先入了骨，脆皮之下别有乾坤。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/crispy_chicken.webp",
+    "imageGitSha": "d16f924e66d68cec7c55e6665ea9f4ab5b2ea735",
+    "containerClassification": "shared-plate",
+    "imageSha256": "d5ed8cb480123c0b3f9d18057afb0286dde8ce8b3e9339253bd6c8d09fea6413",
+    "imageBytes": 466214
+  },
+  {
+    "id": "cumin_lamb",
+    "name": "孜然羊肉",
+    "description": "孜然裹着羊肉爆香，洋葱垫底，西北的豪气。",
+    "story": "西北烧烤摊的灵魂搬进了炒锅。羊肉切片猛火爆炒，孜然辣面一撒，香气能窜出半条街；洋葱垫底吸足肉汁，比肉还抢手。西北人待客的实在，全在这盘肉的分量里。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/cumin_lamb.webp",
+    "imageGitSha": "ce71faa86faa5478c0575062008e996b6d9f7382",
+    "containerClassification": "shared-plate",
+    "imageSha256": "e5b7edafd5afd7ca6fc3c046b4c7797b640944d65093a0d9226a2085bdc40c25",
+    "imageBytes": 452628
+  },
+  {
+    "id": "lamb_noodle_soup",
+    "name": "羊肉烩面",
+    "description": "骨汤奶白，面条筋道，一碗管住整个冬天。",
+    "story": "中原与西北共享的一碗踏实。羊骨吊出奶白的汤，面条抻得宽厚筋道，撒把香菜端上桌——郑州人说「三天不吃烩面，走路都不稳」。一碗下肚，风雪都挡在门外。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/lamb_noodle_soup.webp",
+    "imageGitSha": "adb75ac9602e524bc5ab5c76b1cdadb2254a943c",
+    "containerClassification": "self-contained",
+    "imageSha256": "3deabc182ed29675839a735ba0854ab23a9b08c3c09f477684e653c7d745f899",
+    "imageBytes": 446974
+  },
+  {
+    "id": "lotus_ribs_soup",
+    "name": "排骨藕汤",
+    "description": "粉藕炖到起沙，汤色微红，湖北人的乡愁。",
+    "story": "湖北人的汤罐里，藕是主角、排骨是配角。洪湖的粉藕炖到起沙拉丝，汤色微微发红，武汉伢管这叫「煨汤」——砂吊子小火煨一下午，是外婆家厨房最耐等的香。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/lotus_ribs_soup.webp",
+    "imageGitSha": "cb5564a0b67a3974bb15154324b8389022f558c0",
+    "containerClassification": "self-contained",
+    "imageSha256": "ff73409bdce8057e8affada059893af69726afe46ff0117903c827883cb6f2f3",
+    "imageBytes": 410464
+  },
+  {
+    "id": "stir_fried_lotus",
+    "name": "清炒藕片",
+    "description": "脆藕急火快炒，清清爽爽，藕断丝连。",
+    "story": "塘藕上市的时节，湖北人家最简单的吃法反而最见新鲜——藕片切得飞薄，急火快炒断生就起锅，脆得能听见响。藕断丝连的缠绵，都留在筷子尖上。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/stir_fried_lotus.webp",
+    "imageGitSha": "ee39686cc691d2fbbd0b14614f4702b7c3efeba4",
+    "containerClassification": "shared-plate",
+    "imageSha256": "7d6dba6b7cb8ff46fbcce2ec633f4e5576d544809ebc6c1dedb55fbe67a39ac0",
+    "imageBytes": 316688
+  },
+  {
+    "id": "matsutake_chicken_soup",
+    "name": "松茸炖鸡",
+    "description": "山珍入汤，鲜香清冽，雨季限定的奢侈。",
+    "story": "云南人对松茸的敬意是不加多余调料——土鸡与鲜松茸同炖，一撮盐足矣。雨季的头茬松茸从山里背下来，赶着新鲜下锅，汤色清冽、鲜香入骨，是大自然一年一次的限定款。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/matsutake_chicken_soup.webp",
+    "imageGitSha": "a6cf0caf4a35217bf347308ae2d56798371f1770",
+    "containerClassification": "self-contained",
+    "imageSha256": "5b3a8609407447de2f84e0bad77f6f3b4a3c2f19070fe0068470b5f0c3939c12",
+    "imageBytes": 415544
+  },
+  {
+    "id": "pan_fried_matsutake",
+    "name": "黄油煎松茸",
+    "description": "厚切松茸煎出焦边，一口咬住整座山林。",
+    "story": "松茸最奢侈的吃法偏偏最简单：厚切、黄油、慢煎，两面微焦即起。菌肉紧实弹牙，山林的气息混着黄油香在嘴里散开——云南人说，好松茸自己会说话，厨子少插嘴。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/pan_fried_matsutake.webp",
+    "imageGitSha": "1c88c326a2b4c4ec0e7f9d6d44b9ed8b735e6281",
+    "containerClassification": "shared-plate",
+    "imageSha256": "6dab4aeb7d51685135fd81c7d997c17ee92b98eff8cb323cbdfd3072e683ea54",
+    "imageBytes": 302900
+  },
+  {
+    "id": "pickled_cabbage_pork",
+    "name": "酸菜白肉",
+    "description": "酸菜解腻白肉香，东北炕头的热乎气。",
+    "story": "东北猫冬的头号硬菜。自家缸里捞出的酸菜切细丝，与五花白肉同炖，酸香把肥腻化得干干净净。窗外飘雪，锅里咕嘟，一家人围着炕桌——酸菜白肉一上，年味就到了。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/pickled_cabbage_pork.webp",
+    "imageGitSha": "7c31479df21831a689898b876ba85a31d12a21b8",
+    "containerClassification": "self-contained",
+    "imageSha256": "c8a3edf1fcc433b2a68dbd055cd8965fc81b5d87e8284f95bb34585b05e5977f",
+    "imageBytes": 430968
+  },
+  {
+    "id": "pickled_fish",
+    "name": "酸菜鱼",
+    "description": "酸汤滚鱼片，酸辣开胃，一锅捞不停。",
+    "story": "从重庆江湖菜馆火遍全国的国民爆款。老坛酸菜炒香煮汤，鱼片薄如蝉翼往滚汤里一汆，酸香激得人食指大动。九十年代它是馆子里的招牌，如今连锁店开到了每个商场——酸菜比鱼好吃，是食客共同的秘密。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/pickled_fish.webp",
+    "imageGitSha": "b3172b38329dc6689aaa4bccaad01c4211ab217f",
+    "containerClassification": "shared-plate",
+    "imageSha256": "059b618a7cc677fa592b10991e3bd9dfd15321913477c791f09ac5a15d32927c",
+    "imageBytes": 388748
+  },
+  {
+    "id": "coconut_chicken",
+    "name": "椰子鸡",
+    "description": "椰水做汤底，清甜煮鸡，海南的温柔。",
+    "story": "海南人的火锅哲学：不用一滴清水，整颗椰子的椰水做汤底，文昌鸡斩件下锅，清甜把鸡肉衬得越发嫩滑。蘸一碟小青桔沙姜酱油，是椰风海韵最温柔的打开方式。",
+    "selfContained": true,
+    "soup": true,
+    "rect": {
+      "left": "12.5%",
+      "top": "12.5%",
+      "width": "75%",
+      "height": "75%"
+    },
+    "imageFile": "assets/baiwei/dishes/coconut_chicken.webp",
+    "imageGitSha": "0636cc7d985cf15fa937f30d2d322dec432f204c",
+    "containerClassification": "self-contained",
+    "imageSha256": "e7edfe0c7f1a05df9aab3fbce73f02584c9d6da698a4acadcbe3cdb5353c8c22",
+    "imageBytes": 415746
+  },
+  {
+    "id": "coconut_rice",
+    "name": "椰子饭",
+    "description": "椰香浸透糯饭，切开一轮月白。",
+    "story": "海南文昌的传统甜口主食。糯米灌进掏空的椰壳，连壳同蒸，椰香一丝丝渗进每粒米里。蒸好切件，断面莹白如月——海岛人把最甜的心思，都封进了这颗椰子里。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "4%",
+      "top": "4%",
+      "width": "92%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/coconut_rice.webp",
+    "imageGitSha": "6e9483db21ba4243539d6628a86e5ca65fce1631",
+    "containerClassification": "self-contained",
+    "imageSha256": "602dfa0d6e2a0d5465a780d7aca261126a4535f04cac4836f67ac00d9f1a3575",
+    "imageBytes": 334298
+  },
+  {
+    "id": "sausage_claypot_rice",
+    "name": "腊味煲仔饭",
+    "description": "腊肠油润渗进饭粒，锅巴才是灵魂。",
+    "story": "北风一起，广东人就惦记这一煲。腊肠腊肉铺在饭面，猛火收干、文火焗香，油脂顺着饭粒往下渗，贴底结出金黄饭焦。揭盖淋豉油的滋啦一声，是秋冬最有盼头的动静。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "4%",
+      "top": "4%",
+      "width": "92%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/sausage_claypot_rice.webp",
+    "imageGitSha": "16379c2289b28b42974040d0a31d2e450473f873",
+    "containerClassification": "self-contained",
+    "imageSha256": "7ce49e844d3ae8d1bfe71c5abe2e182e489cf016dceb8972225ad598e29ef088",
+    "imageBytes": 396844
+  },
+  {
+    "id": "steamed_cured_sausage",
+    "name": "腊味合蒸",
+    "description": "腊味同蒸，油亮咸香，蒸出岁月的味道。",
+    "story": "湘粤两地共通的腊味吃法——腊肠切片入笼清蒸，油脂蒸得透亮，咸香里回着一丝甜。腊味是时间的手艺：晒足了北风的肉，蒸一蒸就能把整个秋冬的阳光还给你。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "12%",
+      "top": "8%",
+      "width": "76%",
+      "height": "76%"
+    },
+    "imageFile": "assets/baiwei/dishes/steamed_cured_sausage.webp",
+    "imageGitSha": "120cef85ed573d3e358aa06c063c3a53cf950195",
+    "containerClassification": "shared-plate",
+    "imageSha256": "cf203e74fd23cdc815fabe8375c40e0bedd666201f150c2f33dcb8133b58fca4",
+    "imageBytes": 472076
+  }
+]
