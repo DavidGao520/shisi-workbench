@@ -999,9 +999,9 @@ textarea {
 }
 .kitchen-ingredient-card__name {
   top: 10%;
-  left: 18%;
+  left: 50%;
   width: 74%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   overflow: hidden;
   font-family: 'Songti SC', 'STSong', serif;
   font-size: 20px;

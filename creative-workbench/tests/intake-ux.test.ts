@@ -5,6 +5,25 @@ import { readFile } from 'node:fs/promises';
 // Source-level UX guard: not a claim of browser or microphone acceptance.
 const page = () =>
   readFile(new URL('../app/page.tsx', import.meta.url), 'utf8');
+const styles = () =>
+  readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
+
+void test('ingredient names share the card centerline with the category label', async () => {
+  const source = await styles();
+  const nameRule = source
+    .split('.kitchen-ingredient-card__name {')[1]
+    .split('}')[0];
+  const categoryRule = source
+    .split('.kitchen-ingredient-card__category {')[1]
+    .split('}')[0];
+  assert.match(nameRule, /left: 50%/);
+  assert.match(nameRule, /transform: translate\(-50%, -50%\)/);
+  assert.equal(
+    Number(nameRule.match(/left: (\d+)%/)?.[1]),
+    Number(categoryRule.match(/left: (\d+)%/)?.[1]) +
+      Number(categoryRule.match(/width: (\d+)%/)?.[1]) / 2,
+  );
+});
 
 void test('photo actions use plain names and manual input has matching button styling', async () => {
   const source = await page();
