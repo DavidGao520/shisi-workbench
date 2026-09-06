@@ -1,5 +1,13 @@
-import { names, recipes, RECIPE_VERSION, type Recipe } from './recipes';
-import { isSeasoning, PRESENT_QUANTITY, seasoningNames } from './seasonings';
+import {
+  names,
+  recipes,
+  storedRecipe,
+  ingredientAliases,
+  inventoryIngredientId,
+  RECIPE_VERSION,
+  type Recipe,
+} from './recipes';
+import { isSeasoning, PRESENT_QUANTITY } from './seasonings';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
 export const units = ['个', '盒', '袋', '克', '毫升', '份'] as const;
@@ -186,9 +194,7 @@ export function validateDate(d?: string) {
     fail('请输入有效的到期日期。');
 }
 const aliases: Record<string, string> = {
-  ...Object.fromEntries(
-    Object.entries(seasoningNames).map(([id, name]) => [name, id]),
-  ),
+  ...ingredientAliases,
   糖: 'sugar',
   番茄: 'tomato',
   西红柿: 'tomato',
@@ -364,7 +370,13 @@ export function confirmCandidate(
   if (target) {
     if (target.revision !== input.targetRevision)
       fail('库存已变化，请重新核对批次。');
-    if (target.canonicalIngredientId !== input.ingredientId)
+    if (
+      inventoryIngredientId(target) !==
+      inventoryIngredientId({
+        canonicalIngredientId: input.ingredientId,
+        displayName: input.name,
+      })
+    )
       fail('不能把不同食材合并到同一批次。');
     if (c.mode === 'restock') {
       if (
@@ -416,6 +428,8 @@ export function recipeFor(s: KitchenState, id: string): Recipe {
     ? {
         ...recipe,
         steps: received.steps,
+        // Generated prose has no verified per-step timer/material contract.
+        detailSteps: undefined,
         workbuddyVersion: received.ticketId,
         workbuddyWarnings: received.warnings,
       }
@@ -423,8 +437,7 @@ export function recipeFor(s: KitchenState, id: string): Recipe {
 }
 export function sessionRecipe(_s: KitchenState, session: Session): Recipe {
   // Legacy sessions predate generated steps and must keep the original preset.
-  const recipe =
-    session.recipeSnapshot || recipes.find((r) => r.id === session.recipeId);
+  const recipe = storedRecipe(session);
   if (!recipe) fail('这餐的菜谱不存在。');
   return recipe;
 }
@@ -448,7 +461,7 @@ export function matching(
 ) {
   return r.ingredients.map((i) => {
     const eligible = s.inventory.filter(
-      (b) => b.canonicalIngredientId === i.id && !isExpired(b, date),
+      (b) => inventoryIngredientId(b) === i.id && !isExpired(b, date),
     );
     const amount = eligible
       .filter((b) => b.unit === i.unit)
@@ -463,7 +476,7 @@ export function matching(
       ),
       // Presence helps discovery, but never proves that the required grams/ml are available.
       presenceOnly:
-        isSeasoning(i.id) &&
+        (isSeasoning(i.id) || i.kind === 'seasoning') &&
         eligible.some((b) => b.amountBand === PRESENT_QUANTITY),
     };
   });
@@ -477,7 +490,7 @@ export function recommendations(s: KitchenState, date = today()) {
         matches.filter((i) =>
           s.inventory.some(
             (b) =>
-              b.canonicalIngredientId === i.id &&
+              inventoryIngredientId(b) === i.id &&
               !isExpired(b, date) &&
               b.expiryDate &&
               Date.parse(b.expiryDate + 'T12:00:00Z') -
@@ -490,7 +503,18 @@ export function recommendations(s: KitchenState, date = today()) {
         0.3 * urgent;
       return { recipe: r, matches, missing, score };
     })
-    .filter((x) => x.missing.filter((i) => !i.presenceOnly).length < 2)
+    .filter(
+      (x) =>
+        x.missing.filter((i) => !i.presenceOnly).length < 2 &&
+        // A stocked condiment cupboard alone must not recommend an absent main food.
+        x.matches.some(
+          (i) =>
+            i.id !== 'water' &&
+            i.kind !== 'seasoning' &&
+            !isSeasoning(i.id) &&
+            (i.have > 0 || i.unknown),
+        ),
+    )
     .sort(
       (a, b) =>
         b.score - a.score || a.recipe.id.localeCompare(b.recipe.id, 'en'),
@@ -568,7 +592,8 @@ export function remainingPlan(
     let need = ingredient.amount * servings;
     const candidates = s.inventory
       .filter(
-        (b) => b.canonicalIngredientId === ingredient.id && !isExpired(b, date),
+        (b) =>
+          inventoryIngredientId(b) === ingredient.id && !isExpired(b, date),
       )
       .sort(
         (a, b) =>

@@ -155,7 +155,7 @@ void test('unknown quantity retains known stock; unknown foods keep separate nam
   delete candidate.amount;
   delete candidate.unit;
   assert.equal(candidateReview(state, candidate).quantity.amount, 8);
-  for (const name of ['猪肉', '鸡肉']) {
+  for (const name of ['榴莲', '杨桃']) {
     const c = incoming(state, name);
     assert.equal(c.canonicalIngredientId, 'other');
     assert.equal(candidateReview(state, c).targetId, undefined);
@@ -163,8 +163,8 @@ void test('unknown quantity retains known stock; unknown foods keep separate nam
       quantity: { amount: 300, unit: '克' },
     });
   }
-  const pork = incoming(state, '猪肉');
-  assert.equal(candidateReview(state, pork).targetId, state.inventory[1].id);
+  const durian = incoming(state, '榴莲');
+  assert.equal(candidateReview(state, durian).targetId, state.inventory[1].id);
 });
 
 void test('restock creates its own batch and does not overwrite old expiry or quantity', () => {

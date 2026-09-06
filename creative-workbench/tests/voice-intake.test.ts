@@ -81,6 +81,64 @@ void test('longest food match preserves sauces and cooked rice identities', () =
   assert.equal(items[3].amount, undefined);
   assert.equal(items[3].amountBand, undefined);
 });
+
+void test('processed-food names never become raw tofu or overwrite its stocktake record', () => {
+  assert.deepEqual(
+    extractIngredients('鱼豆腐500克，毛豆腐300克，臭豆腐200克').items.map(
+      (item) => [item.displayName, item.canonicalIngredientId, item.amount],
+    ),
+    [
+      ['鱼豆腐', 'other', 500],
+      ['毛豆腐', 'other', 300],
+      ['臭豆腐', 'other', 200],
+    ],
+  );
+  const state = emptyState('real');
+  state.inventory = [
+    {
+      id: 'plain',
+      canonicalIngredientId: 'tofu',
+      displayName: '豆腐',
+      amount: 100,
+    },
+    {
+      id: 'prepared',
+      canonicalIngredientId: 'other',
+      displayName: '毛豆腐',
+      amount: 300,
+    },
+    {
+      id: 'custom',
+      canonicalIngredientId: 'other',
+      displayName: '自家卤豆腐(袋装)',
+      amount: 200,
+    },
+  ].map((item) => ({
+    ...item,
+    unit: '克',
+    revision: 1,
+    confirmed: true,
+    createdAt: '2026-09-06',
+    updatedAt: '2026-09-06',
+  }));
+  const { rows } = prepareVoiceDraft(
+    '毛豆腐500克，自家卤豆腐(袋装)还有250克',
+    state,
+    'stocktake',
+  );
+  assert.deepEqual(
+    rows.map((row) => [row.name, row.ingredientId, row.targetId]),
+    [
+      ['毛豆腐', 'other', 'prepared'],
+      ['自家卤豆腐(袋装)', 'other', 'custom'],
+    ],
+  );
+  confirmVoiceDraft(state, 'real', rows);
+  assert.deepEqual(
+    state.inventory.map((item) => item.amount),
+    [100, 500, 250],
+  );
+});
 void test('uncertain, repeated and corrected quantities remain for explicit review', () => {
   for (const text of [
     '鸡蛋两三个',

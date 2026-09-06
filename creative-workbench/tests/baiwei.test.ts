@@ -168,9 +168,9 @@ void test('repeat completion is idempotent; repeated meals preserve sorted indiv
   assert.deepEqual(state, before);
 });
 
-void test('existing three recipe IDs all map to the game catalog, including soup', () => {
-  assert.equal(recipes.length, 3);
-  assert.equal(RECIPE_VERSION, '2026-09-05-draft.1');
+void test('all 70 preset recipe IDs map to the game catalog, retaining the original soup ID', () => {
+  assert.equal(recipes.length, 70);
+  assert.equal(RECIPE_VERSION, '2026-09-06-home.1');
   const state = golden();
   finish(state, 'soup', 'tomato_egg_soup');
   const entries = baiweiCollection(state);
@@ -188,16 +188,13 @@ void test('existing three recipe IDs all map to the game catalog, including soup
   assert.equal(otherBaiweiRecords(state).length, 0);
 });
 
-void test('catalog metadata cannot pose as 67 new cookable recipes', () => {
+void test('all catalog recipes have methods but never bypass real-kitchen review', () => {
   const state = emptyState('real');
   assert.equal(
     baiweiCollection(state).filter((entry) => !entry.recipe).length,
-    67,
+    0,
   );
-  assert.throws(
-    () => startCooking(state, 'boiled_fish', 'fake', date),
-    /菜谱不存在/,
-  );
+  assert.throws(() => startCooking(state, 'boiled_fish', 'fake', date), /人工/);
   assert.equal(state.sessions.length, 0);
 });
 

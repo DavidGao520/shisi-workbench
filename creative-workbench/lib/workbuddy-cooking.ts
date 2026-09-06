@@ -29,10 +29,12 @@ export function cookingRequest(dataset: Dataset, recipeId: string) {
     recipeId,
     baseVersion: RECIPE_VERSION,
     title: recipe.title,
-    servings: 1,
+    servings: recipe.baseServings || 1,
     ingredients: recipe.ingredients.map((item) => ({
-      ...item,
-      name: names[item.id],
+      id: item.id,
+      name: item.name || names[item.id],
+      amount: item.amount,
+      unit: item.unit,
     })),
   });
 }

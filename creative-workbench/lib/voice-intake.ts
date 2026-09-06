@@ -1,4 +1,4 @@
-import { names } from './recipes';
+import { names, ingredientAliases, inventoryIngredientId } from './recipes';
 import { PRESENT_QUANTITY } from './seasonings';
 import {
   confirmCandidate,
@@ -17,11 +17,16 @@ const extraFoods =
   '鸡肉 猪肉 牛肉 羊肉 五花肉 排骨 鸡胸肉 鸡腿 鸡翅 虾 鱼肉 鲫鱼 鲈鱼 带鱼 三文鱼 鱿鱼 贝类 香肠 火腿 培根 鸭肉 胡萝卜 白萝卜 洋葱 大蒜 生姜 小葱 香菜 香菇 蘑菇 金针菇 木耳 白菜 大白菜 娃娃菜 油麦菜 生菜 菠菜 西兰花 花菜 茄子 黄瓜 冬瓜 南瓜 丝瓜 西葫芦 豆角 四季豆 荷兰豆 玉米 红薯 山药 莲藕 芹菜 韭菜 小白菜 青菜 彩椒 红椒 面条 面粉 挂面 馒头 饺子 面包 燕麦 牛奶 酸奶 黄油 奶酪 红豆 绿豆 黄豆 花生 核桃 芝麻 苹果 香蕉 橙子 柠檬 草莓 葡萄 酱油 红糖 冰糖'.split(
     ' ',
   );
-const lexicon = new Map<string, string>([
+const baseLexicon = new Map<string, string>([
+  ...extraFoods.map((name) => [name, 'other'] as [string, string]),
+  // These are whole processed-food names, not evidence of raw tofu/egg/meat.
+  ...'毛豆腐 鱼豆腐 臭豆腐 油豆腐 豆腐干 豆腐皮 鸡蛋干 素鸡 素肉'
+    .split(' ')
+    .map((name) => [name, 'other'] as [string, string]),
   ...Object.entries(names)
     .filter(([id]) => id !== 'other')
     .map(([id, name]) => [name, id] as [string, string]),
-  ...extraFoods.map((name) => [name, 'other'] as [string, string]),
+  ...Object.entries(ingredientAliases),
   ['西红柿', 'tomato'],
   ['剩饭', 'cooked_rice'],
   ['米饭', 'cooked_rice'],
@@ -30,10 +35,8 @@ const lexicon = new Map<string, string>([
   ['油', 'oil'],
   ['水', 'water'],
 ]);
-const wordPattern = new RegExp(
-  [...lexicon.keys()].sort((a, b) => b.length - a.length).join('|'),
-  'g',
-);
+const escapePattern = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const digit: Record<string, number> = {
   零: 0,
   〇: 0,
@@ -80,14 +83,30 @@ const beforeQuantity = new RegExp(
   '(' + numberToken + ')\\s*' + measure + '\\s*(?:的)?$',
 );
 const afterQuantity = new RegExp(
-  '^\\s*(?:有|还剩|剩|大约|约)?\\s*(' + numberToken + ')\\s*' + measure,
+  '^\\s*(?:还有|有|还剩|剩|大约|约)?\\s*(' + numberToken + ')\\s*' + measure,
 );
 const negative =
   /没有|没买|没了|用完|吃完|不要|别记|不记|不加|不剩|不是|(?:想|准备|打算|需要|要|计划)(?:买|做|吃)/;
 
-export function extractIngredients(transcript: string) {
+export function extractIngredients(
+  transcript: string,
+  knownFoods: { displayName: string; canonicalIngredientId?: string }[] = [],
+) {
   if (!transcript.trim() || transcript.length > 10000)
     throw new Error('请先说出食材，或修改识别文字。');
+  const lexicon = new Map(baseLexicon);
+  for (const item of knownFoods) {
+    if (item.displayName.trim() && item.displayName.length <= 60) {
+      lexicon.set(item.displayName, inventoryIngredientId(item));
+    }
+  }
+  const wordPattern = new RegExp(
+    [...lexicon.keys()]
+      .sort((a, b) => b.length - a.length)
+      .map(escapePattern)
+      .join('|'),
+    'g',
+  );
   const found = new Map<
     string,
     {
@@ -242,7 +261,7 @@ export function prepareVoiceDraft(
   mode: Mode,
   requestId = uid(),
 ) {
-  const parsed = extractIngredients(transcript);
+  const parsed = extractIngredients(transcript, state.inventory);
   if (!parsed.items.length)
     return { rows: [] as VoiceRow[], warnings: parsed.warnings };
   const candidates = parseImport(
@@ -263,8 +282,8 @@ export function prepareVoiceDraft(
   const rows = candidates.map((candidate) => {
     const existing = state.inventory.filter(
       (b) =>
-        b.canonicalIngredientId === candidate.canonicalIngredientId &&
-        (b.canonicalIngredientId !== 'other' ||
+        inventoryIngredientId(b) === inventoryIngredientId(candidate) &&
+        (inventoryIngredientId(b) !== 'other' ||
           b.displayName === candidate.displayName),
     );
     const target =

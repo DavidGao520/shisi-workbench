@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { IndexedDbStore } from '../lib/store';
 import { recipes, cookingSteps } from '../lib/recipes';
+import { legacyRecipes } from '../lib/legacy-recipes';
 import { renderBaiweiEntry } from '../lib/archive-export';
 import {
   archive,
@@ -23,10 +24,10 @@ import {
 } from '../lib/kitchen';
 
 const date = '2026-09-05';
-void test('two servings scale exact step quantities along with ingredients', () => {
-  assert.match(cookingSteps(recipes[0], 2)[1], /20 毫升/);
-  assert.match(cookingSteps(recipes[0], 2)[3], /60 毫升/);
-  assert.match(cookingSteps(recipes[2], 2)[2], /600 毫升/);
+void test('legacy two servings still scale their original exact step quantities', () => {
+  assert.match(cookingSteps(legacyRecipes[0], 2)[1], /20 毫升/);
+  assert.match(cookingSteps(legacyRecipes[0], 2)[3], /60 毫升/);
+  assert.match(cookingSteps(legacyRecipes[2], 2)[2], /600 毫升/);
 });
 void test('archive HTML escapes memories and omits private inventory snapshots', () => {
   const s = ready();
@@ -350,7 +351,7 @@ void test('progress never consumes food; only confirmed completion does', () => 
   completeCooking(s, 'meal-1', review(s));
   assert.equal(
     s.inventory.find((b) => b.canonicalIngredientId === 'egg')!.amount,
-    6,
+    8 - recipes[0].ingredients.find((item) => item.id === 'egg')!.amount,
   );
   assert.equal(archive(s).length, 1);
 });
@@ -361,7 +362,7 @@ void test('duplicate completion is idempotent even with stale original quantitie
   completeCooking(s, 'meal-1', payload);
   assert.equal(
     s.inventory.find((b) => b.canonicalIngredientId === 'egg')!.amount,
-    6,
+    8 - recipes[0].ingredients.find((item) => item.id === 'egg')!.amount,
   );
   assert.equal(s.sessions.filter((x) => x.status === 'completed').length, 1);
 });
@@ -468,7 +469,7 @@ void test('concurrent repeated completion commits once across connections', asyn
   const final = await a.read('demo');
   assert.equal(
     final.inventory.find((b) => b.canonicalIngredientId === 'egg')!.amount,
-    6,
+    8 - recipes[0].ingredients.find((item) => item.id === 'egg')!.amount,
   );
   assert.equal(archive(final)[0].history.length, 1);
   a.close();

@@ -4,13 +4,13 @@
 
 ## 读取请求
 
-定位用户已指定的完整工作台目录，按 local-bridge.md 使用同一入口与工作台，不能改端口、换目录或清库存。用户在推荐菜点击“跟着做这道菜”，或在详情点击“请 WorkBuddy 生成步骤”后，在本对话说“读取厨房任务，生成做菜步骤”。此时执行：
+定位用户已指定的完整工作台目录，按 local-bridge.md 使用同一入口与工作台，不能改端口、换目录或清库存。推荐菜的“跟着做这道菜”只打开现有预设步骤，不创建任务。用户须在详情展开“可选：请 WorkBuddy 另写一版做法”，显式点击生成按钮，再在本对话说“读取厨房任务，生成做菜步骤”。此时执行：
 
 ```sh
 node "/已确认的Skill目录/scripts/kitchen-bridge.mjs" cooking-task --workspace "/已确认的完整工作台目录"
 ```
 
-返回 task 为 null 时，说明没有等待中的做法任务。请用户先在页面选择菜品；不猜测、不自行创建任务。任务的 ticketId / dataset / recipeId / baseVersion / title / servings / ingredients 是页面绑定的数据。只处理当前任务，不使用照片的 active ticket，不读取浏览器数据库、runtime.json、账号凭据或其他用户目录。
+返回 task 为 null 时，说明没有等待中的做法任务。请用户先在页面显式请求生成；不猜测、不自行创建任务。任务的 ticketId / dataset / recipeId / baseVersion / title / servings / ingredients 是页面绑定的数据，servings 是基础人数（整数 1–12），不是固定一人份，ingredients 已是这些人数的总量，不能再乘一次人数。只处理当前任务，不使用照片的 active ticket，不读取浏览器数据库、runtime.json、账号凭据或其他用户目录。
 
 ## 生成并交回
 

@@ -5,13 +5,14 @@ import {
   type KitchenState,
   type Quantity,
 } from './kitchen';
+import { inventoryIngredientId } from './recipes';
 
 /** Identity and inventory linkage are internal, not extra tasks for the cook. */
 export function candidateReview(state: KitchenState, candidate: Candidate) {
-  const ingredientId = candidate.canonicalIngredientId || 'other';
+  const ingredientId = inventoryIngredientId(candidate);
   const matches = state.inventory.filter(
     (b) =>
-      b.canonicalIngredientId === ingredientId &&
+      inventoryIngredientId(b) === ingredientId &&
       (ingredientId !== 'other' || b.displayName === candidate.displayName),
   );
   const explicit = candidate.stocktakeTarget;

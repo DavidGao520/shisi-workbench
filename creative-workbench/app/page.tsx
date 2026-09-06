@@ -40,8 +40,14 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
 import { VoiceIntake } from '@/components/voice-intake';
-import { BaiweiGallery } from '@/components/baiwei-gallery';
+import { BaiweiGallery, BaiweiDishArt } from '@/components/baiwei-gallery';
+import {
+  RecipeInstructions,
+  RecipeSources,
+} from '@/components/recipe-instructions';
+import { baiweiDishes } from '@/lib/baiwei';
 import '@/components/baiwei-gallery.css';
+import '@/components/recipe-instructions.css';
 import { baiweiImages, baiweiPlate } from '@/lib/baiwei-art';
 import { needsSeasoningOnboarding } from '@/lib/seasoning-setup';
 import { Progress } from '@/components/ui/progress';
@@ -69,14 +75,16 @@ import {
   receiveCookingSteps,
   ignoreCookingTicket,
 } from '@/lib/workbuddy-cooking';
-import { recipeFor, sessionRecipe, detailRecipe } from '@/lib/kitchen';
+import { sessionRecipe, detailRecipe } from '@/lib/kitchen';
 import { renderBaiweiEntry } from '@/lib/archive-export';
 import {
   names,
   recipes,
   safetyNote,
   safetySource,
-  cookingSteps,
+  detailedCookingSteps,
+  recipePeople,
+  ingredientName,
   RECIPE_VERSION,
   type Recipe,
 } from '@/lib/recipes';
@@ -113,6 +121,20 @@ import {
 } from '@/lib/kitchen';
 
 const db = new IndexedDbStore(databaseName());
+
+function RecipeArt({ recipe }: { recipe: Recipe }) {
+  const dish = baiweiDishes.find((dish) => dish.id === recipe.id);
+  return dish ? (
+    <BaiweiDishArt
+      dish={dish}
+      src={baiweiImages[dish.id]}
+      plate={baiweiPlate}
+      lit
+    />
+  ) : (
+    <img src={art[recipe.image]} alt={recipe.title + '游戏插画'} />
+  );
+}
 const pages = [
   { id: 'today', name: '今日一餐', icon: CookingPot },
   { id: 'inventory', name: '我的厨房', icon: Refrigerator },
@@ -833,6 +855,11 @@ export default function Home() {
     ? s?.sessions.find((item) => item.id === detail.sessionId)?.servings ||
       DEFAULT_SERVINGS
     : DEFAULT_SERVINGS;
+  const sessionDish = s && session ? sessionRecipe(s, session) : undefined;
+  const currentStep =
+    sessionDish && session
+      ? detailedCookingSteps(sessionDish, session.servings)?.[session.step]
+      : undefined;
   const openRecipe = (r: Recipe, sessionId?: string) => {
     setDetail({ recipeId: r.id, sessionId });
     setReviewChecks('');
@@ -1151,14 +1178,7 @@ export default function Home() {
                         onClick={() => openRecipe(r)}
                         aria-label={'查看' + r.title}
                       >
-                        <img
-                          src={art[r.image]}
-                          alt={
-                            r.image === 'tomato'
-                              ? '来自游戏的番茄食材插画'
-                              : r.title + '游戏插画'
-                          }
-                        />
+                        <RecipeArt recipe={r} />
                         <span
                           className={
                             'dish-badge ' + (missing.length ? 'amber' : '')
@@ -1169,8 +1189,7 @@ export default function Home() {
                       </button>
                       <div className="recipe-body">
                         <p className="eyebrow">
-                          {r.equipment === '汤锅' ? '一碗暖汤' : '家常小炒'} ·{' '}
-                          {r.minutes} 分钟
+                          预设家常做法 · 约 {r.minutes} 分钟
                         </p>
                         <h2>{r.title}</h2>
                         <p>{r.subtitle}</p>
@@ -1198,12 +1217,7 @@ export default function Home() {
                         )}
                         <button
                           className="recipe-link"
-                          disabled={cooking.busy}
-                          onClick={() => {
-                            openRecipe(r);
-                            if (!recipeFor(s, r.id).workbuddyVersion)
-                              void cooking.begin(r.id);
-                          }}
+                          onClick={() => openRecipe(r)}
                         >
                           跟着做这道菜
                           <ArrowUpRight size={17} />
@@ -1238,7 +1252,7 @@ export default function Home() {
                       key={r.id}
                       onClick={() => openRecipe(r)}
                     >
-                      <img src={art[r.image]} alt="" />
+                      <RecipeArt recipe={r} />
                       <div>
                         <strong>{r.title}</strong>
                         <small>
@@ -1439,15 +1453,17 @@ export default function Home() {
               ) : (
                 <section className="cooking-layout">
                   <div className="cooking-art">
-                    <img
-                      src={art[sessionRecipe(s, session).image]}
-                      alt="菜品或食材插画"
-                    />
+                    <RecipeArt recipe={sessionRecipe(s, session)} />
                     <p className="eyebrow">
                       {dataset === 'demo'
                         ? '体验演练 · 无需真的开火'
                         : '已确认的一餐'}{' '}
-                      · {session.servings} 人份
+                      ·{' '}
+                      {recipePeople(
+                        sessionRecipe(s, session),
+                        session.servings,
+                      )}{' '}
+                      人份
                     </p>
                     <h2>{sessionRecipe(s, session).title}</h2>
                     <p className="muted">
@@ -1513,20 +1529,52 @@ export default function Home() {
                         100
                       }
                     />
-                    <h2 className="step-text">
-                      {session.status === 'paused'
-                        ? '已经暂停，锅边的事先照顾好。'
-                        : cookingSteps(
-                            sessionRecipe(s, session),
-                            session.servings,
-                          )[session.step]}
-                    </h2>
+                    {session.status === 'paused' ? (
+                      <h2 className="step-text">
+                        已经暂停，锅边的事先照顾好。
+                      </h2>
+                    ) : (
+                      <RecipeInstructions
+                        recipe={sessionRecipe(s, session)}
+                        batches={session.servings}
+                        stepIndex={session.step}
+                      />
+                    )}
+                    {sessionRecipe(s, session).safetyTips?.map((tip) => (
+                      <p className="safety-note" key={tip}>
+                        {tip}
+                      </p>
+                    ))}
                     <p className="safety-note">
                       {safetyNote}{' '}
                       <a href={safetySource} target="_blank" rel="noreferrer">
                         安全提示来源
                       </a>
                     </p>
+                    {currentStep &&
+                      !session.timerEnd &&
+                      !session.timerRemaining && (
+                        <button
+                          className="secondary recipe-step-timer"
+                          disabled={busy || session.status === 'paused'}
+                          onClick={() =>
+                            mutate((state) => {
+                              const active = activeSession(state);
+                              if (
+                                active?.id === session.id &&
+                                active.step === session.step &&
+                                active.status === 'cooking'
+                              ) {
+                                active.timerEnd =
+                                  Date.now() + currentStep.minutes * 60000;
+                              }
+                            })
+                          }
+                        >
+                          <Clock3 size={18} /> 按本步 {currentStep.minutes}{' '}
+                          分钟计时
+                        </button>
+                      )}
                     <div className="timer">
                       <Clock3 size={21} />
                       {session.timerEnd || session.timerRemaining ? (
@@ -1570,7 +1618,7 @@ export default function Home() {
                               aria-label="提醒分钟数"
                               type="number"
                               min="1"
-                              max="120"
+                              max="1440"
                               value={timerMinutes}
                               onChange={(e) => setTimerMinutes(e.target.value)}
                             />
@@ -1582,8 +1630,8 @@ export default function Home() {
                             onClick={() =>
                               mutate((state) => {
                                 const n = Number(timerMinutes);
-                                if (!Number.isFinite(n) || n < 1 || n > 120)
-                                  throw new Error('提醒时间应为 1–120 分钟。');
+                                if (!Number.isFinite(n) || n < 1 || n > 1440)
+                                  throw new Error('提醒时间应为 1–1440 分钟。');
                                 const v = activeSession(state);
                                 if (v) v.timerEnd = Date.now() + n * 60000;
                               })
@@ -1942,12 +1990,13 @@ export default function Home() {
                 <X />
               </button>
               <div className="detail-heading">
-                <img src={art[recipe.image]} alt="游戏插画" />
+                <RecipeArt recipe={recipe} />
                 <div>
                   <p className="eyebrow">中华食肆 · 家常做法</p>
                   <DialogTitle>{recipe.title}</DialogTitle>
                   <DialogDescription>
-                    {recipe.minutes} 分钟 · {detailServings} 人份 ·{' '}
+                    约 {recipe.minutes} 分钟（含准备与等待） ·{' '}
+                    {recipePeople(recipe, detailServings)} 人份 ·{' '}
                     {recipe.equipment}
                   </DialogDescription>
                   <span
@@ -1964,11 +2013,15 @@ export default function Home() {
                   本餐固定的做法；重新生成不会修改这份记录。
                 </p>
               )}
-              <h3>需要的食材 · {detailServings} 人份</h3>
+              {recipe.yield && <p className="muted">{recipe.yield}</p>}
+              <h3>需要的食材 · {recipePeople(recipe, detailServings)} 人份</h3>
               <div className="ingredient-list">
                 {matching(s, recipe, undefined, detailServings).map((i) => (
                   <div key={i.id}>
-                    <span>{names[i.id]}</span>
+                    <span>
+                      {ingredientName(recipe, i.id)}
+                      {i.note && <small>{i.note}</small>}
+                    </span>
                     <strong>
                       {i.need} {i.unit}
                     </strong>
@@ -1988,11 +2041,29 @@ export default function Home() {
                 ))}
               </div>
               <p className="muted">
-                用量按当前人数调整；步骤中的明确用量同步变化，加热时间不作机械翻倍。第一版不提供食材单位自动换算。
+                调料、焯水和烹煮用水均列入用料；同一材料在准备和下锅步骤中可能重复出现，并不是需要额外再准备一份。加热时间还需结合食材大小与实际熟度判断。
               </p>
+              <h3>
+                {recipe.workbuddyVersion
+                  ? 'WorkBuddy 生成的做法'
+                  : '预设家常做法 · 每步都有用料与计时'}
+              </h3>
+              {recipe.workbuddyWarnings?.map((warning, index) => (
+                <p className="warning-text" key={index}>
+                  {warning}
+                </p>
+              ))}
+              <RecipeInstructions recipe={recipe} batches={detailServings} />
+              {recipe.safetyTips?.map((tip) => (
+                <p className="safety-note" key={tip}>
+                  {tip}
+                </p>
+              ))}
+              <p className="safety-note">{safetyNote}</p>
+              <RecipeSources recipe={recipe} />
               {!detail?.sessionId && (
-                <section className="paper workbuddy-cooking">
-                  <h3>让 WorkBuddy 带你做</h3>
+                <details className="paper workbuddy-cooking">
+                  <summary>可选：请 WorkBuddy 另写一版做法</summary>
                   {cooking.ticket ? (
                     <>
                       <output>
@@ -2038,42 +2109,8 @@ export default function Home() {
                       {cooking.problem}
                     </p>
                   )}
-                </section>
+                </details>
               )}
-              <h3>
-                {recipe.workbuddyVersion
-                  ? 'WorkBuddy 生成的做法'
-                  : '现有参考做法'}
-              </h3>
-              {recipe.workbuddyVersion && (
-                <p className="muted">
-                  由你的 WorkBuddy 对话生成，尚需本人核对，不代表经过专业审核。
-                </p>
-              )}
-              {recipe.workbuddyWarnings?.map((warning, index) => (
-                <p className="warning-text" key={index}>
-                  {warning}
-                </p>
-              ))}
-              <ol className="instructions">
-                {cookingSteps(recipe, detailServings).map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-              <p className="safety-note">{safetyNote}</p>
-              <section className="culture-panel">
-                <p className="eyebrow">从游戏知识到家庭做法 · 附来源</p>
-                <p>{recipe.knowledge}</p>
-                <a href={recipe.source} target="_blank" rel="noreferrer">
-                  {recipe.workbuddyVersion ? '基础配方参考：' : '做法来源：'}
-                  {recipe.author} ↗
-                </a>
-                <small>
-                  {recipe.workbuddyVersion
-                    ? '上面的步骤由 WorkBuddy 生成，此链接仅为原配方参考，不是 AI 步骤的查证来源。'
-                    : '按来源改写为单人家庭版本；不是游戏数值，不宣称菜系起源或“唯一正宗”。'}
-                </small>
-              </section>
               {!detail?.sessionId &&
                 !reviewed(s, recipe) &&
                 dataset === 'real' && (

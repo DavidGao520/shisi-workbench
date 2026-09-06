@@ -1,5 +1,5 @@
 import catalog from './baiwei-dishes.json';
-import { recipes } from './recipes';
+import { recipes, storedRecipe } from './recipes';
 import type { KitchenState, Session } from './kitchen';
 
 export type BaiweiDish = {
@@ -64,8 +64,5 @@ export function otherBaiweiRecords(state: KitchenState) {
 }
 
 export function savedRecipe(session: Session) {
-  return (
-    session.recipeSnapshot ||
-    recipes.find((recipe) => recipe.id === session.recipeId)
-  );
+  return storedRecipe(session);
 }

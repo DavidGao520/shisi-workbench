@@ -41,6 +41,7 @@ await writeFile(resolve(output, '中华食肆.html'), html);
 for (const file of [
   'README.md',
   'docs/ASSET-SOURCES.md',
+  'docs/CHINESE-RECIPE-SOURCES.md',
   'docs/IMPLEMENTATION-STATUS.md',
 ])
   await copyFile(resolve(root, file), resolve(output, basename(file)));

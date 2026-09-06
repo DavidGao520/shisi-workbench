@@ -5,7 +5,7 @@ const fail = (message, status = 400) => {
 const object = (v) => v && typeof v === 'object' && !Array.isArray(v);
 const text = (v, max) => typeof v === 'string' && !!v.trim() && v.length <= max;
 const only = (v, keys) => Object.keys(v).every((key) => keys.includes(key));
-/** @typedef {{dataset:'real'|'demo',recipeId:string,baseVersion:string,title:string,servings:1,ingredients:{id:string,name:string,amount:number,unit:string}[]}} CookingRequest */
+/** @typedef {{dataset:'real'|'demo',recipeId:string,baseVersion:string,title:string,servings:number,ingredients:{id:string,name:string,amount:number,unit:string}[]}} CookingRequest */
 /** @returns {CookingRequest} */
 export function validateCookingRequest(input) {
   if (
@@ -22,7 +22,9 @@ export function validateCookingRequest(input) {
     !text(input.recipeId, 80) ||
     !text(input.baseVersion, 100) ||
     !text(input.title, 60) ||
-    input.servings !== 1 ||
+    !Number.isInteger(input.servings) ||
+    input.servings < 1 ||
+    input.servings > 12 ||
     !Array.isArray(input.ingredients) ||
     !input.ingredients.length ||
     input.ingredients.length > 30
@@ -55,7 +57,7 @@ export function validateCookingRequest(input) {
     recipeId: input.recipeId,
     baseVersion: input.baseVersion,
     title: input.title,
-    servings: 1,
+    servings: input.servings,
     ingredients,
   };
 }
