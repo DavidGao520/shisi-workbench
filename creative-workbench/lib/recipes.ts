@@ -1,3 +1,4 @@
+import { seasoningNames } from './seasonings';
 export const RECIPE_VERSION = '2026-09-05-draft.1';
 export const names: Record<string, string> = {
   tomato: '番茄',
@@ -13,6 +14,7 @@ export const names: Record<string, string> = {
   potato: '土豆',
   chinese_cabbage: '大白菜',
   other: '其他食材',
+  ...seasoningNames,
 };
 export type Recipe = {
   id: string;
@@ -27,6 +29,8 @@ export type Recipe = {
   author: string;
   knowledge: string;
   image: string;
+  workbuddyVersion?: string;
+  workbuddyWarnings?: string[];
 };
 export const recipes: Recipe[] = [
   {
@@ -114,6 +118,7 @@ export const safetyNote =
 export const safetySource =
   'https://www.fda.gov/food/buy-store-serve-safe-food/what-you-need-know-about-egg-safety';
 export function cookingSteps(recipe: Recipe, servings: number) {
+  if (recipe.workbuddyVersion) return recipe.steps;
   return recipe.steps.map((step) =>
     step.replace(
       /(\d+) 毫升/g,

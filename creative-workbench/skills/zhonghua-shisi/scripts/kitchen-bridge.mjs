@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Local candidate delivery only. No model API, shell execution, or inventory access.
+// Local candidate delivery and offline speech transcription. No inventory access.
 import { createServer } from 'node:http';
 import {
   randomUUID,
@@ -11,6 +11,8 @@ import { readFile, writeFile, mkdir, rename, lstat } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { createLocalSpeech } from './local-speech.mjs';
+import { cookingAction, cookingTaskSummary } from './cooking-contract.mjs';
 
 export const PROTOCOL = 'zhonghua-shisi-bridge-1';
 export const PORT = 43117;
@@ -173,12 +175,15 @@ function secretMatches(header, token) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** @param {{ workspace: string, port?: number, now?: () => number, speech?: { status: () => Promise<unknown>, transcribe: (req: any, signal: AbortSignal) => Promise<unknown> } }} options */
 export async function startBridge({
   workspace,
   port = PORT,
   now = () => Date.now(),
+  speech,
 }) {
   const root = resolve(workspace);
+  const voice = speech || createLocalSpeech(root);
   let html;
   for (const path of [
     join(root, '中华食肆.html'),
@@ -202,6 +207,7 @@ export async function startBridge({
     workspaceId: randomUUID(),
     active: null,
     entries: [],
+    cookingJobs: [],
   };
   try {
     const raw = await readFile(queuePath, 'utf8');
@@ -214,7 +220,12 @@ export async function startBridge({
       saved.entries.length > 100
     )
       fail('连接队列版本或结构异常，未覆盖数据。');
-    state = saved;
+    if (
+      saved.cookingJobs !== undefined &&
+      (!Array.isArray(saved.cookingJobs) || saved.cookingJobs.length > 50)
+    )
+      fail('做法队列结构异常，未覆盖数据。');
+    state = { ...saved, cookingJobs: saved.cookingJobs || [] };
   } catch (e) {
     if (e.code !== 'ENOENT') throw e;
   }
@@ -272,13 +283,83 @@ export async function startBridge({
         '/bridge/agent-status',
         '/bridge/submit',
         '/bridge/stop',
+        '/bridge/cooking/task',
+        '/bridge/cooking/submit',
       ].includes(path);
       const client = req.headers['x-kitchen-client'];
       if (agentPath) {
         if (!secretMatches(req.headers.authorization, token))
           fail('连接凭证无效，请用配套脚本操作。', 401);
       } else if (!uuid(client)) fail('请从本机工作台页面访问。', 403);
-      if (req.method === 'GET' && path === '/bridge/agent-status') {
+      if (req.method === 'GET' && path === '/bridge/cooking/task') {
+        const job = state.cookingJobs.find(
+          (job) => job.status === 'waiting' && job.expiresAt > now(),
+        );
+        json(200, {
+          task: job
+            ? { ...cookingTaskSummary(job), request: job.request }
+            : null,
+        });
+      } else if (req.method === 'GET' && path === '/bridge/cooking/status') {
+        const job = state.cookingJobs.find(
+          (job) =>
+            job.client === client &&
+            (job.status === 'pending' ||
+              (job.status === 'waiting' && job.expiresAt > now())),
+        );
+        json(200, { ticket: cookingTaskSummary(job) });
+      } else if (req.method === 'GET' && path === '/bridge/cooking/next') {
+        const job = state.cookingJobs.find(
+          (job) => job.client === client && job.status === 'pending',
+        );
+        json(200, {
+          entry: job
+            ? {
+                ticketId: job.id,
+                request: job.request,
+                result: job.result,
+                createdAt: job.createdAt,
+              }
+            : null,
+        });
+      } else if (
+        req.method === 'POST' &&
+        [
+          '/bridge/cooking/begin',
+          '/bridge/cooking/cancel',
+          '/bridge/cooking/ack',
+          '/bridge/cooking/submit',
+        ].includes(path)
+      ) {
+        const data = await body(req);
+        json(
+          200,
+          await transact((next) =>
+            cookingAction(
+              next.cookingJobs,
+              path.split('/').at(-1),
+              data,
+              client,
+              now(),
+              randomUUID,
+              digest,
+            ),
+          ),
+        );
+      } else if (req.method === 'GET' && path === '/voice/status') {
+        json(200, await voice.status());
+      } else if (req.method === 'POST' && path === '/voice/transcribe') {
+        const abort = new AbortController();
+        const cancel = () => {
+          if (!res.writableEnded) abort.abort();
+        };
+        res.once('close', cancel);
+        try {
+          json(200, await voice.transcribe(req, abort.signal));
+        } finally {
+          res.removeListener('close', cancel);
+        }
+      } else if (req.method === 'GET' && path === '/bridge/agent-status') {
         const t = active();
         json(200, {
           protocol: PROTOCOL,
@@ -295,6 +376,11 @@ export async function startBridge({
           receipts: state.entries
             .slice(-5)
             .map((e) => ({ ticketId: e.id, status: e.status })),
+          cooking: cookingTaskSummary(
+            state.cookingJobs.find(
+              (job) => job.status === 'waiting' && job.expiresAt > now(),
+            ),
+          ),
         });
       } else if (req.method === 'GET' && path === '/bridge/status') {
         const t = active();
@@ -380,6 +466,14 @@ export async function startBridge({
           state.active.dataset === data.dataset
         )
           ticketIds.push(state.active.id);
+        ticketIds.push(
+          ...state.cookingJobs
+            .filter(
+              (job) =>
+                job.client === client && job.request.dataset === data.dataset,
+            )
+            .map((job) => job.id),
+        );
         // Read-only: retain pending payloads until the page's reset transaction commits.
         json(200, { ticketIds });
       } else if (req.method === 'POST' && path === '/bridge/discard') {
@@ -388,7 +482,7 @@ export async function startBridge({
           !object(data) ||
           !['real', 'demo'].includes(data.dataset) ||
           !Array.isArray(data.ticketIds) ||
-          data.ticketIds.length > 100 ||
+          data.ticketIds.length > 200 ||
           !data.ticketIds.every(uuid)
         )
           fail('厨房无效。');
@@ -414,6 +508,19 @@ export async function startBridge({
           )) {
             entry.status = 'discarded';
             delete entry.envelope;
+          }
+          for (const job of next.cookingJobs.filter(
+            (job) =>
+              job.client === client &&
+              job.request.dataset === data.dataset &&
+              data.ticketIds.includes(job.id),
+          )) {
+            if (['waiting', 'pending'].includes(job.status)) {
+              job.status = 'cancelled';
+              delete job.result;
+              delete job.request.ingredients;
+            }
+            ids.push(job.id);
           }
           return ids;
         });
@@ -598,7 +705,11 @@ async function cli() {
     console.log(
       JSON.stringify(await agentRequest(workspace, '/bridge/agent-status')),
     );
-  else if (command === 'submit') {
+  else if (command === 'cooking-task')
+    console.log(
+      JSON.stringify(await agentRequest(workspace, '/bridge/cooking/task')),
+    );
+  else if (command === 'submit' || command === 'cooking-submit') {
     if (!options['--file'] || !uuid(options['--ticket']))
       fail('submit 需要 --file 和 --ticket。');
     const raw = await readFile(resolve(options['--file']), 'utf8');
@@ -606,10 +717,14 @@ async function cli() {
     const extraction = JSON.parse(raw);
     console.log(
       JSON.stringify(
-        await agentRequest(workspace, '/bridge/submit', {
-          ticketId: options['--ticket'],
-          extraction,
-        }),
+        await agentRequest(
+          workspace,
+          command === 'submit' ? '/bridge/submit' : '/bridge/cooking/submit',
+          {
+            ticketId: options['--ticket'],
+            ...(command === 'submit' ? { extraction } : { result: extraction }),
+          },
+        ),
       ),
     );
   } else if (command === 'stop')
@@ -618,7 +733,7 @@ async function cli() {
     );
   else
     fail(
-      '用法：node kitchen-bridge.mjs start|status|submit|stop --workspace 工作台目录。照片在 WorkBuddy 对话上传。',
+      '用法：node kitchen-bridge.mjs start|status|submit|cooking-task|cooking-submit|stop --workspace 工作台目录。',
     );
 }
 if (

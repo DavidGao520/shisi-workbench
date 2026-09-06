@@ -321,21 +321,32 @@ void test('ten golden runs produce identical three recommendations', () => {
       baseline,
     );
 });
-void test('allergy, equipment, dislikes and time are hard filters', () => {
+void test('inventory-only recommendations and cooking ignore legacy hidden preferences', () => {
   const s = golden();
+  const baseline = recommendations(s, date);
   s.preferences.allergens = ['鸡蛋'];
-  assert.equal(recommendations(s, date).length, 0);
-  s.preferences.allergens = [];
-  s.preferences.equipment = ['汤锅'];
-  assert.deepEqual(
-    recommendations(s, date).map((r) => r.recipe.id),
-    ['tomato_egg_soup'],
-  );
-  s.preferences.equipment = ['炒锅', '汤锅'];
+  s.preferences.equipment = [];
   s.preferences.dislikedIngredients = ['green_pepper'];
-  assert.equal(recommendations(s, date).length, 2);
-  s.preferences.minutes = 10;
-  assert.equal(recommendations(s, date).length, 0);
+  s.preferences.minutes = 0;
+  s.preferences.servings = 2;
+  assert.deepEqual(recommendations(s, date), baseline);
+  startCooking(s, 'tomato_egg', 'new-meal', date);
+  assert.equal(s.sessions[0].servings, 1);
+  assert.deepEqual(
+    matching(s, recipes[0], date),
+    baseline.find((r) => r.recipe.id === 'tomato_egg')!.matches,
+  );
+});
+void test('existing cooking sessions retain their saved portions after preference UI removal', () => {
+  const s = golden();
+  startCooking(s, 'tomato_egg', 'saved-meal', date);
+  s.sessions[0].servings = 2;
+  const restored = structuredClone(s);
+  assert.equal(restored.sessions[0].servings, 2);
+  assert.match(
+    cookingSteps(recipes[0], restored.sessions[0].servings)[1],
+    /20 毫升/,
+  );
 });
 void test('expired batch is excluded while another valid batch still counts', () => {
   const s = golden();

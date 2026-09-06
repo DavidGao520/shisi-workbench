@@ -1,8 +1,15 @@
 import { names, recipes, RECIPE_VERSION, type Recipe } from './recipes';
+import { isSeasoning, PRESENT_QUANTITY, seasoningNames } from './seasonings';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
 export const units = ['个', '盒', '袋', '棵', '克', '毫升', '份'] as const;
-export const bands = ['充足', '少量', '即将用完', '用完'] as const;
+export const bands = [
+  PRESENT_QUANTITY,
+  '充足',
+  '少量',
+  '即将用完',
+  '用完',
+] as const;
 export type Quantity = { amount?: number; unit?: string; amountBand?: string };
 export type Candidate = Quantity & {
   key: string;
@@ -15,6 +22,8 @@ export type Candidate = Quantity & {
   mode: Mode;
   source: string;
   status: 'pending' | 'confirmed' | 'rejected';
+  // Local inventory-card edits retain their exact target; never taken from imports.
+  stocktakeTarget?: { id: string; revision: number };
 };
 export type Batch = Quantity & {
   id: string;
@@ -36,6 +45,7 @@ export type Session = {
   id: string;
   recipeId: string;
   recipeVersion: string;
+  recipeSnapshot?: Recipe;
   servings: number;
   status: 'cooking' | 'paused' | 'reviewing' | 'completed';
   step: number;
@@ -71,8 +81,26 @@ export type KitchenState = {
   reviews: Record<string, Review>;
   preferences: Preferences;
   bridgeIgnoredTicketIds?: string[];
+  workbuddySteps?: Record<
+    string,
+    {
+      ticketId: string;
+      baseVersion: string;
+      steps: string[];
+      warnings: string[];
+      createdAt: string;
+    }
+  >;
+  workbuddyReceivedTickets?: string[];
+  seasoningSetup?: {
+    version: 1;
+    completedAt: string;
+    skipped: boolean;
+    receipts: string[];
+  } | null;
 };
 export const uid = () => globalThis.crypto.randomUUID();
+export const DEFAULT_SERVINGS = 1;
 export const today = () => {
   const d = new Date();
   return [
@@ -89,11 +117,12 @@ export function emptyState(dataset: Dataset): KitchenState {
     candidates: [],
     sessions: [],
     reviews: {},
+    seasoningSetup: null,
     preferences: {
-      servings: 1,
+      servings: DEFAULT_SERVINGS,
       minutes: 20,
       allergens: [],
-      equipment: [],
+      equipment: [...new Set(recipes.map((r) => r.equipment))],
       dislikedIngredients: [],
     },
   };
@@ -157,6 +186,10 @@ export function validateDate(d?: string) {
     fail('请输入有效的到期日期。');
 }
 const aliases: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.entries(seasoningNames).map(([id, name]) => [name, id]),
+  ),
+  糖: 'sugar',
   番茄: 'tomato',
   西红柿: 'tomato',
   鸡蛋: 'egg',
@@ -283,9 +316,9 @@ export function parseImport(
       typeof c.canonicalIngredientId === 'string' &&
       names[c.canonicalIngredientId]
         ? c.canonicalIngredientId
-        : aliases[displayName];
-    if (!canonicalIngredientId)
-      notes.push('请人工选择对应食材，或选「其他食材」。');
+        : aliases[displayName] || 'other';
+    if (canonicalIngredientId === 'other')
+      notes.push('暂未匹配内置菜谱，将按原名称记录。');
     return {
       ...q,
       key: JSON.stringify([requestId, candidateId]),
@@ -377,11 +410,43 @@ export function rejectCandidate(s: KitchenState, key: string) {
 export function activeSession(s: KitchenState) {
   return s.sessions.find((x) => x.status !== 'completed');
 }
+export function recipeFor(s: KitchenState, id: string): Recipe {
+  const recipe = recipes.find((r) => r.id === id);
+  if (!recipe) fail('菜谱不存在。');
+  const received = s.workbuddySteps?.[id];
+  return received?.baseVersion === RECIPE_VERSION
+    ? {
+        ...recipe,
+        steps: received.steps,
+        workbuddyVersion: received.ticketId,
+        workbuddyWarnings: received.warnings,
+      }
+    : recipe;
+}
+export function sessionRecipe(_s: KitchenState, session: Session): Recipe {
+  // Legacy sessions predate generated steps and must keep the original preset.
+  const recipe =
+    session.recipeSnapshot || recipes.find((r) => r.id === session.recipeId);
+  if (!recipe) fail('这餐的菜谱不存在。');
+  return recipe;
+}
+export function detailRecipe(
+  s: KitchenState,
+  recipeId: string,
+  sessionId?: string,
+): Recipe {
+  if (!sessionId) return recipeFor(s, recipeId);
+  const session = s.sessions.find(
+    (item) => item.id === sessionId && item.recipeId === recipeId,
+  );
+  if (!session) fail('这餐的记录不存在。');
+  return sessionRecipe(s, session);
+}
 export function matching(
   s: KitchenState,
   r: Recipe,
   date = today(),
-  servings = s.preferences.servings,
+  servings = DEFAULT_SERVINGS,
 ) {
   return r.ingredients.map((i) => {
     const eligible = s.inventory.filter(
@@ -398,20 +463,15 @@ export function matching(
       unknown: eligible.some(
         (b) => b.amount === undefined || b.unit !== i.unit,
       ),
+      // Presence helps discovery, but never proves that the required grams/ml are available.
+      presenceOnly:
+        isSeasoning(i.id) &&
+        eligible.some((b) => b.amountBand === PRESENT_QUANTITY),
     };
   });
 }
 export function recommendations(s: KitchenState, date = today()) {
   return recipes
-    .filter(
-      (r) =>
-        r.minutes <= s.preferences.minutes &&
-        s.preferences.equipment.includes(r.equipment) &&
-        !r.allergens.some((a) => s.preferences.allergens.includes(a)) &&
-        !r.ingredients.some((i) =>
-          s.preferences.dislikedIngredients.includes(i.id),
-        ),
-    )
     .map((r) => {
       const matches = matching(s, r, date),
         missing = matches.filter((i) => !i.enough);
@@ -427,23 +487,12 @@ export function recommendations(s: KitchenState, date = today()) {
                 2 * 86400000,
           ),
         ).length / matches.length;
-      const history = s.sessions.filter(
-        (x) => x.recipeId === r.id && x.status === 'completed',
-      );
-      const preference = history.length
-        ? history.reduce((n, x) => n + (x.userRating || 3), 0) /
-          history.length /
-          5
-        : 0.5;
       const score =
-        (0.45 * (matches.length - missing.length)) / matches.length +
-        0.2 * urgent +
-        0.15 * (1 - r.minutes / s.preferences.minutes) +
-        0.1 +
-        0.1 * preference;
+        (0.7 * (matches.length - missing.length)) / matches.length +
+        0.3 * urgent;
       return { recipe: r, matches, missing, score };
     })
-    .filter((x) => x.missing.length < 2)
+    .filter((x) => x.missing.filter((i) => !i.presenceOnly).length < 2)
     .sort(
       (a, b) =>
         b.score - a.score || a.recipe.id.localeCompare(b.recipe.id, 'en'),
@@ -451,14 +500,21 @@ export function recommendations(s: KitchenState, date = today()) {
     .slice(0, 3);
 }
 export function reviewed(s: KitchenState, r: Recipe) {
-  return s.reviews[r.id]?.version === RECIPE_VERSION;
+  return s.reviews[r.id]?.version === (r.workbuddyVersion || RECIPE_VERSION);
 }
-export function reviewRecipe(s: KitchenState, recipeId: string, by: string) {
+export function reviewRecipe(
+  s: KitchenState,
+  recipeId: string,
+  by: string,
+  expectedVersion = RECIPE_VERSION,
+) {
   if (!recipes.some((r) => r.id === recipeId)) fail('菜谱不存在。');
+  const version = recipeFor(s, recipeId).workbuddyVersion || RECIPE_VERSION;
+  if (version !== expectedVersion) fail('做法版本已更新，请重新查看并核对。');
   s.reviews[recipeId] = {
     by: short(by, '审校人', 50),
     at: new Date().toISOString(),
-    version: RECIPE_VERSION,
+    version,
   };
 }
 export function startCooking(
@@ -466,24 +522,26 @@ export function startCooking(
   recipeId: string,
   id = uid(),
   date = today(),
+  expectedVersion?: string,
 ) {
   if (s.sessions.some((x) => x.id === id)) return;
   if (activeSession(s)) fail('还有一餐未完成，请先继续当前一餐。');
-  const r = recipes.find((x) => x.id === recipeId);
-  if (!r) fail('菜谱不存在。');
+  const r = recipeFor(s, recipeId);
+  if (
+    expectedVersion &&
+    expectedVersion !== (r.workbuddyVersion || RECIPE_VERSION)
+  )
+    fail('做法版本已更新，请重新查看并核对。');
   if (s.dataset === 'real' && !reviewed(s, r))
     fail('现实跟做前，先逐项完成人工菜谱审校；样例厨房可演练。');
-  if (
-    !recommendations(s, date).some(
-      (x) => x.recipe.id === recipeId && !x.missing.length,
-    )
-  )
-    fail('食材、厨具或偏好已改变，请返回推荐重新核对。');
+  if (matching(s, r, date).some((item) => !item.enough))
+    fail('食材库存已改变，请返回推荐重新核对。');
   s.sessions.unshift({
     id,
     recipeId,
-    recipeVersion: RECIPE_VERSION,
-    servings: s.preferences.servings,
+    recipeVersion: r.workbuddyVersion || RECIPE_VERSION,
+    recipeSnapshot: structuredClone(r),
+    servings: DEFAULT_SERVINGS,
     status: 'cooking',
     step: 0,
     createdAt: new Date().toISOString(),
@@ -493,7 +551,7 @@ export function startCooking(
 export function stepSession(s: KitchenState, id: string, step: number) {
   const session = s.sessions.find((x) => x.id === id);
   if (!session || session.status === 'completed') fail('这餐已结束或不存在。');
-  const r = recipes.find((x) => x.id === session.recipeId)!;
+  const r = sessionRecipe(s, session);
   if (!Number.isInteger(step) || step < 0 || step > r.steps.length)
     fail('无效步骤。');
   session.step = step;

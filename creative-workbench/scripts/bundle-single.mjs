@@ -52,6 +52,11 @@ await copyFile(
   resolve(output, '启动厨房.command'),
 );
 await chmod(resolve(output, '启动厨房.command'), 0o755);
+await copyFile(
+  resolve(root, 'scripts/初始化语音.command'),
+  resolve(output, '初始化语音.command'),
+);
+await chmod(resolve(output, '初始化语音.command'), 0o755);
 console.log(
   'Self-contained HTML written: ' +
     resolve(output, '中华食肆.html') +

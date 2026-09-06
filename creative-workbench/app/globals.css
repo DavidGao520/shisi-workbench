@@ -527,26 +527,6 @@ textarea {
   grid-template-columns: 1fr 90px;
   gap: 10px;
 }
-.preferences {
-  margin-top: 22px;
-}
-.preference-fields {
-  margin-top: 18px;
-  display: grid;
-  grid-template-columns: 125px 150px 1fr;
-  gap: 22px;
-  align-items: start;
-}
-.constraint-row {
-  display: flex;
-  align-items: center;
-  gap: 8px 20px;
-  flex-wrap: wrap;
-  border-top: 1px dashed var(--line);
-  padding-top: 10px;
-  font-size: 14px;
-  color: #665846;
-}
 .empty-state {
   text-align: center;
   border: 1px dashed #cec1a9;
@@ -740,6 +720,129 @@ textarea {
   gap: 12px;
   flex-wrap: wrap;
 }
+.seasoning-onboarding {
+  margin-bottom: 24px;
+  border-top: 4px solid var(--accent, #a9432e);
+}
+.seasoning-onboarding h2 {
+  font-size: clamp(24px, 2.5vw, 32px);
+  margin: 8px 0;
+}
+.seasoning-onboarding > p:not(.eyebrow) {
+  font-size: 16px;
+  color: #665846;
+  margin-bottom: 16px;
+}
+.seasoning-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  color: #665846;
+  margin-bottom: 12px;
+}
+.seasoning-group {
+  border: 0;
+  padding: 0;
+  margin: 0 0 18px;
+  min-width: 0;
+}
+.seasoning-group legend {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.seasoning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: 10px;
+}
+.seasoning-option {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+  min-height: 54px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  font-size: 16px;
+  cursor: pointer;
+}
+.seasoning-option [data-slot='checkbox'] {
+  width: 20px;
+  height: 20px;
+}
+.seasoning-option:focus-within {
+  outline: 2px solid #a9432e;
+  outline-offset: 2px;
+}
+.seasoning-option.is-selected {
+  background: #f6edda;
+  border-color: #a78349;
+}
+.seasoning-option.is-owned {
+  cursor: default;
+}
+.seasoning-option small {
+  font-size: 14px;
+  color: #567343;
+}
+.seasoning-more {
+  border-top: 1px dashed var(--line);
+}
+.seasoning-more summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+.seasoning-more summary span {
+  color: #74664f;
+  font-size: 14px;
+}
+.seasoning-more summary svg {
+  margin-left: auto;
+}
+.seasoning-more[open] summary svg {
+  transform: rotate(90deg);
+}
+.seasoning-confirm {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.seasoning-confirm p {
+  font-size: 16px;
+  margin: 0 0 5px;
+}
+.seasoning-confirm strong {
+  color: #a9432e;
+}
+.seasoning-confirm span {
+  font-size: 14px;
+  color: #665846;
+}
+.seasoning-confirm .actions {
+  margin-top: 16px;
+}
+.seasoning-invitation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+}
+.seasoning-invitation p {
+  font-size: 14px;
+  margin: 6px 0 0;
+}
 .storage-note {
   margin: 15px 0 24px;
 }
@@ -755,6 +858,13 @@ textarea {
 }
 .candidate-editor-body > .form-grid {
   margin-top: 20px;
+}
+.candidate-editor-body > .stocktake-fields {
+  grid-template-columns: minmax(130px, 1fr) minmax(210px, 1.3fr) minmax(
+      180px,
+      1fr
+    );
+  align-items: start;
 }
 .candidate .warning-text {
   margin: 0 0 15px;
@@ -1362,9 +1472,8 @@ textarea {
   gap: 18px;
 }
 @media (max-width: 1100px) {
-  .preference-fields {
-    grid-template-columns: 110px 130px 1fr;
-    gap: 16px;
+  .candidate-editor-body > .stocktake-fields {
+    grid-template-columns: 1fr 1fr;
   }
   .cooking-layout {
     grid-template-columns: 210px 1fr;
@@ -1409,20 +1518,6 @@ textarea {
   .paper {
     padding: 19px;
   }
-  .preference-fields {
-    grid-template-columns: 1fr 1fr;
-    gap: 0 16px;
-  }
-  .preference-fields > div:last-child {
-    grid-column: 1/-1;
-  }
-  .preferences .row-between {
-    align-items: flex-start;
-  }
-  .preferences .row-between .muted {
-    max-width: 130px;
-    font-size: 12px;
-  }
   .recipe-card .dish-cover img {
     padding: 8px;
     max-height: 210px;
@@ -1449,6 +1544,9 @@ textarea {
   .form-grid {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+  .candidate-editor-body > .stocktake-fields {
+    grid-template-columns: 1fr;
   }
   .inventory-grid {
     grid-template-columns: 1fr;
@@ -1481,6 +1579,9 @@ textarea {
   }
   .section-head .search {
     max-width: 150px;
+  }
+  .storage-note {
+    font-size: 12px;
   }
   .section-head h2 {
     font-size: 22px;
@@ -1578,5 +1679,99 @@ textarea {
   * {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+.workbuddy-cooking {
+  padding: 20px;
+  margin: 24px 0;
+}
+.workbuddy-cooking output {
+  display: block;
+  line-height: 1.8;
+}
+.voice-intake {
+  display: grid;
+  gap: 20px;
+}
+.voice-recorder {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f5efe3;
+  text-align: center;
+}
+.voice-recorder > svg {
+  color: #a53e2c;
+}
+.voice-recorder > p {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.voice-recorder > span,
+.voice-recorder > small {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #746c5e;
+}
+.voice-recorder.is-recording {
+  border-color: #a53e2c;
+  background: #f9eee8;
+}
+.voice-recorder .actions {
+  justify-content: center;
+}
+.voice-rows {
+  display: grid;
+  gap: 16px;
+}
+.voice-row {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #ded3c2;
+  border-radius: 10px;
+  display: grid;
+  gap: 12px;
+}
+.voice-row legend {
+  padding: 0 8px;
+  font-size: 18px;
+}
+.voice-row legend label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.voice-row.is-unselected {
+  opacity: 0.65;
+}
+.voice-row .form-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
+}
+.voice-row .field {
+  min-width: 0;
+  margin: 0;
+}
+.voice-row small,
+.voice-notes {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #746c5e;
+}
+.voice-notes {
+  padding-left: 20px;
+  margin: 0;
+}
+.voice-save {
+  justify-self: stretch;
+  justify-content: center;
+}
+@media (max-width: 600px) {
+  .voice-row .form-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
