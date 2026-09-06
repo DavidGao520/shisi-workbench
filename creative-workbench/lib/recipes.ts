@@ -154,6 +154,10 @@ export const ingredientAliases: Record<string, string> = {
   松茸: 'matsutake',
   粉藕: 'lotus_root',
   香油: 'sesame_oil',
+  // Game source labels describe artwork; real inventory must keep cooked rice distinct.
+  米饭: 'cooked_rice',
+  剩饭: 'cooked_rice',
+  油: 'oil',
 };
 /** Recognize exact legacy names without rewriting stored inventory on read. */
 export function inventoryIngredientId(item: {

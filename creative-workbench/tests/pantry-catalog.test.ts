@@ -9,9 +9,19 @@ import {
   baiweiPantryById,
   baiweiSeasonings,
 } from '../lib/pantry-catalog';
-import { names, ingredientAliases } from '../lib/recipes';
+import {
+  names,
+  ingredientAliases,
+  inventoryIngredientId,
+  recipes,
+} from '../lib/recipes';
 import { isSeasoning, seasonings } from '../lib/seasonings';
-import { parseImport } from '../lib/kitchen';
+import {
+  parseImport,
+  emptyState,
+  normalizePantryIdentities,
+  matching,
+} from '../lib/kitchen';
 import { IndexedDbStore } from '../lib/store';
 
 const ingredientIds = [
@@ -192,6 +202,45 @@ void test('legacy other batches gain their known card identity without merging o
   assert.equal(loaded.inventory[0].revision, 4);
   assert.equal(loaded.inventory.length, 1);
   store.close();
+});
+
+void test('legacy pantry aliases keep the same identity before and after normalization', () => {
+  for (const [displayName, id] of Object.entries({
+    米饭: 'cooked_rice',
+    剩饭: 'cooked_rice',
+    油: 'oil',
+  })) {
+    const state = emptyState('real');
+    state.inventory = [
+      {
+        id: 'legacy',
+        displayName,
+        canonicalIngredientId: 'other',
+        amount: 400,
+        unit: '克',
+        confirmed: true,
+        revision: 1,
+        createdAt: '2026-09-06',
+        updatedAt: '2026-09-06',
+      },
+    ];
+    const snapshot = structuredClone(state.inventory[0]);
+    assert.equal(inventoryIngredientId(snapshot), id);
+    const riceRecipe = recipes.find((recipe) => recipe.id === 'steamed_rice')!;
+    const before = matching(state, riceRecipe).find(
+      (item) => item.id === 'rice',
+    )!.have;
+    normalizePantryIdentities(state);
+    assert.equal(inventoryIngredientId(state.inventory[0]), id);
+    assert.equal(inventoryIngredientId(snapshot), id);
+    assert.equal(state.inventory[0].revision, snapshot.revision);
+    assert.equal(state.inventory[0].amount, snapshot.amount);
+    assert.equal(before, 0);
+    assert.equal(
+      matching(state, riceRecipe).find((item) => item.id === 'rice')!.have,
+      before,
+    );
+  }
 });
 
 void test('every compendium card and its three category frames are bundled inline', async () => {
