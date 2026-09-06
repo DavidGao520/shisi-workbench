@@ -61,6 +61,12 @@ import {
   stageDelivery,
 } from '@/lib/workbuddy-bridge';
 import { useWorkBuddyBridge } from '@/lib/use-workbuddy-bridge';
+import { useWorkBuddyCooking } from '@/lib/use-workbuddy-cooking';
+import {
+  receiveCookingSteps,
+  ignoreCookingTicket,
+} from '@/lib/workbuddy-cooking';
+import { recipeFor, sessionRecipe, detailRecipe } from '@/lib/kitchen';
 import { renderBaiweiEntry } from '@/lib/archive-export';
 import {
   names,
@@ -68,6 +74,7 @@ import {
   safetyNote,
   safetySource,
   cookingSteps,
+  RECIPE_VERSION,
   type Recipe,
 } from '@/lib/recipes';
 import { art } from '@/lib/art';
@@ -386,7 +393,7 @@ function ReviewForm({
   done: () => void;
   onError: (v: string) => void;
 }) {
-  const r = recipes.find((r) => r.id === session.recipeId)!;
+  const r = sessionRecipe(s, session);
   const [rows, setRows] = useState<Consumption[]>(
     () =>
       session.reviewDraft?.consumption || remainingPlan(s, r, session.servings),
@@ -647,7 +654,10 @@ export default function Home() {
   const [dialog, setDialog] = useState<'manual' | 'workbuddy' | 'voice' | null>(
       null,
     ),
-    [detail, setDetail] = useState<string | null>(null),
+    [detail, setDetail] = useState<{
+      recipeId: string;
+      sessionId?: string;
+    } | null>(null),
     [reset, setReset] = useState(false),
     [clear, setClear] = useState(false);
   const [seasoningOpen, setSeasoningOpen] = useState(false);
@@ -657,8 +667,8 @@ export default function Home() {
     [manualUnit, setManualUnit] = useState('克');
   const [search, setSearch] = useState(''),
     [reviewer, setReviewer] = useState(''),
-    [reviewChecks, setReviewChecks] = useState(false),
-    [foodChecked, setFoodChecked] = useState(false);
+    [reviewCheckVersion, setReviewChecks] = useState(''),
+    [foodCheckVersion, setFoodChecked] = useState('');
   const [now, setNow] = useState(() => Date.now()),
     [timerMinutes, setTimerMinutes] = useState('3');
   const reload = useCallback(async (d: Dataset) => {
@@ -733,6 +743,30 @@ export default function Home() {
       return saved;
     },
   });
+  const cooking = useWorkBuddyCooking({
+    dataset,
+    notify: setMessage,
+    ignore: async (ticket) => {
+      if (datasetRef.current !== ticket.dataset || lock.current) return false;
+      return mutate((state) => ignoreCookingTicket(state, ticket));
+    },
+    receive: async (entry) => {
+      if (datasetRef.current !== entry.request.dataset || lock.current)
+        return false;
+      let added = false;
+      const saved = await mutate((state) => {
+        added = receiveCookingSteps(state, entry);
+      });
+      if (saved && added) {
+        setReviewChecks('');
+        setFoodChecked('');
+        setMessage(
+          'WorkBuddy 的做法已到，请查看步骤并核对后开始。库存没有扣减。',
+        );
+      }
+      return saved;
+    },
+  });
   // Progressive enhancement only: navigation changes the same visible tab; never grants inventory write access.
   useEffect(() => {
     type Context = {
@@ -790,12 +824,24 @@ export default function Home() {
   const session = s ? activeSession(s) : undefined,
     entries = s ? archive(s) : [],
     rec = s ? recommendations(s) : [];
-  const recipe = detail ? recipes.find((r) => r.id === detail) : undefined;
-  const openRecipe = (r: Recipe) => {
-    setDetail(r.id);
-    setReviewChecks(false);
-    setFoodChecked(false);
+  const recipe =
+    detail && s
+      ? detailRecipe(s, detail.recipeId, detail.sessionId)
+      : undefined;
+  const detailServings = detail?.sessionId
+    ? s?.sessions.find((item) => item.id === detail.sessionId)?.servings ||
+      DEFAULT_SERVINGS
+    : DEFAULT_SERVINGS;
+  const openRecipe = (r: Recipe, sessionId?: string) => {
+    setDetail({ recipeId: r.id, sessionId });
+    setReviewChecks('');
+    setFoodChecked('');
   };
+  const checkKey = recipe
+    ? `${dataset}:${recipe.id}:${recipe.workbuddyVersion || RECIPE_VERSION}`
+    : '';
+  const reviewChecks = !!checkKey && reviewCheckVersion === checkKey;
+  const foodChecked = !!checkKey && foodCheckVersion === checkKey;
   const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
   const loadSample = async () => {
     if (!s || dataset !== 'demo') return;
@@ -993,8 +1039,7 @@ export default function Home() {
                 <div className="resume-strip">
                   <CookingPot />
                   <span>
-                    还有一餐{' '}
-                    {recipes.find((r) => r.id === session.recipeId)?.title}{' '}
+                    还有一餐 {sessionRecipe(s, session).title}{' '}
                     未完成，已保存当前进度。
                   </span>
                   <button
@@ -1152,9 +1197,14 @@ export default function Home() {
                         )}
                         <button
                           className="recipe-link"
-                          onClick={() => openRecipe(r)}
+                          disabled={cooking.busy}
+                          onClick={() => {
+                            openRecipe(r);
+                            if (!recipeFor(s, r.id).workbuddyVersion)
+                              void cooking.begin(r.id);
+                          }}
                         >
-                          看看怎么做
+                          跟着做这道菜
                           <ArrowUpRight size={17} />
                         </button>
                       </div>
@@ -1389,11 +1439,7 @@ export default function Home() {
                 <section className="cooking-layout">
                   <div className="cooking-art">
                     <img
-                      src={
-                        art[
-                          recipes.find((r) => r.id === session.recipeId)!.image
-                        ]
-                      }
+                      src={art[sessionRecipe(s, session).image]}
                       alt="菜品或食材插画"
                     />
                     <p className="eyebrow">
@@ -1402,18 +1448,14 @@ export default function Home() {
                         : '已确认的一餐'}{' '}
                       · {session.servings} 人份
                     </p>
-                    <h2>
-                      {recipes.find((r) => r.id === session.recipeId)!.title}
-                    </h2>
+                    <h2>{sessionRecipe(s, session).title}</h2>
                     <p className="muted">
                       食材与步骤用量按本次人数调整；实际加热时间会受锅具和份量影响，请自行确认熟度。
                     </p>
                     <button
                       className="text-button"
                       onClick={() =>
-                        openRecipe(
-                          recipes.find((r) => r.id === session.recipeId)!,
-                        )
+                        openRecipe(sessionRecipe(s, session), session.id)
                       }
                     >
                       查看食材与来源
@@ -1423,11 +1465,7 @@ export default function Home() {
                     <div className="row-between">
                       <span className="eyebrow">
                         第 {session.step + 1} 步 /{' '}
-                        {
-                          recipes.find((r) => r.id === session.recipeId)!.steps
-                            .length
-                        }{' '}
-                        步
+                        {sessionRecipe(s, session).steps.length} 步
                       </span>
                       <button
                         className="text-button"
@@ -1470,8 +1508,7 @@ export default function Home() {
                       aria-label="跟做进度"
                       value={
                         (session.step /
-                          recipes.find((r) => r.id === session.recipeId)!.steps
-                            .length) *
+                          sessionRecipe(s, session).steps.length) *
                         100
                       }
                     />
@@ -1479,7 +1516,7 @@ export default function Home() {
                       {session.status === 'paused'
                         ? '已经暂停，锅边的事先照顾好。'
                         : cookingSteps(
-                            recipes.find((r) => r.id === session.recipeId)!,
+                            sessionRecipe(s, session),
                             session.servings,
                           )[session.step]}
                     </h2>
@@ -1583,9 +1620,7 @@ export default function Home() {
                         }
                       >
                         {session.step ===
-                        recipes.find((r) => r.id === session.recipeId)!.steps
-                          .length -
-                          1
+                        sessionRecipe(s, session).steps.length - 1
                           ? '做完了，核对实际消耗'
                           : '这一步好了'}
                         <ChevronRight size={17} />
@@ -1722,7 +1757,7 @@ export default function Home() {
           </DialogTitle>
           <DialogDescription>
             {dialog === 'manual'
-                ? '先生成候选，再由你核对数量和到期日期。'
+              ? '先生成候选，再由你核对数量和到期日期。'
               : dialog === 'voice'
                 ? '在这里录音，自动识别食材和数量。核对清单后，确认一次就入库。'
                 : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
@@ -1961,7 +1996,7 @@ export default function Home() {
                   <p className="eyebrow">中华食肆 · 家常做法</p>
                   <DialogTitle>{recipe.title}</DialogTitle>
                   <DialogDescription>
-                    {recipe.minutes} 分钟 · {DEFAULT_SERVINGS} 人份 ·{' '}
+                    {recipe.minutes} 分钟 · {detailServings} 人份 ·{' '}
                     {recipe.equipment}
                   </DialogDescription>
                   <span
@@ -1973,9 +2008,14 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-              <h3>需要的食材 · {DEFAULT_SERVINGS} 人份</h3>
+              {detail?.sessionId && (
+                <p className="muted">
+                  本餐固定的做法；重新生成不会修改这份记录。
+                </p>
+              )}
+              <h3>需要的食材 · {detailServings} 人份</h3>
               <div className="ingredient-list">
-                {matching(s, recipe).map((i) => (
+                {matching(s, recipe, undefined, detailServings).map((i) => (
                   <div key={i.id}>
                     <span>{names[i.id]}</span>
                     <strong>
@@ -1999,9 +2039,73 @@ export default function Home() {
               <p className="muted">
                 用量按当前人数调整；步骤中的明确用量同步变化，加热时间不作机械翻倍。第一版不提供食材单位自动换算。
               </p>
-              <h3>做法与顺序</h3>
+              {!detail?.sessionId && (
+                <section className="paper workbuddy-cooking">
+                  <h3>让 WorkBuddy 带你做</h3>
+                  {cooking.ticket ? (
+                    <>
+                      <output>
+                        {cooking.ticket.recipeId === recipe.id &&
+                        cooking.ticket.dataset === dataset
+                          ? '菜名和用料已准备好。'
+                          : `另一份任务：${cooking.ticket.title}。`}
+                        请在自己的 WorkBuddy 对话说：
+                        <strong>“读取厨房任务，生成做菜步骤”</strong>。
+                      </output>
+                      <p className="muted">
+                        步骤会自动回到这里，不用复制食材或做法。等待期间可以离开页面，取消需点下方按钮。
+                      </p>
+                      <button
+                        className="text-button"
+                        disabled={cooking.busy}
+                        onClick={() => void cooking.cancel()}
+                      >
+                        取消这次请求
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p>
+                        把这道菜的名字和用料交给你自己的
+                        WorkBuddy，生成一份分步做法。
+                      </p>
+                      <button
+                        className="secondary"
+                        disabled={cooking.busy || busy}
+                        onClick={() => void cooking.begin(recipe.id)}
+                      >
+                        {cooking.busy
+                          ? '正在准备…'
+                          : recipe.workbuddyVersion
+                            ? '请 WorkBuddy 重新生成'
+                            : '请 WorkBuddy 生成步骤'}
+                      </button>
+                    </>
+                  )}
+                  {cooking.problem && (
+                    <p className="warning-text" role="alert">
+                      {cooking.problem}
+                    </p>
+                  )}
+                </section>
+              )}
+              <h3>
+                {recipe.workbuddyVersion
+                  ? 'WorkBuddy 生成的做法'
+                  : '现有参考做法'}
+              </h3>
+              {recipe.workbuddyVersion && (
+                <p className="muted">
+                  由你的 WorkBuddy 对话生成，尚需本人核对，不代表经过专业审核。
+                </p>
+              )}
+              {recipe.workbuddyWarnings?.map((warning, index) => (
+                <p className="warning-text" key={index}>
+                  {warning}
+                </p>
+              ))}
               <ol className="instructions">
-                {cookingSteps(recipe, DEFAULT_SERVINGS).map((step) => (
+                {cookingSteps(recipe, detailServings).map((step) => (
                   <li key={step}>{step}</li>
                 ))}
               </ol>
@@ -2010,96 +2114,123 @@ export default function Home() {
                 <p className="eyebrow">从游戏知识到家庭做法 · 附来源</p>
                 <p>{recipe.knowledge}</p>
                 <a href={recipe.source} target="_blank" rel="noreferrer">
-                  做法来源：{recipe.author} ↗
+                  {recipe.workbuddyVersion ? '基础配方参考：' : '做法来源：'}
+                  {recipe.author} ↗
                 </a>
                 <small>
-                  按来源改写为单人家庭版本；不是游戏数值，不宣称菜系起源或“唯一正宗”。
+                  {recipe.workbuddyVersion
+                    ? '上面的步骤由 WorkBuddy 生成，此链接仅为原配方参考，不是 AI 步骤的查证来源。'
+                    : '按来源改写为单人家庭版本；不是游戏数值，不宣称菜系起源或“唯一正宗”。'}
                 </small>
               </section>
-              {!reviewed(s, recipe) && dataset === 'real' && (
-                <section className="review-gate">
-                  <h3>现实跟做前，先把做法核对一遍</h3>
-                  <p>
-                    这些配方由来源整理，尚未实做。请由有烹饪经验的人核对份量、处理顺序和熟度提示；勾选不会代表平台或专业机构认证。
-                  </p>
-                  <label className="field">
-                    实际审校人
-                    <input
-                      value={reviewer}
-                      maxLength={50}
-                      onChange={(e) => setReviewer(e.target.value)}
-                      placeholder="填写真正完成核对的人"
+              {!detail?.sessionId &&
+                !reviewed(s, recipe) &&
+                dataset === 'real' && (
+                  <section className="review-gate">
+                    <h3>现实跟做前，先把做法核对一遍</h3>
+                    <p>
+                      {recipe.workbuddyVersion
+                        ? '这份做法由 WorkBuddy 生成，可能存在错误。'
+                        : '这些配方由来源整理，尚未实做。'}
+                      请由有烹饪经验的人核对份量、处理顺序和熟度提示；勾选不会代表平台或专业机构认证。
+                    </p>
+                    <label className="field">
+                      实际审校人
+                      <input
+                        value={reviewer}
+                        maxLength={50}
+                        onChange={(e) => setReviewer(e.target.value)}
+                        placeholder="填写真正完成核对的人"
+                      />
+                    </label>
+                    <Tick
+                      label="我已逐项核对以上份量、步骤与安全提示，确认这版做法适用于实际跟做。"
+                      checked={reviewChecks}
+                      onChange={(checked) =>
+                        setReviewChecks(checked ? checkKey : '')
+                      }
                     />
-                  </label>
-                  <Tick
-                    label="我已逐项核对以上份量、步骤与安全提示，确认这版做法适用于实际跟做。"
-                    checked={reviewChecks}
-                    onChange={setReviewChecks}
-                  />
-                  <button
-                    className="secondary"
-                    disabled={busy || !reviewChecks || !reviewer.trim()}
-                    onClick={() =>
-                      mutate(
-                        (state) => reviewRecipe(state, recipe.id, reviewer),
-                        '已记录本人的人工审校，未冒充外部认证。',
-                      )
-                    }
-                  >
-                    记录本次人工审校
-                  </button>
-                </section>
-              )}
+                    <button
+                      className="secondary"
+                      disabled={busy || !reviewChecks || !reviewer.trim()}
+                      onClick={() =>
+                        mutate(
+                          (state) =>
+                            reviewRecipe(
+                              state,
+                              recipe.id,
+                              reviewer,
+                              recipe.workbuddyVersion || RECIPE_VERSION,
+                            ),
+                          '已记录本人的人工审校，未冒充外部认证。',
+                        )
+                      }
+                    >
+                      记录本次人工审校
+                    </button>
+                  </section>
+                )}
               {error && (
                 <p role="alert" className="warning-text">
                   {error}
                 </p>
               )}
-              <Tick
-                label={
-                  dataset === 'demo'
-                    ? '我正在演练样例流程，不把它记为真实做菜。'
-                    : '我已核对食材、到期信息与过敏原，确认具备所需厨具。'
-                }
-                checked={foodChecked}
-                onChange={setFoodChecked}
-              />
-              <button
-                className="primary"
-                disabled={
-                  busy ||
-                  !!session ||
-                  !foodChecked ||
-                  (dataset === 'real' && !reviewed(s, recipe)) ||
-                  !rec.some(
-                    (x) => x.recipe.id === recipe.id && !x.missing.length,
-                  )
-                }
-                onClick={async () => {
-                  const id = uid();
-                  if (
-                    await mutate(
-                      (state) => startCooking(state, recipe.id, id),
-                      '这一餐已开始，步骤会保存在本机。',
-                    )
-                  ) {
-                    setDetail(null);
-                    setPage('cooking');
-                  }
-                }}
-              >
-                {session
-                  ? '已有一餐进行中'
-                  : dataset === 'demo'
-                    ? '开始这道菜的演练'
-                    : '食材备好了，开始做'}
-              </button>
-              {!rec.some(
-                (x) => x.recipe.id === recipe.id && !x.missing.length,
-              ) && (
-                <p className="warning-text">
-                  当前食材数量、厨具、忌口或时间条件不满足；请返回今日一餐核对。
-                </p>
+              {!detail?.sessionId && (
+                <>
+                  <Tick
+                    label={
+                      dataset === 'demo'
+                        ? '我正在演练样例流程，不把它记为真实做菜。'
+                        : '我已核对食材、到期信息与过敏原，确认具备所需厨具。'
+                    }
+                    checked={foodChecked}
+                    onChange={(checked) =>
+                      setFoodChecked(checked ? checkKey : '')
+                    }
+                  />
+                  <button
+                    className="primary"
+                    disabled={
+                      busy ||
+                      !!session ||
+                      (cooking.ticket?.recipeId === recipe.id &&
+                        cooking.ticket.dataset === dataset) ||
+                      !foodChecked ||
+                      (dataset === 'real' && !reviewed(s, recipe)) ||
+                      matching(s, recipe).some((item) => !item.enough)
+                    }
+                    onClick={async () => {
+                      const id = uid();
+                      if (
+                        await mutate(
+                          (state) =>
+                            startCooking(
+                              state,
+                              recipe.id,
+                              id,
+                              undefined,
+                              recipe.workbuddyVersion || RECIPE_VERSION,
+                            ),
+                          '这一餐已开始，步骤会保存在本机。',
+                        )
+                      ) {
+                        setDetail(null);
+                        setPage('cooking');
+                      }
+                    }}
+                  >
+                    {session
+                      ? '已有一餐进行中'
+                      : dataset === 'demo'
+                        ? '开始这道菜的演练'
+                        : '食材备好了，开始做'}
+                  </button>
+                  {matching(s, recipe).some((item) => !item.enough) && (
+                    <p className="warning-text">
+                      当前食材数量不足或尚未确认，请回到厨房核对。
+                    </p>
+                  )}
+                </>
               )}
               {s.sessions.filter(
                 (x) => x.recipeId === recipe.id && x.status === 'completed',

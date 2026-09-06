@@ -28,6 +28,8 @@ export type Recipe = {
   author: string;
   knowledge: string;
   image: string;
+  workbuddyVersion?: string;
+  workbuddyWarnings?: string[];
 };
 export const recipes: Recipe[] = [
   {
@@ -115,6 +117,7 @@ export const safetyNote =
 export const safetySource =
   'https://www.fda.gov/food/buy-store-serve-safe-food/what-you-need-know-about-egg-safety';
 export function cookingSteps(recipe: Recipe, servings: number) {
+  if (recipe.workbuddyVersion) return recipe.steps;
   return recipe.steps.map((step) =>
     step.replace(
       /(\d+) 毫升/g,

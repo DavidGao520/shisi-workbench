@@ -9,11 +9,16 @@ const escapeHtml = (s: string) =>
       ]!,
   );
 export function renderBaiweiEntry(
-  r: Recipe,
+  recipe: Recipe,
   session: Session,
   dataset: Dataset,
 ) {
-  if (session.status !== 'completed' || session.recipeId !== r.id)
+  const r = session.recipeSnapshot || recipe;
+  if (
+    session.status !== 'completed' ||
+    session.recipeId !== recipe.id ||
+    session.recipeId !== r.id
+  )
     throw new Error('只能导出对应菜品的已完成记录。');
   if (new URL(r.source).protocol !== 'https:')
     throw new Error('来源链接必须使用 HTTPS。');
@@ -39,8 +44,15 @@ export function renderBaiweiEntry(
     escapeHtml(r.knowledge) +
     '</p><a href="' +
     escapeHtml(r.source) +
-    '" rel="noreferrer">做法来源：' +
+    '" rel="noreferrer">' +
+    (r.workbuddyVersion ? '基础配方参考：' : '做法来源：') +
     escapeHtml(r.author) +
-    '</a></section><section><small>源自国宴队《中华食肆》的非游戏厨房工作台。本文件只包含这一条完成记录，不包含冰箱库存。</small></section></html>';
+    '</a></section>' +
+    (r.workbuddyVersion
+      ? '<section><h2>本次跟做步骤</h2><small>WorkBuddy 对话生成，经用户核对；上面的链接是基础配方参考。</small><ol>' +
+        r.steps.map((step) => '<li>' + escapeHtml(step) + '</li>').join('') +
+        '</ol></section>'
+      : '') +
+    '<section><small>源自国宴队《中华食肆》的非游戏厨房工作台。本文件只包含这一条完成记录，不包含冰箱库存。</small></section></html>';
   return html;
 }

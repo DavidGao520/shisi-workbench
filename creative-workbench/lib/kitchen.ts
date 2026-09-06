@@ -45,6 +45,7 @@ export type Session = {
   id: string;
   recipeId: string;
   recipeVersion: string;
+  recipeSnapshot?: Recipe;
   servings: number;
   status: 'cooking' | 'paused' | 'reviewing' | 'completed';
   step: number;
@@ -80,6 +81,17 @@ export type KitchenState = {
   reviews: Record<string, Review>;
   preferences: Preferences;
   bridgeIgnoredTicketIds?: string[];
+  workbuddySteps?: Record<
+    string,
+    {
+      ticketId: string;
+      baseVersion: string;
+      steps: string[];
+      warnings: string[];
+      createdAt: string;
+    }
+  >;
+  workbuddyReceivedTickets?: string[];
   seasoningSetup?: {
     version: 1;
     completedAt: string;
@@ -396,6 +408,38 @@ export function rejectCandidate(s: KitchenState, key: string) {
 export function activeSession(s: KitchenState) {
   return s.sessions.find((x) => x.status !== 'completed');
 }
+export function recipeFor(s: KitchenState, id: string): Recipe {
+  const recipe = recipes.find((r) => r.id === id);
+  if (!recipe) fail('菜谱不存在。');
+  const received = s.workbuddySteps?.[id];
+  return received?.baseVersion === RECIPE_VERSION
+    ? {
+        ...recipe,
+        steps: received.steps,
+        workbuddyVersion: received.ticketId,
+        workbuddyWarnings: received.warnings,
+      }
+    : recipe;
+}
+export function sessionRecipe(_s: KitchenState, session: Session): Recipe {
+  // Legacy sessions predate generated steps and must keep the original preset.
+  const recipe =
+    session.recipeSnapshot || recipes.find((r) => r.id === session.recipeId);
+  if (!recipe) fail('这餐的菜谱不存在。');
+  return recipe;
+}
+export function detailRecipe(
+  s: KitchenState,
+  recipeId: string,
+  sessionId?: string,
+): Recipe {
+  if (!sessionId) return recipeFor(s, recipeId);
+  const session = s.sessions.find(
+    (item) => item.id === sessionId && item.recipeId === recipeId,
+  );
+  if (!session) fail('这餐的记录不存在。');
+  return sessionRecipe(s, session);
+}
 export function matching(
   s: KitchenState,
   r: Recipe,
@@ -454,14 +498,21 @@ export function recommendations(s: KitchenState, date = today()) {
     .slice(0, 3);
 }
 export function reviewed(s: KitchenState, r: Recipe) {
-  return s.reviews[r.id]?.version === RECIPE_VERSION;
+  return s.reviews[r.id]?.version === (r.workbuddyVersion || RECIPE_VERSION);
 }
-export function reviewRecipe(s: KitchenState, recipeId: string, by: string) {
+export function reviewRecipe(
+  s: KitchenState,
+  recipeId: string,
+  by: string,
+  expectedVersion = RECIPE_VERSION,
+) {
   if (!recipes.some((r) => r.id === recipeId)) fail('菜谱不存在。');
+  const version = recipeFor(s, recipeId).workbuddyVersion || RECIPE_VERSION;
+  if (version !== expectedVersion) fail('做法版本已更新，请重新查看并核对。');
   s.reviews[recipeId] = {
     by: short(by, '审校人', 50),
     at: new Date().toISOString(),
-    version: RECIPE_VERSION,
+    version,
   };
 }
 export function startCooking(
@@ -469,23 +520,25 @@ export function startCooking(
   recipeId: string,
   id = uid(),
   date = today(),
+  expectedVersion?: string,
 ) {
   if (s.sessions.some((x) => x.id === id)) return;
   if (activeSession(s)) fail('还有一餐未完成，请先继续当前一餐。');
-  const r = recipes.find((x) => x.id === recipeId);
-  if (!r) fail('菜谱不存在。');
+  const r = recipeFor(s, recipeId);
+  if (
+    expectedVersion &&
+    expectedVersion !== (r.workbuddyVersion || RECIPE_VERSION)
+  )
+    fail('做法版本已更新，请重新查看并核对。');
   if (s.dataset === 'real' && !reviewed(s, r))
     fail('现实跟做前，先逐项完成人工菜谱审校；样例厨房可演练。');
-  if (
-    !recommendations(s, date).some(
-      (x) => x.recipe.id === recipeId && !x.missing.length,
-    )
-  )
+  if (matching(s, r, date).some((item) => !item.enough))
     fail('食材库存已改变，请返回推荐重新核对。');
   s.sessions.unshift({
     id,
     recipeId,
-    recipeVersion: RECIPE_VERSION,
+    recipeVersion: r.workbuddyVersion || RECIPE_VERSION,
+    recipeSnapshot: structuredClone(r),
     servings: DEFAULT_SERVINGS,
     status: 'cooking',
     step: 0,
@@ -496,7 +549,7 @@ export function startCooking(
 export function stepSession(s: KitchenState, id: string, step: number) {
   const session = s.sessions.find((x) => x.id === id);
   if (!session || session.status === 'completed') fail('这餐已结束或不存在。');
-  const r = recipes.find((x) => x.id === session.recipeId)!;
+  const r = sessionRecipe(s, session);
   if (!Number.isInteger(step) || step < 0 || step > r.steps.length)
     fail('无效步骤。');
   session.step = step;

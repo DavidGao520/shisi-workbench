@@ -1445,6 +1445,14 @@ textarea {
   }
 }
 
+.workbuddy-cooking {
+  padding: 20px;
+  margin: 24px 0;
+}
+.workbuddy-cooking output {
+  display: block;
+  line-height: 1.8;
+}
 .voice-intake {
   display: grid;
   gap: 20px;

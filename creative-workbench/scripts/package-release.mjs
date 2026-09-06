@@ -14,7 +14,9 @@ const paths = [
   'skills/zhonghua-shisi/references/inventory-contract.md',
   'skills/zhonghua-shisi/references/theme-assets.md',
   'skills/zhonghua-shisi/references/local-bridge.md',
+  'skills/zhonghua-shisi/references/cooking-handoff.md',
   'skills/zhonghua-shisi/scripts/kitchen-bridge.mjs',
+  'skills/zhonghua-shisi/scripts/cooking-contract.mjs',
   'skills/zhonghua-shisi/scripts/local-speech.mjs',
   'skills/zhonghua-shisi/scripts/transcribe.py',
   'skills/zhonghua-shisi/scripts/setup-voice.mjs',
@@ -57,7 +59,7 @@ for (const path of paths) {
   )
     throw new Error('Archive round trip failed: ' + path);
 }
-const destination = resolve(root, '中华食肆-创意工作台-v0.4.1.zip');
+const destination = resolve(root, '中华食肆-创意工作台-v0.4.2.zip');
 await writeFile(destination, zipped);
 console.log(
   'Verified UTF-8 ZIP with ' +
