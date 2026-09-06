@@ -1,3 +1,4 @@
+/* oxlint-disable next/no-img-element -- Layered inline game artwork must also render in the self-contained HTML build. */
 import { today } from '@/lib/kitchen';
 import { ingredientCardArt } from '@/lib/art';
 
@@ -93,9 +94,8 @@ export function KitchenIngredientCard({
     ) : null;
 
   return (
-    <div
+    <article
       className={`kitchen-ingredient-card kitchen-ingredient-card--${status}${expired ? ' kitchen-ingredient-card--expired' : ''}`}
-      role="group"
       aria-label={accessibleLabel}
     >
       <div className="kitchen-ingredient-card__visual">
@@ -166,6 +166,6 @@ export function KitchenIngredientCard({
           ) : null}
         </div>
       </div>
-    </div>
+    </article>
   );
 }
