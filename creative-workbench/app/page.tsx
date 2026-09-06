@@ -1267,7 +1267,6 @@ export default function Home() {
               )}
               <div className="section-head">
                 <h2>已确认的厨房库存</h2>
-                <span>{s.inventory.length} 个批次 · 未拍到的不会自动删除</span>
               </div>
               {!s.inventory.length ? (
                 <div className="empty-state">
