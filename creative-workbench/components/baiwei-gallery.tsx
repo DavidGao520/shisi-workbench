@@ -16,6 +16,7 @@ import {
 } from '@/lib/baiwei';
 import type { KitchenState, Session } from '@/lib/kitchen';
 import type { Recipe } from '@/lib/recipes';
+import { mealRatingSummary } from '@/lib/meal-ratings';
 
 type GalleryProps = {
   state: KitchenState;
@@ -97,11 +98,7 @@ function History({
                 <time dateTime={session.completedAt || session.createdAt}>
                   {dateText(session)}
                 </time>
-                <span>
-                  {session.userRating === undefined
-                    ? '未评分'
-                    : `${session.userRating} / 5 分`}
-                </span>
+                <span>{mealRatingSummary(session)}</span>
                 {sample && <span>样例演练</span>}
               </p>
               <p className="baiwei-memory">
@@ -191,9 +188,7 @@ export function BaiweiGallery({
                   {latest && (
                     <span className="baiwei-note">
                       最近一次 {dateText(latest)}
-                      {latest.userRating === undefined
-                        ? ''
-                        : ` · ${latest.userRating} / 5 分`}
+                      {' · ' + mealRatingSummary(latest)}
                     </span>
                   )}
                   <span className="baiwei-row-link">
@@ -264,9 +259,7 @@ export function BaiweiGallery({
               <section className="baiwei-story">
                 <h3>这道菜的故事</h3>
                 <p>{selected.dish.story}</p>
-                <p className="baiwei-note">
-                  《中华食肆》游戏原作故事 · 国宴队
-                </p>
+                <p className="baiwei-note">《中华食肆》游戏原作故事 · 国宴队</p>
                 <p className="baiwei-note">
                   包含传说与文学表达，尚未逐条作史实考证；不作为烹饪或健康建议。
                 </p>

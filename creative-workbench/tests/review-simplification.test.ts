@@ -18,7 +18,7 @@ import {
 const r = recipes.find((recipe) => recipe.id === 'golden_egg')!;
 const date = '2026-09-06';
 const feedback = {
-  rating: 4,
+  ratings: { taste: 4, difficulty: 2, appearance: 5 },
   memory: '下次再试试',
   photo: 'data:image/png;base64,AA==',
 };
@@ -69,14 +69,17 @@ void test('review has only photo, score and comment fields, with no stock contro
     /尚未扣减库存|本餐临时用料|只在本机保存|确认实际剩余|另用到一个批次|加入核对|按最新库存重新预填|我已核对实际消耗|本餐无需扣减冰箱库存|<Tick|<Choice|setRows|setExtra|setConfirmed|!confirmed/,
   );
   assert.match(form, /留张成品照（可跳过）/);
-  assert.match(form, /我的评分（必填）/);
+  assert.match(form, /<MealRatingInput/);
   assert.match(form, /留一句家庭记忆或下次改进（可选）/);
-  assert.match(form, /disabled=\{busy \|\| photoBusy \|\| !rating\}/);
-  assert.match(form, /if \(busy \|\| photoBusy \|\| !rating\) return;/);
+  assert.match(form, /disabled=\{busy \|\| photoBusy \|\| !ratingsComplete\}/);
+  assert.match(
+    form,
+    /if \(busy \|\| photoBusy \|\| !ratingsComplete\) return;/,
+  );
   assert.match(form, /finishCooking\(state, session.id,/);
   assert.match(form, /保存草稿/);
   assert.doesNotMatch(form, /setPhoto\(await photoData\(f\)\)[\s\S]*fetch\(/);
-  for (const field of ['rating', 'memory', 'photo'])
+  for (const field of ['ratings', 'memory', 'photo'])
     assert.ok(form.includes(`session.reviewDraft?.${field}`));
   const css = await readFile(
     new URL('../app/globals.css', import.meta.url),
@@ -98,13 +101,17 @@ void test('full-stock meal saves a plan and finishes with feedback alone, deduct
     s.inventory.map((b) => b.amount),
     r.ingredients.map((i) => i.amount),
   );
-  assert.equal(session.userRating, 4);
+  assert.deepEqual(session.ratings, feedback.ratings);
+  assert.equal(session.userRating, undefined);
   assert.equal(session.familyMemory, feedback.memory);
   assert.equal(session.photo, feedback.photo);
   assert.equal(session.consumptionMode, 'recipe-plan');
   assert.equal(archive(s).length, 1);
   const finished = structuredClone(s);
-  finishCooking(s, 'meal', { rating: 0, memory: '' });
+  finishCooking(s, 'meal', {
+    ratings: { ...feedback.ratings, taste: 0 },
+    memory: '',
+  });
   assert.deepEqual(s, finished);
 });
 
@@ -113,7 +120,7 @@ void test('all-temporary and mixed meals complete without creating or double-ded
     const s = prepared();
     if (partial) s.inventory = [stock('egg', 1, '个')];
     ready(s);
-    finishCooking(s, 'meal', { rating: 5, memory: '' });
+    finishCooking(s, 'meal', { ratings: feedback.ratings, memory: '' });
     assert.equal(s.inventory.length, partial ? 1 : 0);
     assert.deepEqual(
       s.inventory.map((b) => b.amount),
@@ -198,7 +205,7 @@ void test('legacy session fallback uses its snapshot and start date, not new sto
     s,
     'meal',
     {
-      rating: session.reviewDraft.rating,
+      ratings: session.reviewDraft.ratings!,
       memory: session.reviewDraft.memory,
       photo: session.reviewDraft.photo,
     },
@@ -229,7 +236,7 @@ void test('bad feedback or unfinished steps leave stock, fallback plan and sessi
   const session = ready(s);
   delete session.stockAllocation;
   for (const bad of [
-    { ...feedback, rating: 0 },
+    { ...feedback, ratings: { ...feedback.ratings, taste: 0 } },
     { ...feedback, memory: 'x'.repeat(2001) },
     { ...feedback, photo: 'javascript:bad' },
   ]) {
@@ -261,7 +268,10 @@ void test('draft reopen and two connections finish atomically once without anoth
   });
   await assert.rejects(
     a.change('real', (s) =>
-      finishCooking(s, 'meal', { ...feedback, rating: 0 }),
+      finishCooking(s, 'meal', {
+        ...feedback,
+        ratings: { ...feedback.ratings, taste: 0 },
+      }),
     ),
   );
   assert.equal((await a.read('real')).inventory[0].amount, 6);

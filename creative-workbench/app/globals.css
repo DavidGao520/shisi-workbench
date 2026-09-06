@@ -1178,21 +1178,77 @@ textarea {
   margin-top: 13px;
   border-radius: 8px;
 }
-.rating {
+.meal-ratings {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.meal-ratings legend {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+.meal-rating-dimension + .meal-rating-dimension {
+  margin-top: 18px;
+}
+.meal-rating-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 16px;
+}
+.meal-rating-heading small {
+  color: #70695e;
+  font-size: 14px;
+}
+.meal-rating-line {
   display: flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
 }
-.rating button {
+.meal-rating-options {
+  display: flex;
+  width: auto;
+  gap: 0;
+}
+.meal-rating-choice {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+}
+.meal-rating-choice .meal-rating-input {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   background: none;
   border: 0;
-  padding: 5px;
-  min-width: 33px;
-  min-height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
 }
-.rating span {
-  font-size: 13px;
-  margin-left: 10px;
+.meal-rating-choice .meal-rating-input::after,
+.meal-rating-input [data-slot='radio-group-indicator'] {
+  display: none;
+}
+.meal-rating-choice .meal-rating-input:focus-visible {
+  outline: 2px solid #b46642;
+  outline-offset: -2px;
+}
+.meal-rating-star {
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+}
+.meal-ratings:disabled .meal-rating-star {
+  opacity: 0.5;
+}
+.meal-rating-value {
+  font-size: 14px;
+  color: #70695e;
 }
 .review-form > .actions {
   margin-top: 18px;

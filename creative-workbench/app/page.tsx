@@ -16,7 +16,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Star,
   RotateCcw,
   X,
   Pause,
@@ -41,6 +40,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
 import { VoiceIntake } from '@/components/voice-intake';
 import { MealIngredients } from '@/components/meal-ingredients';
+import { MealRatingInput } from '@/components/meal-rating-input';
+import {
+  hasCompleteMealRatings,
+  mealRatingsDraft,
+  mealRatingSummary,
+} from '@/lib/meal-ratings';
 import { BaiweiGallery, BaiweiDishArt } from '@/components/baiwei-gallery';
 import {
   RecipeInstructions,
@@ -411,10 +416,13 @@ function ReviewForm({
   done: () => void;
   onError: (v: string) => void;
 }) {
-  const [rating, setRating] = useState(session.reviewDraft?.rating || 0),
+  const [ratings, setRatings] = useState(() =>
+      mealRatingsDraft(session.reviewDraft?.ratings),
+    ),
     [memory, setMemory] = useState(session.reviewDraft?.memory || ''),
     [photo, setPhoto] = useState(session.reviewDraft?.photo || ''),
     [photoBusy, setPhotoBusy] = useState(false);
+  const ratingsComplete = hasCompleteMealRatings(ratings);
   return (
     <section className="paper review-form">
       <p className="eyebrow">掌柜复盘</p>
@@ -449,23 +457,11 @@ function ReviewForm({
             </button>
           </>
         )}
-        <label className="field">
-          我的评分（必填）
-          <div className="rating">
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button
-                type="button"
-                key={v}
-                aria-label={v + ' 分'}
-                aria-pressed={rating === v}
-                onClick={() => setRating(v)}
-              >
-                <Star fill={v <= rating ? '#bc8435' : 'none'} color="#bc8435" />
-              </button>
-            ))}
-            <span>{rating ? rating + ' / 5' : '还没评分'}</span>
-          </div>
-        </label>
+        <MealRatingInput
+          value={ratings}
+          onChange={setRatings}
+          disabled={busy || photoBusy}
+        />
         <label className="field">
           留一句家庭记忆或下次改进（可选）
           <textarea
@@ -479,14 +475,14 @@ function ReviewForm({
       <div className="actions">
         <button
           className="primary"
-          disabled={busy || photoBusy || !rating}
+          disabled={busy || photoBusy || !ratingsComplete}
           onClick={async () => {
-            if (busy || photoBusy || !rating) return;
+            if (busy || photoBusy || !ratingsComplete) return;
             if (
               await mutate(
                 (state) =>
                   finishCooking(state, session.id, {
-                    rating,
+                    ratings,
                     memory,
                     photo: photo || undefined,
                   }),
@@ -507,7 +503,10 @@ function ReviewForm({
               const v = activeSession(state);
               if (v?.id === session.id)
                 v.reviewDraft = {
-                  rating,
+                  ratings,
+                  ...(v.reviewDraft?.rating !== undefined
+                    ? { rating: v.reviewDraft.rating }
+                    : {}),
                   memory,
                   photo: photo || undefined,
                   // Preserve old draft data without using its manual stock edits.
@@ -2061,7 +2060,7 @@ export default function Home() {
                     .map((x) => (
                       <div className="history-item" key={x.id}>
                         <div>
-                          <strong>{x.userRating} / 5 分</strong>
+                          <strong>{mealRatingSummary(x)}</strong>
                           <small>
                             {new Date(x.completedAt!).toLocaleString('zh-CN')}
                           </small>

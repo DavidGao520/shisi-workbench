@@ -7,6 +7,7 @@ import {
   type Recipe,
 } from './recipes';
 import type { Session, Dataset } from './kitchen';
+import { mealRatingSummary } from './meal-ratings';
 const escapeHtml = (s: string) =>
   s.replace(
     /[&<>"']/g,
@@ -44,9 +45,9 @@ export function renderBaiweiEntry(
     escapeHtml(r.title) +
     '</h1>' +
     picture +
-    '<p>我的评分：' +
-    session.userRating +
-    ' / 5</p><small>' +
+    '<p>' +
+    escapeHtml(mealRatingSummary(session)) +
+    '</p><small>' +
     escapeHtml(session.completedAt || '') +
     '</small><section><h2>我的食忆</h2><p>' +
     escapeHtml(session.familyMemory || '这一次，把一餐好好做完。') +

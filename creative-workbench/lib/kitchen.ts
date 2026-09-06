@@ -8,6 +8,7 @@ import {
   type Recipe,
 } from './recipes';
 import { isSeasoning, PRESENT_QUANTITY } from './seasonings';
+import { validateMealRatings, type MealRatings } from './meal-ratings';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
 export const units = ['个', '盒', '袋', '克', '毫升', '份'] as const;
@@ -75,6 +76,7 @@ export type Session = {
   timerEnd?: number;
   timerRemaining?: number;
   userRating?: number;
+  ratings?: MealRatings;
   familyMemory?: string;
   photo?: string;
   actualConsumption?: Consumption[];
@@ -82,7 +84,8 @@ export type Session = {
   mealOnlyIngredients?: MealOnlyIngredient[];
   stockAllocation?: StockAllocation[];
   reviewDraft?: {
-    rating: number;
+    rating?: number; // Legacy single score, never used to prefill three dimensions.
+    ratings?: MealRatings;
     memory: string;
     photo?: string;
     consumption?: Consumption[];
@@ -770,7 +773,8 @@ export function completeCooking(
   s: KitchenState,
   id: string,
   review: {
-    rating: number;
+    rating?: number;
+    ratings?: MealRatings;
     memory: string;
     photo?: string;
     consumption: Consumption[];
@@ -781,10 +785,16 @@ export function completeCooking(
   if (!session) fail('烹饪记录不存在。');
   if (session.status === 'completed') return;
   if (session.status !== 'reviewing') fail('请先完成跟做，再确认实际消耗。');
+  const ratings =
+    review.ratings === undefined
+      ? undefined
+      : validateMealRatings(review.ratings);
   if (
-    !Number.isInteger(review.rating) ||
-    review.rating < 1 ||
-    review.rating > 5
+    !ratings &&
+    (review.rating === undefined ||
+      !Number.isInteger(review.rating) ||
+      review.rating < 1 ||
+      review.rating > 5)
   )
     fail('请给这一餐打 1–5 分。');
   if (review.memory.length > 2000) fail('家庭记忆请控制在 2000 字以内。');
@@ -832,7 +842,7 @@ export function completeCooking(
   Object.assign(session, {
     status: 'completed',
     completedAt: at,
-    userRating: review.rating,
+    ...(ratings ? { ratings } : { userRating: review.rating }),
     familyMemory: review.memory,
     photo: review.photo,
     actualConsumption: review.consumption,
@@ -845,13 +855,14 @@ export function completeCooking(
 export function finishCooking(
   s: KitchenState,
   id: string,
-  feedback: { rating: number; memory: string; photo?: string },
+  feedback: { ratings: MealRatings; memory: string; photo?: string },
   at = new Date().toISOString(),
 ) {
   const session = s.sessions.find((x) => x.id === id);
   if (!session) fail('烹饪记录不存在。');
   if (session.status === 'completed') return;
   if (session.status !== 'reviewing') fail('请先完成跟做，再记录这一餐。');
+  const ratings = validateMealRatings(feedback.ratings);
   let allocation = session.stockAllocation;
   if (!allocation) {
     // Older meals never borrow newly added stock. Use the original local start
@@ -899,7 +910,7 @@ export function finishCooking(
     });
   }
   // Ignore legacy draft.consumption: only the photo, score and comment are input.
-  completeCooking(s, id, { ...feedback, consumption }, at);
+  completeCooking(s, id, { ...feedback, ratings, consumption }, at);
   session.consumptionMode = 'recipe-plan';
 }
 export function archive(s: KitchenState) {
