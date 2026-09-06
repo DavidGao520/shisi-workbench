@@ -141,10 +141,6 @@ export function BaiweiGallery({
   return (
     <section className="baiwei-gallery" aria-label="百味图">
       <header className="baiwei-heading">
-        <div>
-          <p className="eyebrow">中华食肆 · 食肆菜单</p>
-          <h1>百味图</h1>
-        </div>
         <div className="baiwei-progress" aria-live="polite">
           <p>
             {sample ? '样例已点亮' : '已点亮'} <strong>{litCount}</strong> /{' '}
