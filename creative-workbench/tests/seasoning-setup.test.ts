@@ -293,14 +293,13 @@ void test('owned seasonings keep recipes discoverable, but do not authorize cook
     ),
   );
 });
-void test('missing food, expired seasoning and safety preferences still constrain suggestions', () => {
+void test('missing food and expired seasoning constrain inventory-only suggestions', () => {
   const state = mealWithUnknownSeasoning();
+  const baseline = recommendations(state, date);
+  assert.ok(baseline.length > 0);
   state.preferences.allergens = ['鸡蛋'];
-  assert.equal(recommendations(state, date).length, 0);
-  state.preferences.allergens = [];
   state.preferences.equipment = [];
-  assert.equal(recommendations(state, date).length, 0);
-  state.preferences.equipment = ['炒锅', '汤锅'];
+  assert.deepEqual(recommendations(state, date), baseline);
   for (const item of state.inventory.filter(
     (b) => b.amountBand === PRESENT_QUANTITY,
   ))

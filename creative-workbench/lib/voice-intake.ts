@@ -2,7 +2,6 @@ import { names } from './recipes';
 import { PRESENT_QUANTITY } from './seasonings';
 import {
   confirmCandidate,
-  isExpired,
   parseImport,
   stage,
   uid,
@@ -264,7 +263,6 @@ export function prepareVoiceDraft(
   const rows = candidates.map((candidate) => {
     const existing = state.inventory.filter(
       (b) =>
-        !isExpired(b) &&
         b.canonicalIngredientId === candidate.canonicalIngredientId &&
         (b.canonicalIngredientId !== 'other' ||
           b.displayName === candidate.displayName),
@@ -320,7 +318,9 @@ export function confirmVoiceDraft(
     if (keys.has(row.candidate.key)) throw new Error('同一候选不能重复确认。');
     keys.add(row.candidate.key);
     if (row.targetId === 'choose')
-      throw new Error('同一种食材有多个批次，请先选择要校准的批次。');
+      throw new Error(
+        '已有多份同名食材，请取消这一项，并在库存卡片分别校准余量。',
+      );
     if (row.targetId && targets.has(row.targetId))
       throw new Error('多个食材不能同时校准同一个批次。');
     if (row.targetId) targets.add(row.targetId);

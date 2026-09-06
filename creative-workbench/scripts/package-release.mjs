@@ -57,7 +57,7 @@ for (const path of paths) {
   )
     throw new Error('Archive round trip failed: ' + path);
 }
-const destination = resolve(root, '中华食肆-创意工作台-v0.4.zip');
+const destination = resolve(root, '中华食肆-创意工作台-v0.4.1.zip');
 await writeFile(destination, zipped);
 console.log(
   'Verified UTF-8 ZIP with ' +

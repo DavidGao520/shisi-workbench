@@ -51,6 +51,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { IndexedDbStore } from '@/lib/store';
 import {
+  candidateReview,
+  confirmReviewedCandidate,
+  inventoryEditCandidate,
+} from '@/lib/candidate-review';
+import {
   BRIDGE_URL,
   databaseName,
   stageDelivery,
@@ -73,6 +78,7 @@ import {
   completeCooking,
   confirmCandidate,
   demoImport,
+  DEFAULT_SERVINGS,
   emptyState,
   isExpired,
   matching,
@@ -104,10 +110,6 @@ const pages = [
   { id: 'cooking', name: '做菜模式', icon: ChefHat },
   { id: 'archive', name: '百味图', icon: BookOpen },
 ];
-const ingredientOptions = Object.entries(names).map(([value, label]) => ({
-  value,
-  label,
-}));
 type ChoiceOption = { value: string; label: string };
 function Choice({
   label,
@@ -226,20 +228,25 @@ function CandidateEditor({
   busy: boolean;
   mutate: Mutate;
 }) {
-  const [ingredient, setIngredient] = useState(c.canonicalIngredientId || '');
-  const [name, setName] = useState(c.displayName),
-    [amount, setAmount] = useState(
-      c.amount === undefined ? '' : String(c.amount),
-    ),
-    [unit, setUnit] = useState(c.unit || '克');
-  const [kind, setKind] = useState(c.amountBand ? 'band' : 'exact'),
-    [band, setBand] = useState(c.amountBand || '少量'),
-    [expiry, setExpiry] = useState(''),
-    [target, setTarget] = useState('');
-  const batches = s.inventory.filter(
-      (b) => b.canonicalIngredientId === ingredient,
-    ),
-    batch = batches.find((b) => b.id === target);
+  const latestReview = candidateReview(s, c);
+  const [review, setReview] = useState(() => latestReview);
+  const stale = latestReview.fingerprint !== review.fingerprint;
+  const [amount, setAmount] = useState(
+    review.quantity.amount === undefined ? '' : String(review.quantity.amount),
+  );
+  const [unit, setUnit] = useState(review.quantity.unit || '克');
+  const [kind, setKind] = useState(
+    review.quantity.amountBand ? 'band' : 'exact',
+  );
+  const [band, setBand] = useState(review.quantity.amountBand || '少量');
+  const [expiry, setExpiry] = useState(review.expiryDate || '');
+  const visibleWarnings = c.warnings.filter(
+    (warning) =>
+      ![
+        '请人工选择对应食材，或选「其他食材」。',
+        '请在下方选择原批次进行盘点校准。',
+      ].includes(warning),
+  );
   return (
     <article className="candidate">
       <div className="row-between">
@@ -249,24 +256,7 @@ function CandidateEditor({
         </span>
       </div>
       {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
-      <div className="form-grid">
-        <Choice
-          label="对应食材"
-          value={ingredient}
-          onChange={(v) => {
-            setIngredient(v);
-            setTarget('');
-          }}
-          options={ingredientOptions}
-        />
-        <label className="field">
-          显示名称
-          <input
-            value={name}
-            maxLength={60}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
+      <div className="form-grid stocktake-fields">
         <Choice
           label="数量形式"
           value={kind}
@@ -311,52 +301,52 @@ function CandidateEditor({
             onChange={(e) => setExpiry(e.target.value)}
           />
         </label>
-        <Choice
-          label={c.mode === 'stocktake' ? '校准哪一批？' : '添加到哪里？'}
-          value={target}
-          onChange={(v) => {
-            setTarget(v);
-            const b = batches.find((x) => x.id === v);
-            if (b) setExpiry(b.expiryDate || '');
-          }}
-          options={[
-            { value: 'new', label: '明确新建一个批次' },
-            ...batches.map((b) => ({
-              value: b.id,
-              label:
-                b.displayName +
-                ' · ' +
-                quantityText(b) +
-                (b.expiryDate ? ' · ' + b.expiryDate : ''),
-            })),
-          ]}
-        />
       </div>
-      {c.warnings.length > 0 && (
-        <p className="warning-text">{c.warnings.join('；')}</p>
+      {review.problem && <p className="warning-text">{review.problem}</p>}
+      {stale && (
+        <p className="warning-text">
+          库存有更新，请重新核对。
+          <button
+            className="text-button"
+            disabled={busy}
+            onClick={() => {
+              setReview(latestReview);
+              setAmount(
+                latestReview.quantity.amount === undefined
+                  ? ''
+                  : String(latestReview.quantity.amount),
+              );
+              setUnit(latestReview.quantity.unit || '克');
+              setKind(latestReview.quantity.amountBand ? 'band' : 'exact');
+              setBand(latestReview.quantity.amountBand || '少量');
+              setExpiry(latestReview.expiryDate || '');
+            }}
+          >
+            重新核对
+          </button>
+        </p>
+      )}
+      {visibleWarnings.length > 0 && (
+        <p className="warning-text">{visibleWarnings.join('；')}</p>
       )}
       <div className="actions">
         <button
           className="primary"
           disabled={
             busy ||
-            !ingredient ||
-            !target ||
+            stale ||
+            !!review.problem ||
             (kind === 'exact' && amount === '')
           }
           onClick={() =>
             mutate(
               (state) =>
-                confirmCandidate(state, c.key, {
-                  name,
-                  ingredientId: ingredient,
+                confirmReviewedCandidate(state, c.key, review, {
                   quantity:
                     kind === 'exact'
                       ? { amount: Number(amount), unit }
                       : { amountBand: band },
                   expiryDate: expiry || undefined,
-                  targetId: target === 'new' ? undefined : target,
-                  targetRevision: batch?.revision,
                 }),
               '已确认入库。',
             )
@@ -806,30 +796,12 @@ export default function Home() {
     setReviewChecks(false);
     setFoodChecked(false);
   };
-  const setPref = (key: keyof KitchenState['preferences'], value: unknown) =>
-    mutate((state) => {
-      state.preferences = { ...state.preferences, [key]: value };
-    });
-  const togglePref = (
-    key: 'allergens' | 'equipment' | 'dislikedIngredients',
-    value: string,
-    checked: boolean,
-  ) => {
-    if (s)
-      void setPref(
-        key,
-        checked
-          ? [...s.preferences[key].filter((x) => x !== value), value]
-          : s.preferences[key].filter((x) => x !== value),
-      );
-  };
   const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
   const loadSample = async () => {
     if (!s || dataset !== 'demo') return;
     if (
       await mutate((state) => {
         stage(state, parseImport(demoImport(), 'demo', 'stocktake'));
-        state.preferences.equipment = ['炒锅', '汤锅'];
       }, '七项样例已进入候选区，请确认后入库。')
     )
       setPage('inventory');
@@ -859,8 +831,7 @@ export default function Home() {
     setMessage(
       skipped
         ? '已跳过调料设置。以后可在“我的厨房”打开调料清单。'
-        : added +
-            ' 种调料已记录。其他食材可以继续用 WorkBuddy 照片或听写文字录入。',
+        : added + ' 种调料已记录。其他食材可以用语音或拍照录入。',
     );
   };
   const changeDataset = (d: Dataset) => {
@@ -1006,7 +977,7 @@ export default function Home() {
               >
                 <p className="eyebrow">新厨房 · 先备好调料</p>
                 <h2 id="seasoning-welcome">家里的油盐酱醋，不用再拍一遍</h2>
-                <p>先勾选调料，再用 WorkBuddy 录入冰箱里的其他食材。</p>
+                <p>先勾选调料，再用语音或拍照录入冰箱里的其他食材。</p>
                 <SeasoningChecklist
                   key={dataset}
                   state={s}
@@ -1072,9 +1043,7 @@ export default function Home() {
                       }}
                     >
                       <Camera size={18} />
-                      {inventoryUsed
-                        ? '继续用 WorkBuddy 录入食材'
-                        : '用 WorkBuddy 拍照录入食材'}
+                      拍照录入食材
                     </button>
                     {dataset === 'demo' && !s.candidates.length && (
                       <button
@@ -1105,74 +1074,6 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-              <section className="preferences paper">
-                <div className="row-between">
-                  <h3>今天这一餐</h3>
-                  <span className="muted">
-                    首批都是家常蛋菜 · 非完整营养餐单
-                  </span>
-                </div>
-                <div className="preference-fields">
-                  <Choice
-                    label="几个人吃"
-                    value={String(s.preferences.servings)}
-                    onChange={(v) => void setPref('servings', Number(v))}
-                    options={[1, 2].map((v) => ({
-                      value: String(v),
-                      label: v + ' 人',
-                    }))}
-                    disabled={busy}
-                  />
-                  <Choice
-                    label="最多花多久"
-                    value={String(s.preferences.minutes)}
-                    onChange={(v) => void setPref('minutes', Number(v))}
-                    options={[10, 20, 30].map((v) => ({
-                      value: String(v),
-                      label: v + ' 分钟',
-                    }))}
-                    disabled={busy}
-                  />
-                  <div>
-                    <span className="field-label">
-                      可用厨具（另需炉灶、刀、砧板和碗）
-                    </span>
-                    <div className="actions">
-                      {['炒锅', '汤锅'].map((v) => (
-                        <Tick
-                          key={v}
-                          label={v}
-                          checked={s.preferences.equipment.includes(v)}
-                          disabled={busy}
-                          onChange={(b) => togglePref('equipment', v, b)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="constraint-row">
-                  <span>需要避开：</span>
-                  {['鸡蛋', '大豆', '小麦'].map((v) => (
-                    <Tick
-                      key={v}
-                      label={v + '过敏'}
-                      checked={s.preferences.allergens.includes(v)}
-                      disabled={busy}
-                      onChange={(b) => togglePref('allergens', v, b)}
-                    />
-                  ))}
-                  <Tick
-                    label="不吃青椒"
-                    checked={s.preferences.dislikedIngredients.includes(
-                      'green_pepper',
-                    )}
-                    disabled={busy}
-                    onChange={(b) =>
-                      togglePref('dislikedIngredients', 'green_pepper', b)
-                    }
-                  />
-                </div>
-              </section>
               <div className="section-head">
                 <h2>手边食材，能做这些</h2>
                 <span>规则推荐 · 最多三道</span>
@@ -1186,11 +1087,7 @@ export default function Home() {
                       : '先确认食材，再给你推荐'}
                   </h3>
                   <p>
-                    {!s.preferences.equipment.length
-                      ? '请选择可用厨具。'
-                      : s.preferences.allergens.includes('鸡蛋')
-                        ? '首批三道都含鸡蛋，已全部排除。可以浏览菜谱，但不能开始跟做。'
-                        : '检查数量、单位、时间与忌口。缺少两项以上食材的菜不会凑数推荐；已勾选的调料仍需核对用量。'}
+                    核对现有食材和数量，就能找到适合的一餐。已勾选的调料仍需确认用量。
                   </p>
                   <button
                     className="secondary"
@@ -1318,10 +1215,18 @@ export default function Home() {
                     className="secondary"
                     onClick={() => setDialog('workbuddy')}
                   >
-                    <Camera size={17} />用 WorkBuddy 录入食材
+                    <Camera size={17} />
+                    拍照识别
                   </button>
                   <button
                     className="secondary"
+                    onClick={() => setDialog('manual')}
+                  >
+                    <Plus size={17} />
+                    手动补充
+                  </button>
+                  <button
+                    className="text-button"
                     disabled={busy}
                     onClick={() => {
                       setDialog(null);
@@ -1330,13 +1235,6 @@ export default function Home() {
                   >
                     <Check size={17} />
                     调料清单
-                  </button>
-                  <button
-                    className="text-button"
-                    onClick={() => setDialog('manual')}
-                  >
-                    <Plus size={17} />
-                    手动补充
                   </button>
                 </div>
                 <button
@@ -1361,9 +1259,6 @@ export default function Home() {
                   完整备份
                 </button>
               </div>
-              <p className="muted storage-note">
-                保存在当前浏览器环境。清理浏览器数据可能丢失记录；换设备不会自动同步。备份包含私人库存和成品照，请自行保管。
-              </p>
               {dataset === 'demo' && !s.candidates.length && (
                 <button
                   className="secondary"
@@ -1443,27 +1338,10 @@ export default function Home() {
                           disabled={busy}
                           onClick={() =>
                             mutate((state) => {
-                              const id = uid();
                               stage(state, [
-                                {
-                                  key: JSON.stringify([id, 'edit']),
-                                  candidateId: 'edit',
-                                  requestId: id,
-                                  displayName: b.displayName,
-                                  canonicalIngredientId:
-                                    b.canonicalIngredientId,
-                                  amount: b.amount,
-                                  unit: b.unit,
-                                  amountBand: b.amountBand,
-                                  warnings: [
-                                    '请在下方选择原批次进行盘点校准。',
-                                  ],
-                                  mode: 'stocktake',
-                                  source: 'manual-form',
-                                  status: 'pending',
-                                },
+                                inventoryEditCandidate(state, b.id),
                               ]);
-                            }, '已创建盘点候选，请指定原批次后确认。')
+                            }, '请核对数量和到期日期后确认。')
                           }
                         >
                           校准余量
@@ -1844,7 +1722,7 @@ export default function Home() {
           </DialogTitle>
           <DialogDescription>
             {dialog === 'manual'
-              ? '先生成候选，再由你确认批次和数量。'
+                ? '先生成候选，再由你核对数量和到期日期。'
               : dialog === 'voice'
                 ? '在这里录音，自动识别食材和数量。核对清单后，确认一次就入库。'
                 : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
@@ -2083,7 +1961,7 @@ export default function Home() {
                   <p className="eyebrow">中华食肆 · 家常做法</p>
                   <DialogTitle>{recipe.title}</DialogTitle>
                   <DialogDescription>
-                    {recipe.minutes} 分钟 · {s.preferences.servings} 人份 ·{' '}
+                    {recipe.minutes} 分钟 · {DEFAULT_SERVINGS} 人份 ·{' '}
                     {recipe.equipment}
                   </DialogDescription>
                   <span
@@ -2095,7 +1973,7 @@ export default function Home() {
                   </span>
                 </div>
               </div>
-              <h3>需要的食材 · {s.preferences.servings} 人份</h3>
+              <h3>需要的食材 · {DEFAULT_SERVINGS} 人份</h3>
               <div className="ingredient-list">
                 {matching(s, recipe).map((i) => (
                   <div key={i.id}>
@@ -2123,7 +2001,7 @@ export default function Home() {
               </p>
               <h3>做法与顺序</h3>
               <ol className="instructions">
-                {cookingSteps(recipe, s.preferences.servings).map((step) => (
+                {cookingSteps(recipe, DEFAULT_SERVINGS).map((step) => (
                   <li key={step}>{step}</li>
                 ))}
               </ol>

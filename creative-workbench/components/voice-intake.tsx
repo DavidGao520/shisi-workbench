@@ -9,16 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  bands,
-  isExpired,
-  quantityText,
-  uid,
-  units,
-  type KitchenState,
-  type Mode,
-} from '@/lib/kitchen';
-import { names } from '@/lib/recipes';
+import { bands, uid, units, type KitchenState, type Mode } from '@/lib/kitchen';
 import { BRIDGE_URL } from '@/lib/workbuddy-bridge';
 import {
   prepareVoiceDraft,
@@ -51,6 +42,9 @@ export function VoiceIntake({
   const [phase, setPhase] = useState<Phase>('checking');
   const [text, setText] = useState('');
   const [rows, setRows] = useState<VoiceRow[]>([]);
+  const [quantityKinds, setQuantityKinds] = useState<Record<string, string>>(
+    {},
+  );
   const [notes, setNotes] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [seconds, setSeconds] = useState(0);
@@ -214,6 +208,14 @@ export function VoiceIntake({
     );
   const working = ['recording', 'permission', 'recognizing'].includes(phase);
   const selected = rows.filter((row) => row.selected).length;
+  const quantityKind = (row: VoiceRow) =>
+    quantityKinds[row.candidate.key] || (row.amount.trim() ? 'exact' : 'band');
+  const blocked = rows.some(
+    (row) =>
+      row.selected &&
+      (row.targetId === 'choose' ||
+        (quantityKind(row) === 'exact' && !row.amount.trim())),
+  );
   return (
     <section className="voice-intake">
       <div
@@ -327,12 +329,6 @@ export function VoiceIntake({
           <p>识别到 {rows.length} 种食材。取消勾选不需要的，数量可直接修改。</p>
           <div className="voice-rows">
             {rows.map((row, index) => {
-              const matches = state.inventory.filter(
-                (b) =>
-                  !isExpired(b) &&
-                  b.canonicalIngredientId === row.ingredientId &&
-                  (row.ingredientId !== 'other' || b.displayName === row.name),
-              );
               return (
                 <fieldset
                   key={row.candidate.key}
@@ -353,132 +349,118 @@ export function VoiceIntake({
                       {row.candidate.displayName}
                     </label>
                   </legend>
-                  <div className="form-grid">
-                    <label className="field">
-                      食材名称
-                      <input
-                        value={row.name}
-                        maxLength={60}
-                        onChange={(e) =>
-                          update(index, { name: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label className="field">
-                      数量
-                      <input
-                        type="number"
-                        min="0"
-                        max="1000000"
-                        step="any"
-                        placeholder="没说数量，先记有"
-                        value={row.amount}
-                        onChange={(e) =>
-                          update(index, { amount: e.target.value })
-                        }
-                      />
-                    </label>
+                  <div className="form-grid stocktake-fields">
                     <div className="field">
-                      <span>{row.amount.trim() ? '单位' : '数量记录'}</span>
+                      <span>数量形式</span>
                       <Select
-                        value={row.amount.trim() ? row.unit : row.amountBand}
+                        value={quantityKind(row)}
                         onValueChange={(value) => {
-                          if (value)
-                            update(
-                              index,
-                              row.amount.trim()
-                                ? { unit: value }
-                                : { amountBand: value },
-                            );
+                          if (!value) return;
+                          setQuantityKinds((previous) => ({
+                            ...previous,
+                            [row.candidate.key]: value,
+                          }));
+                          if (value === 'band') update(index, { amount: '' });
                         }}
                       >
-                        <SelectTrigger
-                          aria-label={
-                            row.name + (row.amount.trim() ? '单位' : '数量记录')
-                          }
-                        >
+                        <SelectTrigger aria-label={row.name + '数量形式'}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(row.amount.trim() ? units : bands).map((value) => (
-                            <SelectItem key={value} value={value}>
-                              {value}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="exact">精确数量</SelectItem>
+                          <SelectItem value="band">数量不确定</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-                  <div className="field">
-                    <span>对应食材</span>
-                    <Select
-                      value={row.ingredientId}
-                      onValueChange={(value) => {
-                        if (value)
-                          update(index, {
-                            ingredientId: value,
-                            targetId: '',
-                            targetRevision: undefined,
-                            expiryDate: undefined,
-                          });
-                      }}
+                    <div
+                      className={
+                        quantityKind(row) === 'exact' ? 'quantity-pair' : ''
+                      }
                     >
-                      <SelectTrigger aria-label={row.name + '对应食材'}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(names).map(([value, label]) => (
-                          <SelectItem value={value} key={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {(matches.length > 0 || row.targetId) && (
-                    <div className="field">
-                      <span>
-                        {mode === 'stocktake' ? '要校准的库存' : '补货批次'}
-                      </span>
-                      <Select
-                        value={row.targetId || 'new'}
-                        onValueChange={(value) => {
-                          const target = matches.find((b) => b.id === value);
-                          update(index, {
-                            targetId: target?.id || '',
-                            targetRevision: target?.revision,
-                            expiryDate: target?.expiryDate,
-                          });
-                        }}
-                      >
-                        <SelectTrigger aria-label={row.name + '库存批次'}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {row.targetId === 'choose' && (
-                            <SelectItem value="choose" disabled>
-                              请选择一个批次
-                            </SelectItem>
-                          )}
-                          <SelectItem value="new">
-                            新建一批，不改旧库存
-                          </SelectItem>
-                          {matches.map((b) => (
-                            <SelectItem key={b.id} value={b.id}>
-                              {b.displayName} · 原有 {quantityText(b)}
-                              {b.expiryDate ? ' · 到期 ' + b.expiryDate : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {quantityKind(row) === 'exact' && (
+                        <label className="field">
+                          数量
+                          <input
+                            type="number"
+                            min="0"
+                            max="1000000"
+                            step="any"
+                            placeholder="没说数量，先记有"
+                            value={row.amount}
+                            onChange={(e) => {
+                              setQuantityKinds((previous) => ({
+                                ...previous,
+                                [row.candidate.key]: 'exact',
+                              }));
+                              update(index, { amount: e.target.value });
+                            }}
+                          />
+                        </label>
+                      )}
+                      <div className="field">
+                        <span>
+                          {quantityKind(row) === 'exact' ? '单位' : '数量档'}
+                        </span>
+                        <Select
+                          value={
+                            quantityKind(row) === 'exact'
+                              ? row.unit
+                              : row.amountBand
+                          }
+                          onValueChange={(value) => {
+                            if (value)
+                              update(
+                                index,
+                                quantityKind(row) === 'exact'
+                                  ? { unit: value }
+                                  : { amountBand: value },
+                              );
+                          }}
+                        >
+                          <SelectTrigger
+                            aria-label={
+                              row.name +
+                              (quantityKind(row) === 'exact'
+                                ? '单位'
+                                : '数量档')
+                            }
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(quantityKind(row) === 'exact'
+                              ? units
+                              : bands
+                            ).map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  )}
+                    <label className="field">
+                      到期日期（不知道可留空）
+                      <input
+                        type="date"
+                        value={row.expiryDate || ''}
+                        onChange={(e) =>
+                          update(index, {
+                            expiryDate: e.target.value || undefined,
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
                   <small>
-                    {row.targetId && row.targetId !== 'choose'
-                      ? mode === 'stocktake'
-                        ? '将校准所选批次，不累加；原到期日期保留。'
-                        : '将增加所选批次，单位和日期须一致。'
-                      : '确认后新增一批；未说数量的只记录“有”。'}
+                    {row.targetId === 'choose'
+                      ? '已有多份同名食材，请取消这一项，并在库存卡片分别校准余量。'
+                      : row.targetId
+                        ? mode === 'stocktake'
+                          ? '确认后更新已有数量，不累加。'
+                          : '将增加所选批次，单位和日期须一致。'
+                        : '确认后新增一批；未说数量的只记录“有”。'}
                   </small>
                   {!!row.candidate.warnings.length && (
                     <p className="muted">{row.candidate.warnings.join(' ')}</p>
@@ -489,7 +471,7 @@ export function VoiceIntake({
           </div>
           <button
             className="primary voice-save"
-            disabled={busy || !selected}
+            disabled={busy || !selected || blocked}
             onClick={async () => {
               if (saving.current) return;
               saving.current = true;

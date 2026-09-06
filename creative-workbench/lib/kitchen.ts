@@ -22,6 +22,8 @@ export type Candidate = Quantity & {
   mode: Mode;
   source: string;
   status: 'pending' | 'confirmed' | 'rejected';
+  // Local inventory-card edits retain their exact target; never taken from imports.
+  stocktakeTarget?: { id: string; revision: number };
 };
 export type Batch = Quantity & {
   id: string;
@@ -86,6 +88,7 @@ export type KitchenState = {
   } | null;
 };
 export const uid = () => globalThis.crypto.randomUUID();
+export const DEFAULT_SERVINGS = 1;
 export const today = () => {
   const d = new Date();
   return [
@@ -104,10 +107,10 @@ export function emptyState(dataset: Dataset): KitchenState {
     reviews: {},
     seasoningSetup: null,
     preferences: {
-      servings: 1,
+      servings: DEFAULT_SERVINGS,
       minutes: 20,
       allergens: [],
-      equipment: [],
+      equipment: [...new Set(recipes.map((r) => r.equipment))],
       dislikedIngredients: [],
     },
   };
@@ -299,9 +302,9 @@ export function parseImport(
       typeof c.canonicalIngredientId === 'string' &&
       names[c.canonicalIngredientId]
         ? c.canonicalIngredientId
-        : aliases[displayName];
-    if (!canonicalIngredientId)
-      notes.push('请人工选择对应食材，或选「其他食材」。');
+        : aliases[displayName] || 'other';
+    if (canonicalIngredientId === 'other')
+      notes.push('暂未匹配内置菜谱，将按原名称记录。');
     return {
       ...q,
       key: JSON.stringify([requestId, candidateId]),
@@ -397,7 +400,7 @@ export function matching(
   s: KitchenState,
   r: Recipe,
   date = today(),
-  servings = s.preferences.servings,
+  servings = DEFAULT_SERVINGS,
 ) {
   return r.ingredients.map((i) => {
     const eligible = s.inventory.filter(
@@ -423,15 +426,6 @@ export function matching(
 }
 export function recommendations(s: KitchenState, date = today()) {
   return recipes
-    .filter(
-      (r) =>
-        r.minutes <= s.preferences.minutes &&
-        s.preferences.equipment.includes(r.equipment) &&
-        !r.allergens.some((a) => s.preferences.allergens.includes(a)) &&
-        !r.ingredients.some((i) =>
-          s.preferences.dislikedIngredients.includes(i.id),
-        ),
-    )
     .map((r) => {
       const matches = matching(s, r, date),
         missing = matches.filter((i) => !i.enough);
@@ -447,20 +441,9 @@ export function recommendations(s: KitchenState, date = today()) {
                 2 * 86400000,
           ),
         ).length / matches.length;
-      const history = s.sessions.filter(
-        (x) => x.recipeId === r.id && x.status === 'completed',
-      );
-      const preference = history.length
-        ? history.reduce((n, x) => n + (x.userRating || 3), 0) /
-          history.length /
-          5
-        : 0.5;
       const score =
-        (0.45 * (matches.length - missing.length)) / matches.length +
-        0.2 * urgent +
-        0.15 * (1 - r.minutes / s.preferences.minutes) +
-        0.1 +
-        0.1 * preference;
+        (0.7 * (matches.length - missing.length)) / matches.length +
+        0.3 * urgent;
       return { recipe: r, matches, missing, score };
     })
     .filter((x) => x.missing.filter((i) => !i.presenceOnly).length < 2)
@@ -498,12 +481,12 @@ export function startCooking(
       (x) => x.recipe.id === recipeId && !x.missing.length,
     )
   )
-    fail('食材、厨具或偏好已改变，请返回推荐重新核对。');
+    fail('食材库存已改变，请返回推荐重新核对。');
   s.sessions.unshift({
     id,
     recipeId,
     recipeVersion: RECIPE_VERSION,
-    servings: s.preferences.servings,
+    servings: DEFAULT_SERVINGS,
     status: 'cooking',
     step: 0,
     createdAt: new Date().toISOString(),

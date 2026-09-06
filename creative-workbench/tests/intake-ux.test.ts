@@ -6,6 +6,62 @@ import { readFile } from 'node:fs/promises';
 const page = () =>
   readFile(new URL('../app/page.tsx', import.meta.url), 'utf8');
 
+void test('photo actions use plain names and manual input has matching button styling', async () => {
+  const source = await page();
+  assert.match(source, /拍照录入食材/);
+  assert.match(source, /拍照识别/);
+  assert.doesNotMatch(
+    source,
+    /继续用 WorkBuddy 录入食材|用 WorkBuddy 拍照录入食材|用 WorkBuddy 录入食材/,
+  );
+  const tools = source
+    .split('<div className="inventory-tools">')[1]
+    .split('zhonghua-shisi-backup')[0];
+  assert.match(
+    tools,
+    /className="secondary"\s+onClick=\{\(\) => setDialog\('manual'\)/,
+  );
+  assert.match(tools, /className="text-button"[^<]*[\s\S]*?调料清单/);
+  assert.ok(tools.indexOf('拍照识别') < tools.indexOf('手动补充'));
+  assert.ok(tools.indexOf('手动补充') < tools.indexOf('调料清单'));
+});
+
+void test('meal setup and browser-storage paragraph are removed, recipe safety notes stay', async () => {
+  const source = await page();
+  assert.doesNotMatch(
+    source,
+    /今天这一餐|几个人吃|最多花多久|需要避开|preference-fields/,
+  );
+  assert.doesNotMatch(
+    source,
+    /保存在当前浏览器环境|清理浏览器数据可能丢失记录|s\.preferences/,
+  );
+  assert.match(source, /safetyNote/);
+  assert.match(source, /DEFAULT_SERVINGS/);
+});
+
+void test('candidate and voice review show quantities and expiry without identity or target pickers', async () => {
+  const source = await page();
+  const candidate = source
+    .split('function CandidateEditor(')[1]
+    .split('function ReviewForm(')[0];
+  assert.doesNotMatch(
+    candidate,
+    /label="对应食材"|显示名称|校准哪一批|添加到哪里/,
+  );
+  assert.match(candidate, /数量形式/);
+  assert.match(candidate, /到期日期/);
+  assert.match(source, /inventoryEditCandidate\(state, b.id\)/);
+  const voice = await readFile(
+    new URL('../components/voice-intake.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(voice, /对应食材|食材名称|要校准的库存|库存批次/);
+  assert.match(voice, /数量形式/);
+  assert.match(voice, /到期日期/);
+  assert.match(voice, /库存卡片分别校准余量/);
+});
+
 void test('kitchen has no user-facing candidate JSON import path', async () => {
   const source = await page();
   assert.equal(

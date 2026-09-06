@@ -199,7 +199,7 @@ void test('batch choice, foreign kitchen and invalid quantities fail safely', ()
   assert.equal(state.inventory.length, 0);
   draft.rows[0].amount = '2';
   draft.rows[0].targetId = 'choose';
-  assert.throws(() => confirmVoiceDraft(state, 'real', draft.rows), /批次/);
+  assert.throws(() => confirmVoiceDraft(state, 'real', draft.rows), /库存卡片/);
 });
 
 void test('a stocktake without spoken quantity preserves an existing known amount', () => {

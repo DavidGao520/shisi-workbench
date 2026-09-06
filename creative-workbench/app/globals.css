@@ -524,26 +524,6 @@ textarea {
   grid-template-columns: 1fr 90px;
   gap: 10px;
 }
-.preferences {
-  margin-top: 22px;
-}
-.preference-fields {
-  margin-top: 18px;
-  display: grid;
-  grid-template-columns: 125px 150px 1fr;
-  gap: 22px;
-  align-items: start;
-}
-.constraint-row {
-  display: flex;
-  align-items: center;
-  gap: 8px 20px;
-  flex-wrap: wrap;
-  border-top: 1px dashed var(--line);
-  padding-top: 10px;
-  font-size: 14px;
-  color: #665846;
-}
 .empty-state {
   text-align: center;
   border: 1px dashed #cec1a9;
@@ -875,6 +855,13 @@ textarea {
 }
 .candidate > .form-grid {
   margin-top: 20px;
+}
+.candidate > .stocktake-fields {
+  grid-template-columns: minmax(130px, 1fr) minmax(210px, 1.3fr) minmax(
+      180px,
+      1fr
+    );
+  align-items: start;
 }
 .candidate .warning-text {
   margin: 0 0 15px;
@@ -1267,9 +1254,8 @@ textarea {
   gap: 18px;
 }
 @media (max-width: 1100px) {
-  .preference-fields {
-    grid-template-columns: 110px 130px 1fr;
-    gap: 16px;
+  .candidate > .stocktake-fields {
+    grid-template-columns: 1fr 1fr;
   }
   .cooking-layout {
     grid-template-columns: 210px 1fr;
@@ -1306,20 +1292,6 @@ textarea {
   .paper {
     padding: 19px;
   }
-  .preference-fields {
-    grid-template-columns: 1fr 1fr;
-    gap: 0 16px;
-  }
-  .preference-fields > div:last-child {
-    grid-column: 1/-1;
-  }
-  .preferences .row-between {
-    align-items: flex-start;
-  }
-  .preferences .row-between .muted {
-    max-width: 130px;
-    font-size: 12px;
-  }
   .recipe-card .dish-cover img {
     padding: 8px;
     max-height: 210px;
@@ -1347,6 +1319,9 @@ textarea {
     grid-template-columns: 1fr;
     gap: 0;
   }
+  .candidate > .stocktake-fields {
+    grid-template-columns: 1fr;
+  }
   .inventory-grid {
     gap: 12px;
   }
@@ -1368,11 +1343,11 @@ textarea {
     font-size: 12px;
     min-height: 43px;
   }
-  .storage-note {
-    font-size: 12px;
-  }
   .section-head .search {
     max-width: 150px;
+  }
+  .storage-note {
+    font-size: 12px;
   }
   .section-head h2 {
     font-size: 22px;
@@ -1530,7 +1505,7 @@ textarea {
   opacity: 0.65;
 }
 .voice-row .form-grid {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
 }
 .voice-row .field {
   min-width: 0;
@@ -1552,9 +1527,6 @@ textarea {
 }
 @media (max-width: 600px) {
   .voice-row .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .voice-row .form-grid > :first-child {
-    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
