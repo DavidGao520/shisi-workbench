@@ -9,7 +9,7 @@ import {
   baiweiPantryById,
   baiweiSeasonings,
 } from '../lib/pantry-catalog';
-import { names } from '../lib/recipes';
+import { names, ingredientAliases } from '../lib/recipes';
 import { isSeasoning, seasonings } from '../lib/seasonings';
 import { parseImport } from '../lib/kitchen';
 import { IndexedDbStore } from '../lib/store';
@@ -104,7 +104,10 @@ void test('catalog mirrors all 47 ingredients and 16 seasonings from the compend
 void test('catalog names, aliases and seasoning ownership share one identity', () => {
   for (const item of baiweiPantry) {
     assert.equal(baiweiPantryById[item.id], item);
-    assert.equal(names[item.id], item.name);
+    // Recipe labels can be more specific than game labels (e.g. 鲜香菇).
+    assert.ok(names[item.id]);
+    assert.equal(ingredientAliases[item.name], item.id);
+    assert.equal(ingredientAliases[names[item.id]], item.id);
     assert.equal(baiweiPantryAliases[item.name], item.id);
   }
   for (const item of baiweiSeasonings) {

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { IndexedDbStore } from '../lib/store';
 import { recipes, cookingSteps } from '../lib/recipes';
+import { legacyRecipes } from '../lib/legacy-recipes';
 import { renderBaiweiEntry } from '../lib/archive-export';
 import {
   archive,
@@ -16,7 +17,6 @@ import {
   recommendations,
   rejectCandidate,
   remainingPlan,
-  reviewRecipe,
   stage,
   startCooking,
   stepSession,
@@ -24,10 +24,10 @@ import {
 } from '../lib/kitchen';
 
 const date = '2026-09-05';
-void test('two servings scale exact step quantities along with ingredients', () => {
-  assert.match(cookingSteps(recipes[0], 2)[1], /20 毫升/);
-  assert.match(cookingSteps(recipes[0], 2)[3], /60 毫升/);
-  assert.match(cookingSteps(recipes[2], 2)[2], /600 毫升/);
+void test('legacy two servings still scale their original exact step quantities', () => {
+  assert.match(cookingSteps(legacyRecipes[0], 2)[1], /20 毫升/);
+  assert.match(cookingSteps(legacyRecipes[0], 2)[3], /60 毫升/);
+  assert.match(cookingSteps(legacyRecipes[2], 2)[2], /600 毫升/);
 });
 void test('archive HTML escapes memories and omits private inventory snapshots', () => {
   const s = ready();
@@ -371,13 +371,13 @@ void test('ambiguous bands and boxes do not count as exact eggs', () => {
     false,
   );
 });
-void test('draft recipes cannot start real cooking until actual review is recorded', () => {
+void test('real cooking needs no named reviewer and never fabricates review records', () => {
   const s = golden();
   s.dataset = 'real';
-  assert.throws(() => startCooking(s, 'tomato_egg', 'real-1', date), /人工/);
-  reviewRecipe(s, 'tomato_egg', '测试审校人');
+  const reviewsBefore = structuredClone(s.reviews);
   startCooking(s, 'tomato_egg', 'real-1', date);
   assert.equal(s.sessions[0].status, 'cooking');
+  assert.deepEqual(s.reviews, reviewsBefore);
 });
 void test('progress never consumes food; only confirmed completion does', () => {
   const s = ready();
@@ -388,7 +388,7 @@ void test('progress never consumes food; only confirmed completion does', () => 
   completeCooking(s, 'meal-1', review(s));
   assert.equal(
     s.inventory.find((b) => b.canonicalIngredientId === 'egg')!.amount,
-    6,
+    8 - recipes[0].ingredients.find((item) => item.id === 'egg')!.amount,
   );
   assert.equal(archive(s).length, 1);
 });
@@ -399,7 +399,7 @@ void test('duplicate completion is idempotent even with stale original quantitie
   completeCooking(s, 'meal-1', payload);
   assert.equal(
     s.inventory.find((b) => b.canonicalIngredientId === 'egg')!.amount,
-    6,
+    8 - recipes[0].ingredients.find((item) => item.id === 'egg')!.amount,
   );
   assert.equal(s.sessions.filter((x) => x.status === 'completed').length, 1);
 });
@@ -506,7 +506,7 @@ void test('concurrent repeated completion commits once across connections', asyn
   const final = await a.read('demo');
   assert.equal(
     final.inventory.find((b) => b.canonicalIngredientId === 'egg')!.amount,
-    6,
+    8 - recipes[0].ingredients.find((item) => item.id === 'egg')!.amount,
   );
   assert.equal(archive(final)[0].history.length, 1);
   a.close();

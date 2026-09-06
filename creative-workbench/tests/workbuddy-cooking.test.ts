@@ -262,7 +262,7 @@ void test('cross-kitchen, stale recipe versions and replay cannot overwrite acce
   reset.bridgeIgnoredTicketIds = [entry.ticketId];
   assert.equal(receiveCookingSteps(reset, entry), false);
 });
-void test('generated steps invalidate old review, freeze cooking snapshot and complete through 百味图', () => {
+void test('generated steps preserve historical review and complete without a new named review', () => {
   const state = kitchen();
   state.dataset = 'real';
   reviewRecipe(state, 'tomato_egg', '测试核对者');
@@ -271,9 +271,9 @@ void test('generated steps invalidate old review, freeze cooking snapshot and co
   receiveCookingSteps(state, entry);
   const recipe = recipeFor(state, 'tomato_egg');
   assert.equal(reviewed(state, recipe), false);
-  assert.throws(() => startCooking(state, recipe.id), /审校/);
-  reviewRecipe(state, recipe.id, '测试核对者', recipe.workbuddyVersion);
+  const reviewsBefore = structuredClone(state.reviews);
   startCooking(state, recipe.id, 'meal');
+  assert.deepEqual(state.reviews, reviewsBefore);
   const newer = delivery();
   newer.request.dataset = 'real';
   newer.result.steps = ['新步骤一', '新步骤二', '新步骤三'];

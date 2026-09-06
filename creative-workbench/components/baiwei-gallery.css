@@ -1,0 +1,283 @@
+.baiwei-gallery {
+  font-size: 16px;
+}
+.baiwei-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+.baiwei-heading h1 {
+  margin-top: 8px;
+}
+.baiwei-progress {
+  text-align: right;
+}
+.baiwei-progress strong {
+  color: var(--red);
+  font-size: 28px;
+}
+.baiwei-progress progress {
+  display: block;
+  width: 200px;
+  height: 6px;
+  margin: 10px 0 8px auto;
+  border: 0;
+  border-radius: 3px;
+  background: #e5dece;
+  accent-color: var(--green);
+}
+.baiwei-progress progress::-webkit-progress-bar {
+  background: #e5dece;
+  border-radius: 3px;
+}
+.baiwei-progress progress::-webkit-progress-value {
+  background: var(--green);
+  border-radius: 3px;
+}
+.baiwei-progress progress::-moz-progress-bar {
+  background: var(--green);
+  border-radius: 3px;
+}
+.baiwei-note {
+  color: #70695e;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.baiwei-list,
+.baiwei-history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.baiwei-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
+}
+.baiwei-list > li {
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.baiwei-row {
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  min-height: 214px;
+  padding: 22px 4px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  border-radius: 6px;
+}
+.baiwei-row:hover {
+  background: #eee7d855;
+}
+.baiwei-row:focus-visible {
+  outline-offset: -3px;
+}
+.baiwei-row-content {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 8px;
+  min-width: 0;
+}
+.baiwei-row-title {
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 24px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.baiwei-description {
+  color: #70695e;
+  font-size: 14px;
+  line-height: 1.75;
+}
+.baiwei-row-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red);
+  font-size: 14px;
+}
+.baiwei-status {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 2px 9px;
+  color: #70695e;
+  background: #eae6dd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.baiwei-status.is-lit {
+  color: var(--green);
+  background: #e5ecd9;
+}
+.baiwei-art {
+  display: block;
+  position: relative;
+  width: 150px;
+  height: 150px;
+  flex: 0 0 150px;
+}
+.baiwei-art.is-unlit {
+  filter: grayscale(1);
+  opacity: 0.65;
+}
+.baiwei-art img {
+  display: block;
+  position: absolute;
+  object-fit: contain;
+}
+.baiwei-art .baiwei-plate {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.baiwei-art .baiwei-food {
+  max-width: none;
+}
+.baiwei-latest-photo {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+  position: absolute;
+  left: 100px;
+  bottom: 23px;
+  border: 3px solid var(--paper);
+}
+.baiwei-dialog {
+  font-size: 16px;
+}
+.baiwei-dialog > .baiwei-art {
+  width: 240px;
+  height: 240px;
+  margin: 0 auto;
+}
+.baiwei-dialog [data-slot='dialog-title'] {
+  text-align: center;
+  font-size: 32px;
+}
+.baiwei-dialog [data-slot='dialog-description'] {
+  text-align: center;
+  font-size: 16px;
+}
+.baiwei-story {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 24px 0;
+}
+.baiwei-story > p {
+  margin-top: 12px;
+}
+.baiwei-story > p:not(.baiwei-note) {
+  line-height: 1.95;
+}
+.baiwei-recipe-pending {
+  padding: 14px 18px;
+  background: #f1ecdf;
+  border-radius: 8px;
+  color: #70695e;
+}
+.baiwei-history > li {
+  display: flex;
+  gap: 16px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+}
+.baiwei-history > li > div {
+  min-width: 0;
+}
+.baiwei-history-photo {
+  width: 100px;
+  height: 100px;
+  flex: 0 0 100px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.baiwei-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 14px;
+  color: var(--green);
+}
+.baiwei-memory {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+}
+.baiwei-other {
+  padding-top: 40px;
+}
+.baiwei-other > section {
+  margin-top: 24px;
+}
+@media (max-width: 1200px) {
+  .baiwei-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .baiwei-row {
+    min-height: 184px;
+  }
+}
+@media (max-width: 600px) {
+  .baiwei-heading {
+    align-items: start;
+    gap: 12px;
+  }
+  .baiwei-heading h1 {
+    font-size: 30px;
+  }
+  .baiwei-heading .eyebrow {
+    font-size: 14px;
+  }
+  .baiwei-progress {
+    padding-top: 8px;
+  }
+  .baiwei-progress progress {
+    width: 120px;
+  }
+  .baiwei-progress p {
+    font-size: 14px;
+  }
+  .baiwei-progress strong {
+    font-size: 22px;
+  }
+  .baiwei-row {
+    gap: 10px;
+    padding: 20px 0;
+    min-height: 160px;
+  }
+  .baiwei-art {
+    width: 108px;
+    height: 108px;
+    flex-basis: 108px;
+  }
+  .baiwei-row-title {
+    font-size: 22px;
+  }
+  .baiwei-latest-photo {
+    width: 40px;
+    height: 40px;
+    left: 64px;
+    bottom: 20px;
+  }
+  .baiwei-dialog > .baiwei-art {
+    width: 190px;
+    height: 190px;
+  }
+  .baiwei-history-photo {
+    width: 72px;
+    height: 72px;
+    flex-basis: 72px;
+  }
+}

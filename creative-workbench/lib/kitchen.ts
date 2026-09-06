@@ -1,6 +1,14 @@
-import { names, recipes, RECIPE_VERSION, type Recipe } from './recipes';
-import { isSeasoning, PRESENT_QUANTITY, seasoningNames } from './seasonings';
-import { baiweiPantryAliases } from './pantry-catalog';
+import {
+  names,
+  recipes,
+  storedRecipe,
+  ingredientAliases,
+  inventoryIngredientId,
+  RECIPE_VERSION,
+  type Recipe,
+} from './recipes';
+import { isSeasoning, PRESENT_QUANTITY } from './seasonings';
+import { validateMealRatings, type MealRatings } from './meal-ratings';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
 export const units = ['个', '盒', '袋', '棵', '克', '毫升', '份'] as const;
@@ -42,6 +50,19 @@ export type Consumption = {
   expectedRevision: number;
   remaining: Quantity;
 };
+// A confirmation belongs to one recipe, kitchen and observed ingredient state.
+// It is a meal-only draft, never an inventory batch or a candidate import.
+export type MealConfirmation = { ingredientId: string; token: string };
+export type MealOnlyIngredient = {
+  ingredientId: string;
+  amount: number;
+  unit: string;
+};
+export type StockAllocation = {
+  batchId: string;
+  amount: number;
+  unit: string;
+};
 export type Session = {
   id: string;
   recipeId: string;
@@ -55,14 +76,19 @@ export type Session = {
   timerEnd?: number;
   timerRemaining?: number;
   userRating?: number;
+  ratings?: MealRatings;
   familyMemory?: string;
   photo?: string;
   actualConsumption?: Consumption[];
+  consumptionMode?: 'recipe-plan';
+  mealOnlyIngredients?: MealOnlyIngredient[];
+  stockAllocation?: StockAllocation[];
   reviewDraft?: {
-    rating: number;
+    rating?: number; // Legacy single score, never used to prefill three dimensions.
+    ratings?: MealRatings;
     memory: string;
     photo?: string;
-    consumption: Consumption[];
+    consumption?: Consumption[];
   };
   inventorySnapshot: Batch[];
 };
@@ -187,10 +213,13 @@ export function validateDate(d?: string) {
     fail('请输入有效的到期日期。');
 }
 const aliases: Record<string, string> = {
-  ...Object.fromEntries(
-    Object.entries(seasoningNames).map(([id, name]) => [name, id]),
-  ),
-  ...baiweiPantryAliases,
+  ...ingredientAliases,
+  糖: 'sugar',
+  番茄: 'tomato',
+  西红柿: 'tomato',
+  鸡蛋: 'egg',
+  青椒: 'green_pepper',
+  食用油: 'oil',
   油: 'oil',
   水: 'water',
   饮用水: 'water',
@@ -389,7 +418,13 @@ export function confirmCandidate(
   if (target) {
     if (target.revision !== input.targetRevision)
       fail('库存已变化，请重新核对批次。');
-    if (target.canonicalIngredientId !== input.ingredientId)
+    if (
+      inventoryIngredientId(target) !==
+      inventoryIngredientId({
+        canonicalIngredientId: input.ingredientId,
+        displayName: input.name,
+      })
+    )
       fail('不能把不同食材合并到同一批次。');
     if (c.mode === 'restock') {
       if (
@@ -441,6 +476,8 @@ export function recipeFor(s: KitchenState, id: string): Recipe {
     ? {
         ...recipe,
         steps: received.steps,
+        // Generated prose has no verified per-step timer/material contract.
+        detailSteps: undefined,
         workbuddyVersion: received.ticketId,
         workbuddyWarnings: received.warnings,
       }
@@ -448,8 +485,7 @@ export function recipeFor(s: KitchenState, id: string): Recipe {
 }
 export function sessionRecipe(_s: KitchenState, session: Session): Recipe {
   // Legacy sessions predate generated steps and must keep the original preset.
-  const recipe =
-    session.recipeSnapshot || recipes.find((r) => r.id === session.recipeId);
+  const recipe = storedRecipe(session);
   if (!recipe) fail('这餐的菜谱不存在。');
   return recipe;
 }
@@ -473,7 +509,7 @@ export function matching(
 ) {
   return r.ingredients.map((i) => {
     const eligible = s.inventory.filter(
-      (b) => b.canonicalIngredientId === i.id && !isExpired(b, date),
+      (b) => inventoryIngredientId(b) === i.id && !isExpired(b, date),
     );
     const amount = eligible
       .filter((b) => b.unit === i.unit)
@@ -488,8 +524,51 @@ export function matching(
       ),
       // Presence helps discovery, but never proves that the required grams/ml are available.
       presenceOnly:
-        isSeasoning(i.id) &&
+        (isSeasoning(i.id) || i.kind === 'seasoning') &&
         eligible.some((b) => b.amountBand === PRESENT_QUANTITY),
+    };
+  });
+}
+export function mealIngredients(
+  s: KitchenState,
+  r: Recipe,
+  confirmations: MealConfirmation[] = [],
+  date = today(),
+  servings = DEFAULT_SERVINGS,
+) {
+  return matching(s, r, date, servings).map((item) => {
+    const token = JSON.stringify([
+      s.dataset,
+      r.id,
+      r.workbuddyVersion || RECIPE_VERSION,
+      servings,
+      item.id,
+      item.need,
+      item.unit,
+      s.inventory
+        .filter((b) => inventoryIngredientId(b) === item.id)
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map((b) => [
+          b.id,
+          b.revision,
+          b.amount,
+          b.unit,
+          b.amountBand,
+          b.expiryDate,
+          isExpired(b, date),
+        ]),
+    ]);
+    const confirmed =
+      !item.enough &&
+      confirmations.some(
+        (c) => c.ingredientId === item.id && c.token === token,
+      );
+    return {
+      ...item,
+      token,
+      confirmed,
+      ready: item.enough || confirmed,
+      mealOnlyAmount: Math.max(0, item.need - item.have),
     };
   });
 }
@@ -502,7 +581,7 @@ export function recommendations(s: KitchenState, date = today()) {
         matches.filter((i) =>
           s.inventory.some(
             (b) =>
-              b.canonicalIngredientId === i.id &&
+              inventoryIngredientId(b) === i.id &&
               !isExpired(b, date) &&
               b.expiryDate &&
               Date.parse(b.expiryDate + 'T12:00:00Z') -
@@ -515,7 +594,18 @@ export function recommendations(s: KitchenState, date = today()) {
         0.3 * urgent;
       return { recipe: r, matches, missing, score };
     })
-    .filter((x) => x.missing.filter((i) => !i.presenceOnly).length < 2)
+    .filter(
+      (x) =>
+        x.missing.filter((i) => !i.presenceOnly).length < 2 &&
+        // A stocked condiment cupboard alone must not recommend an absent main food.
+        x.matches.some(
+          (i) =>
+            i.id !== 'water' &&
+            i.kind !== 'seasoning' &&
+            !isSeasoning(i.id) &&
+            (i.have > 0 || i.unknown),
+        ),
+    )
     .sort(
       (a, b) =>
         b.score - a.score || a.recipe.id.localeCompare(b.recipe.id, 'en'),
@@ -546,6 +636,7 @@ export function startCooking(
   id = uid(),
   date = today(),
   expectedVersion?: string,
+  confirmations: MealConfirmation[] = [],
 ) {
   if (s.sessions.some((x) => x.id === id)) return;
   if (activeSession(s)) fail('还有一餐未完成，请先继续当前一餐。');
@@ -555,10 +646,31 @@ export function startCooking(
     expectedVersion !== (r.workbuddyVersion || RECIPE_VERSION)
   )
     fail('做法版本已更新，请重新查看并核对。');
-  if (s.dataset === 'real' && !reviewed(s, r))
-    fail('现实跟做前，先逐项完成人工菜谱审校；样例厨房可演练。');
-  if (matching(s, r, date).some((item) => !item.enough))
-    fail('食材库存已改变，请返回推荐重新核对。');
+  // The page requires the meal-specific food/equipment checkbox, not a named reviewer.
+  // Recheck confirmations inside the storage transaction, against its latest stock.
+  const ingredients = mealIngredients(s, r, confirmations, date);
+  if (
+    new Set(confirmations.map((c) => c.ingredientId)).size !==
+      confirmations.length ||
+    confirmations.some(
+      (c) =>
+        !ingredients.some(
+          (i) => i.id === c.ingredientId && i.confirmed && i.token === c.token,
+        ),
+    )
+  )
+    fail('本餐食材确认已变化，请重新确认拥有。');
+  if (ingredients.some((item) => !item.ready))
+    fail('食材库存不足或已改变，请重新核对并确认本餐拥有所需食材。');
+  const mealOnlyIngredients = ingredients
+    .filter((i) => i.confirmed)
+    .map((i) => ({
+      ingredientId: i.id,
+      amount: i.mealOnlyAmount,
+      unit: i.unit,
+    }));
+  // Every meal fixes its own real-stock plan; later restocks are not a substitute.
+  const stockAllocation = allocateStock(s, r, DEFAULT_SERVINGS, date);
   s.sessions.unshift({
     id,
     recipeId,
@@ -569,6 +681,8 @@ export function startCooking(
     step: 0,
     createdAt: new Date().toISOString(),
     inventorySnapshot: structuredClone(s.inventory),
+    stockAllocation,
+    ...(mealOnlyIngredients.length ? { mealOnlyIngredients } : {}),
   });
 }
 export function stepSession(s: KitchenState, id: string, step: number) {
@@ -582,18 +696,19 @@ export function stepSession(s: KitchenState, id: string, step: number) {
   delete session.timerEnd;
   delete session.timerRemaining;
 }
-export function remainingPlan(
+function allocateStock(
   s: KitchenState,
   r: Recipe,
   servings: number,
   date = today(),
-): Consumption[] {
-  const result: Consumption[] = [];
+): StockAllocation[] {
+  const result: StockAllocation[] = [];
   for (const ingredient of r.ingredients) {
     let need = ingredient.amount * servings;
     const candidates = s.inventory
       .filter(
-        (b) => b.canonicalIngredientId === ingredient.id && !isExpired(b, date),
+        (b) =>
+          inventoryIngredientId(b) === ingredient.id && !isExpired(b, date),
       )
       .sort(
         (a, b) =>
@@ -608,21 +723,87 @@ export function remainingPlan(
       need -= consumed;
       result.push({
         batchId: b.id,
-        expectedRevision: b.revision,
-        remaining: {
-          amount: Math.round((b.amount - consumed) * 1000) / 1000,
-          unit: b.unit,
-        },
+        amount: consumed,
+        unit: b.unit,
       });
     }
   }
   return result;
 }
+export function remainingPlan(
+  s: KitchenState,
+  r: Recipe,
+  servings: number,
+  date = today(),
+): Consumption[] {
+  // Retain the original prefill semantics for sessions without meal-only provisions.
+  return allocateStock(s, r, servings, date).map((use) => {
+    const batch = s.inventory.find((b) => b.id === use.batchId)!;
+    return {
+      batchId: batch.id,
+      expectedRevision: batch.revision,
+      remaining: {
+        amount: Math.round((batch.amount! - use.amount) * 1000) / 1000,
+        unit: use.unit,
+      },
+    };
+  });
+}
+export function sessionRemainingPlan(
+  s: KitchenState,
+  session: Session,
+): Consumption[] {
+  if (!session.stockAllocation)
+    return remainingPlan(s, sessionRecipe(s, session), session.servings);
+  return session.stockAllocation.map((use) => {
+    const current = s.inventory.find((b) => b.id === use.batchId);
+    const original = session.inventorySnapshot.find(
+      (b) => b.id === use.batchId,
+    )!;
+    const compatible =
+      current?.amount !== undefined &&
+      current.unit === use.unit &&
+      inventoryIngredientId(current) === inventoryIngredientId(original);
+    const batch = compatible ? current! : original;
+    return {
+      batchId: use.batchId,
+      // A removed/retyped batch stays stale until the user explicitly removes it.
+      expectedRevision: compatible ? batch.revision : -1,
+      remaining: {
+        // Never round down past the saved allocation: inventory accepts decimals.
+        amount: Math.max(0, batch.amount! - use.amount),
+        unit: use.unit,
+      },
+    };
+  });
+}
+export function mealStockLimit(
+  session: Session,
+  batch: Batch,
+): number | undefined {
+  const original = session.inventorySnapshot.find((b) => b.id === batch.id);
+  const hasMealOnlyPortion = session.mealOnlyIngredients?.some(
+    (i) =>
+      i.ingredientId === inventoryIngredientId(batch) ||
+      (original && i.ingredientId === inventoryIngredientId(original)),
+  );
+  if (!hasMealOnlyPortion) return undefined;
+  const allocation = session.stockAllocation?.find(
+    (a) => a.batchId === batch.id,
+  );
+  return allocation &&
+    allocation.unit === batch.unit &&
+    original &&
+    inventoryIngredientId(original) === inventoryIngredientId(batch)
+    ? allocation.amount
+    : 0;
+}
 export function completeCooking(
   s: KitchenState,
   id: string,
   review: {
-    rating: number;
+    rating?: number;
+    ratings?: MealRatings;
     memory: string;
     photo?: string;
     consumption: Consumption[];
@@ -633,10 +814,16 @@ export function completeCooking(
   if (!session) fail('烹饪记录不存在。');
   if (session.status === 'completed') return;
   if (session.status !== 'reviewing') fail('请先完成跟做，再确认实际消耗。');
+  const ratings =
+    review.ratings === undefined
+      ? undefined
+      : validateMealRatings(review.ratings);
   if (
-    !Number.isInteger(review.rating) ||
-    review.rating < 1 ||
-    review.rating > 5
+    !ratings &&
+    (review.rating === undefined ||
+      !Number.isInteger(review.rating) ||
+      review.rating < 1 ||
+      review.rating > 5)
   )
     fail('请给这一餐打 1–5 分。');
   if (review.memory.length > 2000) fail('家庭记忆请控制在 2000 字以内。');
@@ -665,6 +852,14 @@ export function completeCooking(
       fail('剩余量不能大于原量或静默换单位；补货请到我的厨房操作。');
     if (batch.amount !== undefined && q.amount === undefined)
       fail('精确数量批次请填写实际剩余数量。');
+    const limit = mealStockLimit(session, batch);
+    if (
+      limit !== undefined &&
+      (batch.amount === undefined ||
+        q.amount === undefined ||
+        batch.amount - q.amount > limit + 0.000001)
+    )
+      fail('本餐临时确认的食材不扣冰箱库存；只能核对开做时已分配的库存用量。');
     updates.push({ batch, q });
   }
   for (const { batch, q } of updates) {
@@ -676,7 +871,7 @@ export function completeCooking(
   Object.assign(session, {
     status: 'completed',
     completedAt: at,
-    userRating: review.rating,
+    ...(ratings ? { ratings } : { userRating: review.rating }),
     familyMemory: review.memory,
     photo: review.photo,
     actualConsumption: review.consumption,
@@ -684,6 +879,68 @@ export function completeCooking(
   delete session.timerEnd;
   delete session.timerRemaining;
   delete session.reviewDraft;
+}
+/** Simple feedback flow: compute the saved recipe's deduction inside db.change. */
+export function finishCooking(
+  s: KitchenState,
+  id: string,
+  feedback: { ratings: MealRatings; memory: string; photo?: string },
+  at = new Date().toISOString(),
+) {
+  const session = s.sessions.find((x) => x.id === id);
+  if (!session) fail('烹饪记录不存在。');
+  if (session.status === 'completed') return;
+  if (session.status !== 'reviewing') fail('请先完成跟做，再记录这一餐。');
+  const ratings = validateMealRatings(feedback.ratings);
+  let allocation = session.stockAllocation;
+  if (!allocation) {
+    // Older meals never borrow newly added stock. Use the original local start
+    // day, not today, so a meal finished after midnight retains its original plan.
+    const began = new Date(session.createdAt);
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(session.createdAt)
+      ? session.createdAt
+      : [
+          began.getFullYear(),
+          String(began.getMonth() + 1).padStart(2, '0'),
+          String(began.getDate()).padStart(2, '0'),
+        ].join('-');
+    allocation = Number.isNaN(began.getTime())
+      ? []
+      : allocateStock(
+          { ...s, inventory: session.inventorySnapshot },
+          sessionRecipe(s, session),
+          session.servings,
+          startDate,
+        );
+  }
+  const consumption: Consumption[] = [];
+  for (const use of allocation) {
+    const original = session.inventorySnapshot.find(
+      (b) => b.id === use.batchId,
+    );
+    const current = s.inventory.find((b) => b.id === use.batchId);
+    // Removed, retyped or imprecise rows are left untouched, never replaced.
+    if (
+      !original ||
+      !current ||
+      current.amount === undefined ||
+      current.amount <= 0 ||
+      current.unit !== use.unit ||
+      inventoryIngredientId(current) !== inventoryIngredientId(original)
+    )
+      continue;
+    consumption.push({
+      batchId: current.id,
+      expectedRevision: current.revision,
+      remaining: {
+        amount: Math.max(0, current.amount - use.amount),
+        unit: current.unit,
+      },
+    });
+  }
+  // Ignore legacy draft.consumption: only the photo, score and comment are input.
+  completeCooking(s, id, { ...feedback, ratings, consumption }, at);
+  session.consumptionMode = 'recipe-plan';
 }
 export function archive(s: KitchenState) {
   return recipes

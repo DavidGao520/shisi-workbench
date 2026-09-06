@@ -267,7 +267,7 @@ small {
   place-items: center;
   color: #8a8b59;
 }
-.dish-cover img {
+.dish-cover > img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -683,7 +683,7 @@ textarea {
   background: #fffaf0;
   text-align: left;
 }
-.index-item img {
+.index-item > img {
   width: 54px;
   height: 54px;
   object-fit: contain;
@@ -1203,7 +1203,7 @@ textarea {
   align-items: center;
   gap: 18px;
 }
-.detail-heading img {
+.detail-heading > img {
   width: 140px;
   height: 140px;
   object-fit: contain;
@@ -1218,7 +1218,8 @@ textarea {
 }
 .ingredient-list > div {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) auto;
+  align-items: center;
   gap: 12px;
   padding: 9px 0;
   border-bottom: 1px dashed var(--line);
@@ -1232,6 +1233,56 @@ textarea {
 }
 .ingredient-list small {
   text-align: right;
+}
+.meal-ingredient-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.meal-ownership,
+.meal-owned {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.meal-ownership {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.meal-ownership.needs-confirmation {
+  color: #a43d2c;
+  border-color: #d69b8e;
+  background: #fff6f2;
+}
+.meal-ownership.is-owned,
+.meal-owned {
+  color: #456033;
+  border-color: #9eb188;
+  background: #edf3e6;
+}
+.meal-owned {
+  padding: 8px 12px;
+  border-radius: 7px;
+}
+.meal-ownership:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.meal-ownership:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.meal-provision-note {
+  font-size: 13px;
+  color: #786c56;
+  line-height: 1.7;
 }
 .culture-panel {
   padding: 20px;
@@ -1256,17 +1307,6 @@ textarea {
   display: block;
   margin-top: 8px;
   color: #807054;
-}
-.review-gate {
-  background: #f6ecdb;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #ddc8a1;
-}
-.review-gate > p {
-  font-size: 14px;
-  margin: 12px 0;
-  color: #7b684e;
 }
 .safety-note {
   font-size: 13px;
@@ -1328,15 +1368,21 @@ textarea {
 .timer strong {
   font-size: 21px;
 }
+.review-form {
+  max-width: 760px;
+}
 .review-form > h2 {
   font-size: 30px;
   margin: 8px 0 12px;
 }
-.review-grid {
+.review-fields {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 35px;
-  margin: 25px 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  margin: 28px 0;
+}
+.review-fields > .field {
+  margin: 0;
 }
 .photo-upload {
   position: relative;
@@ -1366,61 +1412,77 @@ textarea {
   margin-top: 13px;
   border-radius: 8px;
 }
-.rating {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.rating button {
-  background: none;
+.meal-ratings {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
   border: 0;
-  padding: 5px;
-  min-width: 33px;
-  min-height: 40px;
 }
-.rating span {
-  font-size: 13px;
-  margin-left: 10px;
+.meal-ratings legend {
+  margin-bottom: 16px;
+  font-size: 16px;
 }
-.consume-row {
+.meal-rating-dimension + .meal-rating-dimension {
+  margin-top: 18px;
+}
+.meal-rating-heading {
   display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 13px 0;
-  border-bottom: 1px dashed var(--line);
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 16px;
 }
-.consume-row > div:first-child {
-  flex: 1;
-}
-.consume-row strong {
-  font-size: 15px;
-  font-weight: 500;
-}
-.consume-row small {
-  display: block;
-  font-size: 12px;
-  color: #8a775d;
-}
-.remaining-field {
-  display: flex;
-  align-items: center;
-  gap: 7px;
+.meal-rating-heading small {
+  color: #70695e;
   font-size: 14px;
 }
-.remaining-field input {
-  width: 75px;
-  padding: 8px;
+.meal-rating-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
 }
-.review-grid > .field {
-  margin-top: 15px;
+.meal-rating-options {
+  display: flex;
+  width: auto;
+  gap: 0;
 }
-.review-grid > div > .actions {
-  margin-top: 18px;
-  align-items: end;
+.meal-rating-choice {
+  position: relative;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
 }
-.review-grid > div > .actions .field {
-  margin-bottom: 0;
-  flex: 1;
+.meal-rating-choice .meal-rating-input {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.meal-rating-choice .meal-rating-input::after,
+.meal-rating-input [data-slot='radio-group-indicator'] {
+  display: none;
+}
+.meal-rating-choice .meal-rating-input:focus-visible {
+  outline: 2px solid #b46642;
+  outline-offset: -2px;
+}
+.meal-rating-star {
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+}
+.meal-ratings:disabled .meal-rating-star {
+  opacity: 0.5;
+}
+.meal-rating-value {
+  font-size: 14px;
+  color: #70695e;
 }
 .review-form > .actions {
   margin-top: 18px;
@@ -1500,9 +1562,6 @@ textarea {
   .recipe-index {
     grid-template-columns: 1fr;
   }
-  .review-grid {
-    grid-template-columns: 1fr;
-  }
   .row-between > .muted {
     max-width: 190px;
   }
@@ -1534,7 +1593,7 @@ textarea {
   .paper {
     padding: 19px;
   }
-  .recipe-card .dish-cover img {
+  .recipe-card .dish-cover > img {
     padding: 8px;
     max-height: 210px;
   }
@@ -1605,7 +1664,7 @@ textarea {
     grid-template-columns: 115px 1fr;
     gap: 0 15px;
   }
-  .cooking-art img {
+  .cooking-art > img {
     grid-row: 1/5;
     height: 135px;
   }
@@ -1651,9 +1710,6 @@ textarea {
   }
   .culture-panel {
     padding: 17px;
-  }
-  .review-grid {
-    gap: 23px;
   }
   .archive-heading {
     align-items: baseline;

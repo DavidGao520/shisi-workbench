@@ -1,0 +1,131 @@
+.dish-cover .baiwei-art {
+  width: 230px;
+  height: 230px;
+  flex-basis: 230px;
+  margin: auto;
+}
+.index-item .baiwei-art {
+  width: 60px;
+  height: 60px;
+  flex-basis: 60px;
+}
+.detail-heading .baiwei-art {
+  width: 140px;
+  height: 140px;
+  flex-basis: 140px;
+}
+.cooking-art > .baiwei-art {
+  width: min(100%, 340px);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0 auto 28px;
+}
+.recipe-instructions > li {
+  padding: 20px 0 24px 8px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.recipe-instructions > li::marker {
+  font-weight: 700;
+  color: var(--red);
+}
+.recipe-step-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.recipe-step-heading h3 {
+  font-size: 20px;
+  margin: 0;
+}
+.recipe-step-time {
+  color: var(--red);
+  white-space: nowrap;
+  font-size: 14px;
+}
+.recipe-step-heat {
+  color: #726a59;
+  margin: 6px 0 12px;
+  font-size: 14px;
+}
+.recipe-step-materials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  padding: 12px 14px;
+  background: #eee7d866;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.recipe-step-materials ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.recipe-step-materials li {
+  padding: 0;
+  margin: 0;
+}
+.recipe-step-materials b {
+  font-weight: 500;
+}
+.recipe-step-instruction {
+  line-height: 1.95;
+  white-space: pre-wrap;
+  margin: 14px 0 10px;
+}
+.recipe-step-check {
+  color: #456141;
+  font-size: 14px;
+  line-height: 1.85;
+  margin: 8px 0 0;
+}
+.recipe-step-timer {
+  margin-top: 12px;
+}
+.recipe-sources ul {
+  list-style: none;
+  padding: 0;
+}
+.recipe-sources li + li {
+  margin-top: 18px;
+}
+.recipe-sources li p {
+  font-size: 14px;
+  margin-top: 6px;
+}
+.recipe-safety-source {
+  margin-top: 16px;
+  font-size: 14px;
+}
+.workbuddy-cooking summary {
+  cursor: pointer;
+  color: #735c40;
+  padding: 6px 0;
+}
+.ingredient-list > div > span > small {
+  display: block;
+  max-width: 230px;
+  font-size: 12px;
+}
+@media (max-width: 650px) {
+  .detail-heading .baiwei-art {
+    width: 96px;
+    height: 96px;
+    flex-basis: 96px;
+  }
+  .cooking-art > .baiwei-art {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+  }
+  .recipe-instructions {
+    padding-left: 20px;
+  }
+}

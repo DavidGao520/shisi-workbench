@@ -1,0 +1,40 @@
+{
+  "source": {
+    "repository": "https://github.com/4567lizhen/Chinese-Cuisine",
+    "revision": "ae825f252ae982ec05d359edff44e226cef2fca2",
+    "metadataSources": [
+      {
+        "path": "src/data/dishes.ts",
+        "gitSha": "7a55eee2277c4ed9f2d1adee719d9dcecc7b9b63",
+        "sha256": "0bc0184b9fc1316ccafb62a7604f147d63f0010295725e4e082cb590eef34284"
+      },
+      {
+        "path": "src/data/recipes.ts",
+        "gitSha": "ea07d9c10f5cf5bded10acf934dc7211396d613f",
+        "sha256": "5a2bb5a3405f0b6e3f632fe7d5946e8a39abd1b3996d1e4541291c28a67f8b54"
+      },
+      {
+        "path": "src/ui/cardArt.ts",
+        "gitSha": "4152a6bee9cc5b85cdf9e09c5efc76e7c972b0b7",
+        "sha256": "59e82fb3550973b645ce62d2bdedbdf4bca33c030e73fe6c9b579996616459d6"
+      }
+    ],
+    "assetRetrieval": "Authenticated GitHub REST git/blobs API using gh; base64 decoded without transformation; Git blob SHA-1 verified"
+  },
+  "counts": {
+    "dishes": 70,
+    "stories": 70,
+    "selfContained": 21,
+    "sharedPlate": 49,
+    "soup": 14,
+    "assets": 71,
+    "dishBytes": 14256394,
+    "totalBytes": 14302538
+  },
+  "plate": {
+    "imageFile": "assets/baiwei/plates/plate_1.webp",
+    "imageGitSha": "e8d9913e675c007ff4a4b3a920c3035c02cc75b0",
+    "imageSha256": "d42ccf9496ef05768151d66189df195c15cfdfd903203eb0218b434335373d94",
+    "imageBytes": 46144
+  }
+}
