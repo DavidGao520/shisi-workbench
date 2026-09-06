@@ -264,3 +264,63 @@ void test('every compendium card and its three category frames are bundled inlin
       new URL('../public/art/cards/' + frame + '.webp', import.meta.url),
     );
 });
+
+void test('workbench-only staples have distinct inline card art without changing the compendium', async () => {
+  const artSource = await readFile(
+    new URL('../lib/art.ts', import.meta.url),
+    'utf8',
+  );
+  const supplementalCards = [
+    {
+      id: 'oil',
+      kind: 'seasoning',
+      theme: 'spice',
+      frame: 'spiceCardFrame',
+      image: 'cardOil',
+    },
+    {
+      id: 'cooking_wine',
+      kind: 'seasoning',
+      theme: 'spice',
+      frame: 'spiceCardFrame',
+      image: 'cardCookingWine',
+    },
+    {
+      id: 'starch',
+      kind: 'seasoning',
+      theme: 'spice',
+      frame: 'spiceCardFrame',
+      image: 'cardStarch',
+    },
+    {
+      id: 'cooked_rice',
+      kind: 'ingredient',
+      theme: 'vegetable',
+      frame: 'vegetableCardFrame',
+      image: 'cardCookedRice',
+    },
+  ] as const;
+
+  assert.equal(baiweiPantry.length, 63);
+  for (const item of supplementalCards) {
+    await access(
+      new URL('../public/art/cards/' + item.id + '.webp', import.meta.url),
+    );
+    assert.ok(
+      artSource.includes('/cards/' + item.id + '.webp?inline'),
+      item.id + ' must be part of the self-contained build',
+    );
+    const cardBlock = artSource
+      .split(`  ${item.id}: {`)[1]
+      ?.split('  },')[0];
+    assert.ok(cardBlock, item.id + ' must have supplemental card metadata');
+    assert.ok(cardBlock.includes(`frame: ${item.frame}`));
+    assert.ok(cardBlock.includes(`image: ${item.image}`));
+    assert.ok(cardBlock.includes(`kind: '${item.kind}'`));
+    assert.ok(cardBlock.includes(`theme: '${item.theme}'`));
+    if (item.id === 'cooked_rice') {
+      assert.ok(cardBlock.includes('image: cardCookedRice'));
+      assert.ok(!cardBlock.includes('image: cardRice,'));
+    }
+  }
+});
