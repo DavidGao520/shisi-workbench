@@ -916,6 +916,11 @@ textarea {
   overflow: hidden;
   text-align: center;
 }
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__details {
+  top: 62.5%;
+  height: 26%;
+  justify-content: center;
+}
 .kitchen-ingredient-card__state {
   color: #7c6a4e;
   font-size: 11px;

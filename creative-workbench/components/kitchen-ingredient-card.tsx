@@ -12,7 +12,6 @@ type KitchenIngredientCardProps = {
   expiryDate?: string;
   expired?: boolean;
   batchId?: string;
-  contextLabel?: string;
   actionLabel?: string;
   actionDisabled?: boolean;
   onAction?: () => void;
@@ -52,7 +51,6 @@ export function KitchenIngredientCard({
   expiryDate,
   expired = false,
   batchId,
-  contextLabel,
   actionLabel,
   actionDisabled = false,
   onAction,
@@ -67,9 +65,7 @@ export function KitchenIngredientCard({
       : quantity;
   const expiry = expiryPresentation(expiryDate, status, expired);
   const dateLabel = expiryDate?.replaceAll('-', '.');
-  const meta = batchId
-    ? '批次 ' + batchId.slice(0, 6)
-    : contextLabel || '待确认批次';
+  const meta = batchId ? '批次 ' + batchId.slice(0, 6) : undefined;
   const accessibleLabel = [
     name,
     stateLabel,
@@ -134,10 +130,12 @@ export function KitchenIngredientCard({
           </span>
           {expiryDate && <time dateTime={expiryDate}>{dateLabel}</time>}
         </div>
-        <div className="kitchen-ingredient-card__footer">
-          <span>{meta}</span>
-          {action}
-        </div>
+        {(meta || action) && (
+          <div className="kitchen-ingredient-card__footer">
+            {meta && <span>{meta}</span>}
+            {action}
+          </div>
+        )}
       </div>
 
       <div className="kitchen-ingredient-card__mobile-details">
@@ -152,19 +150,21 @@ export function KitchenIngredientCard({
           {expiry.label}
         </span>
         {expiryDate && <time dateTime={expiryDate}>{dateLabel}</time>}
-        <div className="kitchen-ingredient-card__mobile-footer">
-          <span>{meta}</span>
-          {actionLabel && onAction ? (
-            <button
-              type="button"
-              className="kitchen-ingredient-card__action"
-              disabled={actionDisabled}
-              onClick={onAction}
-            >
-              {actionLabel}
-            </button>
-          ) : null}
-        </div>
+        {(meta || (actionLabel && onAction)) && (
+          <div className="kitchen-ingredient-card__mobile-footer">
+            {meta && <span>{meta}</span>}
+            {actionLabel && onAction ? (
+              <button
+                type="button"
+                className="kitchen-ingredient-card__action"
+                disabled={actionDisabled}
+                onClick={onAction}
+              >
+                {actionLabel}
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
     </article>
   );

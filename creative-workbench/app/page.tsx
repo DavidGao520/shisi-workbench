@@ -255,7 +255,6 @@ function CandidateEditor({
           status="pending"
           quantity={previewQuantity}
           expiryDate={expiry || undefined}
-          contextLabel={c.mode === 'stocktake' ? '盘点候选' : '补货候选'}
         />
       )}
       <div className="candidate-editor-body">
