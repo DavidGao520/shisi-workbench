@@ -847,7 +847,7 @@ export default function Home() {
       <aside className="rail">
         <div className="brand">
           <span className="brand-seal">食</span>
-          <div>中华食肆</div>
+          <div>食肆工作台</div>
         </div>
         <TabsList className="side-tabs">
           {pages.map((p) => (
