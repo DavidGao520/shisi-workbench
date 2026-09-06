@@ -25,6 +25,53 @@ void test('ingredient names share the card centerline with the category label', 
   );
 });
 
+void test('illustrated candidate layout stacks before the three-field form loses its minimum width', async () => {
+  const source = await styles();
+  const rule = (selector: string) =>
+    source.split(selector + ' {')[1].split('}')[0];
+  const workspace = rule('.workspace');
+  const card = rule('.candidate');
+  const art = rule('.candidate-with-art');
+  const fields = rule('.candidate-editor-body > .stocktake-fields');
+  const railWidth = Number(workspace.match(/margin-left: (\d+)px/)![1]);
+  const horizontalPadding =
+    2 * Number(workspace.match(/padding: 0 (\d+)px/)![1]);
+  const inset =
+    2 *
+    (Number(card.match(/padding: (\d+)px/)![1]) +
+      Number(card.match(/border: (\d+)px/)![1]));
+  const artWidth = Number(art.match(/minmax\(\d+px, (\d+)px\)/)![1]);
+  const artGap = Number(art.match(/gap: (\d+)px/)![1]);
+  const minimums = [...fields.matchAll(/minmax\(\s*(\d+)px/g)].map((match) =>
+    Number(match[1]),
+  );
+  assert.equal(minimums.length, 3);
+  const fieldGap = Number(rule('.form-grid').match(/gap: 0 (\d+)px/)![1]);
+  const required =
+    minimums.reduce((sum, value) => sum + value, 0) + 2 * fieldGap;
+  const stackAt = Number(
+    source.match(
+      /@media \(max-width: (\d+)px\) \{\s*\.candidate-with-art \{\s*grid-template-columns: 1fr;/,
+    )![1],
+  );
+  for (const viewport of [1101, 1200, 1250, 1251, 1440]) {
+    const available =
+      viewport -
+      railWidth -
+      horizontalPadding -
+      inset -
+      (viewport > stackAt ? artWidth + artGap : 0);
+    assert.ok(
+      available >= required,
+      `${viewport}px: ${available}px available, ${required}px required`,
+    );
+  }
+  assert.match(
+    rule('.candidate--calibration .candidate-editor-body > .stocktake-fields'),
+    /grid-template-columns: 1fr;/,
+  );
+});
+
 void test('cooking keeps one version-bound food checkbox, with no named-review panel or hidden blocker', async () => {
   const source = await page();
   assert.doesNotMatch(

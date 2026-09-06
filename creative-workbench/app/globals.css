@@ -1566,7 +1566,8 @@ textarea {
     max-width: 190px;
   }
 }
-@media (max-width: 900px) {
+/* Stack artwork before it leaves less than 556px for quantity/date fields. */
+@media (max-width: 1250px) {
   .candidate-with-art {
     grid-template-columns: 1fr;
   }
