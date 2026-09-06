@@ -732,26 +732,19 @@ textarea {
 }
 .seasoning-onboarding {
   margin-bottom: 24px;
-  border-top: 4px solid var(--accent, #a9432e);
 }
 .seasoning-onboarding h2 {
-  font-size: clamp(24px, 2.5vw, 32px);
-  margin: 8px 0;
+  font-size: 26px;
+  margin: 0 0 8px;
 }
 .seasoning-onboarding > p:not(.eyebrow) {
   font-size: 16px;
   color: #665846;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
-.seasoning-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+.seasoning-shortcut {
   font-size: 14px;
-  color: #665846;
-  margin-bottom: 12px;
+  font-weight: 400;
 }
 .seasoning-group {
   border: 0;
@@ -760,13 +753,19 @@ textarea {
   min-width: 0;
 }
 .seasoning-group legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 10px;
 }
 .seasoning-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 .seasoning-option {
@@ -827,19 +826,13 @@ textarea {
   border-top: 1px solid var(--line);
   padding-top: 16px;
 }
-.seasoning-confirm p {
-  font-size: 16px;
-  margin: 0 0 5px;
-}
-.seasoning-confirm strong {
-  color: #a9432e;
-}
-.seasoning-confirm span {
-  font-size: 14px;
-  color: #665846;
-}
 .seasoning-confirm .actions {
-  margin-top: 16px;
+  margin-top: 0;
+}
+@media (max-width: 600px) {
+  .seasoning-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .seasoning-invitation {
   display: flex;

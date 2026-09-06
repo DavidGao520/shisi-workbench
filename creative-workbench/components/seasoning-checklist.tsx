@@ -48,7 +48,26 @@ export function SeasoningChecklist({
   };
   const group = (entry: (typeof seasoningGroups)[number]) => (
     <fieldset className="seasoning-group" disabled={busy} key={entry.id}>
-      <legend>{entry.label}</legend>
+      <legend>
+        <span>{entry.label}</span>
+        {entry.id === seasoningGroups[0].id && (
+          <button
+            className="text-button seasoning-shortcut"
+            disabled={busy || !common.length}
+            onClick={() =>
+              setSelected((previous) =>
+                commonSelected
+                  ? previous.filter(
+                      (id) => !common.some((item) => item.id === id),
+                    )
+                  : [...new Set([...previous, ...common.map((item) => item.id)])],
+              )
+            }
+          >
+            {commonSelected ? '取消常用项' : '选中常用 ' + common.length + ' 项'}
+          </button>
+        )}
+      </legend>
       <div className="seasoning-grid">
         {entry.items.map((item) => {
           const existing = owned.has(item.id);
@@ -86,24 +105,6 @@ export function SeasoningChecklist({
   );
   return (
     <div className="seasoning-checklist">
-      <div className="seasoning-shortcuts">
-        <span>勾选家里确实有的，确认前不会入库。</span>
-        <button
-          className="text-button"
-          disabled={busy || !common.length}
-          onClick={() =>
-            setSelected((previous) =>
-              commonSelected
-                ? previous.filter(
-                    (id) => !common.some((item) => item.id === id),
-                  )
-                : [...new Set([...previous, ...common.map((item) => item.id)])],
-            )
-          }
-        >
-          {commonSelected ? '取消常用项' : '选中常用 ' + common.length + ' 项'}
-        </button>
-      </div>
       {group(seasoningGroups[0])}
       <details className="seasoning-more">
         <summary>
@@ -113,16 +114,7 @@ export function SeasoningChecklist({
         {seasoningGroups.slice(1).map(group)}
       </details>
       <div className="seasoning-confirm">
-        <div>
-          <p aria-live="polite">
-            待加入 <strong>{pending.length}</strong> 种调料
-            {owned.size > 0 && ' · 已记录 ' + owned.size + ' 种'}
-          </p>
-          <span>
-            只记录“有”，不估重量或余量；已有库存保持不变。菜谱需要的用量之后再核对。
-          </span>
-        </div>
-        <div className="actions">
+        <div className="actions" aria-live="polite">
           <button
             className="primary"
             disabled={busy || !pending.length}

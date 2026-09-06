@@ -961,8 +961,7 @@ export default function Home() {
                 className="paper seasoning-onboarding"
                 aria-labelledby="seasoning-welcome"
               >
-                <p className="eyebrow">新厨房 · 先备好调料</p>
-                <h2 id="seasoning-welcome">家里的油盐酱醋，不用再拍一遍</h2>
+                <h2 id="seasoning-welcome">先备好调料</h2>
                 <p>先勾选调料，再用语音或拍照录入冰箱里的其他食材。</p>
                 <SeasoningChecklist
                   key={dataset}
