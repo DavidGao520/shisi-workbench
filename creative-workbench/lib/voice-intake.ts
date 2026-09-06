@@ -86,6 +86,27 @@ const afterQuantity = new RegExp(
 const negative =
   /没有|没买|没了|用完|吃完|不要|别记|不记|不加|不剩|不是|(?:想|准备|打算|需要|要|计划)(?:买|做|吃)/;
 
+// A known word inside a compound is not evidence of its raw ingredient.
+// Exact prepared/custom foods still win the longest-match lexicon above.
+function foodBoundaries(before: string, after: string) {
+  const left = before.trim();
+  const right = after.trim();
+  return (
+    (!left ||
+      /\s$/.test(before) ||
+      beforeQuantity.test(left) ||
+      /(?:[、和与跟及]|还有|有|还剩|剩|只记|记|买了|放着|存着|的|一点|有点|少量|一些)$/.test(
+        left,
+      )) &&
+    (!right ||
+      /^\s/.test(after) ||
+      afterQuantity.test(right) ||
+      /^(?:[、和与跟及]|还有|有|还剩|剩|都|没有|没了|用完|吃完|不要|一点|有点|少量|充足|即将用完|大概|大约|约|差不多|大半|半个多|左右)/.test(
+        right,
+      ))
+  );
+}
+
 export function extractIngredients(
   transcript: string,
   knownFoods: { displayName: string; canonicalIngredientId?: string }[] = [],
@@ -144,6 +165,15 @@ export function extractIngredients(
           '未加入「' +
             word +
             '」：这段话表示没有、已用完或计划购买；原库存未改变。',
+        );
+        continue;
+      }
+      const touchesPrevious = i > 0 && before.length === 0;
+      const touchesNext = i < matches.length - 1 && after.length === 0;
+      if (touchesPrevious || touchesNext || !foodBoundaries(before, after)) {
+        unresolved = true;
+        notes.push(
+          '有复合或加工食材未完整识别，未按部分名称入库；请核对原话或手动补充。',
         );
         continue;
       }

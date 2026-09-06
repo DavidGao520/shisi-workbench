@@ -169,6 +169,91 @@ void test('processed-food names never become raw tofu or overwrite its stocktake
     [100, 500, 250],
   );
 });
+void test('unknown compound foods never become raw ingredients through substring matching', () => {
+  for (const text of [
+    '一袋鱼丸',
+    '猪肉脯200克',
+    '虾滑300克',
+    '姜汁一瓶',
+    '牛奶糖一袋',
+    '盐焗鸡一只',
+    '蛋白粉一罐',
+    '鱼香肉丝一份',
+  ]) {
+    const result = extractIngredients(text);
+    assert.equal(result.items.length, 0, text);
+    assert.ok(
+      result.warnings.some((warning) => warning.includes('完整')),
+      text,
+    );
+  }
+  const mixed = extractIngredients('买了鱼丸和两个鸡蛋');
+  assert.deepEqual(
+    mixed.items.map((item) => [item.canonicalIngredientId, item.amount]),
+    [['egg', 2]],
+  );
+  assert.ok(mixed.warnings.length);
+  assert.deepEqual(
+    extractIngredients('牛奶、白糖').items.map(
+      (item) => item.canonicalIngredientId,
+    ),
+    ['milk', 'sugar'],
+  );
+});
+
+void test('green garlic and unresolved compounds cannot overwrite existing raw-food stock', () => {
+  const state = emptyState('real');
+  state.inventory = [
+    { id: 'raw-garlic', displayName: '大蒜', canonicalIngredientId: 'garlic' },
+    { id: 'raw-fish', displayName: '鱼', canonicalIngredientId: 'fish' },
+  ].map((item) => ({
+    ...item,
+    amount: 1000,
+    unit: '克',
+    revision: 1,
+    confirmed: true,
+    createdAt: '2026-09-06',
+    updatedAt: '2026-09-06',
+  }));
+  const before = structuredClone(state.inventory);
+  const draft = prepareVoiceDraft('200克蒜苗，一袋鱼丸', state, 'stocktake');
+  assert.deepEqual(
+    draft.rows.map((row) => row.ingredientId),
+    ['green_garlic'],
+  );
+  confirmVoiceDraft(state, 'real', draft.rows);
+  assert.deepEqual(state.inventory.slice(0, 2), before);
+  assert.equal(state.inventory[2].canonicalIngredientId, 'green_garlic');
+  assert.equal(state.inventory[2].amount, 200);
+});
+
+void test('exact prepared, custom and separated foods survive compound guarding', () => {
+  const items = extractIngredients(
+    '干香菇20克，泡发木耳80克，椰子水100毫升，一棵白菜，蒜苗200克，鱼豆腐300克',
+  ).items;
+  assert.deepEqual(
+    items.map((item) => [item.canonicalIngredientId, item.amount]),
+    [
+      ['dried_shiitake', 20],
+      ['rehydrated_wood_ear', 80],
+      ['coconut_water', 100],
+      ['chinese_cabbage', 1],
+      ['green_garlic', 200],
+      ['other', 300],
+    ],
+  );
+  assert.deepEqual(
+    extractIngredients('鱼丸200克', [
+      { displayName: '鱼丸', canonicalIngredientId: 'other' },
+    ]).items.map((item) => [
+      item.displayName,
+      item.canonicalIngredientId,
+      item.amount,
+    ]),
+    [['鱼丸', 'other', 200]],
+  );
+});
+
 void test('uncertain, repeated and corrected quantities remain for explicit review', () => {
   for (const text of [
     '鸡蛋两三个',
