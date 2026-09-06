@@ -12,7 +12,7 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",
-    "lint:app": "oxlint app lib components/seasoning-checklist.tsx components/voice-intake.tsx tests scripts skills/zhonghua-shisi/scripts standalone vite.standalone.config.ts",
+    "lint:app": "oxlint app lib components/seasoning-checklist.tsx components/voice-intake.tsx components/meal-ingredients.tsx tests scripts skills/zhonghua-shisi/scripts standalone vite.standalone.config.ts",
     "test": "tsx --test tests/*.test.ts",
     "package:local": "npm run build:html && node scripts/package-release.mjs",
     "build:html": "vite build --config vite.standalone.config.ts && node scripts/bundle-single.mjs",

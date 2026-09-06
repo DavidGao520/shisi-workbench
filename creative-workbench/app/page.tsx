@@ -40,6 +40,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
 import { VoiceIntake } from '@/components/voice-intake';
+import { MealIngredients } from '@/components/meal-ingredients';
 import { BaiweiGallery, BaiweiDishArt } from '@/components/baiwei-gallery';
 import {
   RecipeInstructions,
@@ -98,12 +99,13 @@ import {
   DEFAULT_SERVINGS,
   emptyState,
   isExpired,
-  matching,
+  mealIngredients,
+  mealStockLimit,
   parseImport,
   quantityText,
   recommendations,
   rejectCandidate,
-  remainingPlan,
+  sessionRemainingPlan,
   stage,
   startCooking,
   stepSession,
@@ -114,6 +116,7 @@ import {
   type Dataset,
   type KitchenState,
   type Mode,
+  type MealConfirmation,
   type Quantity,
   type Session,
 } from '@/lib/kitchen';
@@ -417,8 +420,7 @@ function ReviewForm({
 }) {
   const r = sessionRecipe(s, session);
   const [rows, setRows] = useState<Consumption[]>(
-    () =>
-      session.reviewDraft?.consumption || remainingPlan(s, r, session.servings),
+    () => session.reviewDraft?.consumption || sessionRemainingPlan(s, session),
   );
   const [rating, setRating] = useState(session.reviewDraft?.rating || 0),
     [memory, setMemory] = useState(session.reviewDraft?.memory || ''),
@@ -439,6 +441,18 @@ function ReviewForm({
       <p className="muted">
         尚未扣减库存。请核对用过的食材，以及现在实际还剩多少。
       </p>
+      {!!session.mealOnlyIngredients?.length && (
+        <p className="meal-provision-note">
+          本餐临时用料：
+          {session.mealOnlyIngredients
+            .map(
+              (i) =>
+                `${ingredientName(r, i.ingredientId)} ${i.amount} ${i.unit}`,
+            )
+            .join('、')}
+          。未加入冰箱，完成时不会再次扣减。
+        </p>
+      )}
       <div className="review-grid">
         <div>
           <label className="photo-upload">
@@ -506,12 +520,22 @@ function ReviewForm({
           <p className="muted">
             以下按菜谱预填，可修改。没有用到的批次可移除；不会自动扣未列出的食材。
           </p>
+          {rows.length === 0 && <p className="muted">本餐无需扣减冰箱库存。</p>}
           {rows.map((row) => {
             const b = s.inventory.find((b) => b.id === row.batchId);
             if (!b)
               return (
                 <p key={row.batchId} className="warning-text">
-                  原批次不存在，请重新核对。
+                  原批次不存在，不会改扣其他库存。
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setRows(rows.filter((x) => x.batchId !== row.batchId));
+                      setConfirmed(false);
+                    }}
+                  >
+                    从本餐核对清单移除
+                  </button>
                 </p>
               );
             return (
@@ -526,7 +550,11 @@ function ReviewForm({
                     <input
                       aria-label={b.displayName + '实际剩余量'}
                       type="number"
-                      min="0"
+                      min={Math.max(
+                        0,
+                        (b.amount || 0) -
+                          (mealStockLimit(session, b) ?? (b.amount || 0)),
+                      )}
                       max={b.amount}
                       step="any"
                       value={
@@ -574,6 +602,7 @@ function ReviewForm({
               onChange={setExtra}
               options={s.inventory
                 .filter((b) => !rows.some((x) => x.batchId === b.id))
+                .filter((b) => mealStockLimit(session, b) !== 0)
                 .map((b) => ({
                   value: b.id,
                   label: b.displayName + ' · ' + quantityText(b),
@@ -606,7 +635,7 @@ function ReviewForm({
           <button
             className="text-button"
             onClick={() => {
-              setRows(remainingPlan(s, r, session.servings));
+              setRows(sessionRemainingPlan(s, session));
               setConfirmed(false);
             }}
           >
@@ -689,6 +718,9 @@ export default function Home() {
     [manualUnit, setManualUnit] = useState('克');
   const [search, setSearch] = useState(''),
     [foodCheckVersion, setFoodChecked] = useState('');
+  const [mealConfirmations, setMealConfirmations] = useState<
+    MealConfirmation[]
+  >([]);
   const [now, setNow] = useState(() => Date.now()),
     [timerMinutes, setTimerMinutes] = useState('3');
   const reload = useCallback(async (d: Dataset) => {
@@ -858,9 +890,19 @@ export default function Home() {
   const openRecipe = (r: Recipe, sessionId?: string) => {
     setDetail({ recipeId: r.id, sessionId });
     setFoodChecked('');
+    setMealConfirmations([]);
   };
+  const closeRecipe = () => {
+    setDetail(null);
+    setMealConfirmations([]);
+    setFoodChecked('');
+  };
+  const ingredientRows =
+    s && recipe
+      ? mealIngredients(s, recipe, mealConfirmations, undefined, detailServings)
+      : [];
   const checkKey = recipe
-    ? `${dataset}:${recipe.id}:${recipe.workbuddyVersion || RECIPE_VERSION}`
+    ? JSON.stringify(ingredientRows.map((i) => [i.token, i.confirmed]))
     : '';
   const foodChecked = !!checkKey && foodCheckVersion === checkKey;
   const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
@@ -908,6 +950,8 @@ export default function Home() {
       setMessage('');
       setDialog(null);
       setDetail(null);
+      setMealConfirmations([]);
+      setFoodChecked('');
       setSeasoningOpen(false);
       datasetRef.current = d;
       setDataset(d);
@@ -1962,7 +2006,7 @@ export default function Home() {
       <Dialog
         open={!!recipe}
         onOpenChange={(v) => {
-          if (!v) setDetail(null);
+          if (!v) closeRecipe();
         }}
       >
         <DialogContent
@@ -1974,7 +2018,7 @@ export default function Home() {
               <button
                 className="dialog-close icon-button"
                 aria-label="关闭菜谱详情"
-                onClick={() => setDetail(null)}
+                onClick={closeRecipe}
               >
                 <X />
               </button>
@@ -2002,31 +2046,39 @@ export default function Home() {
               )}
               {recipe.yield && <p className="muted">{recipe.yield}</p>}
               <h3>需要的食材 · {recipePeople(recipe, detailServings)} 人份</h3>
-              <div className="ingredient-list">
-                {matching(s, recipe, undefined, detailServings).map((i) => (
-                  <div key={i.id}>
-                    <span>
-                      {ingredientName(recipe, i.id)}
-                      {i.note && <small>{i.note}</small>}
-                    </span>
-                    <strong>
-                      {i.need} {i.unit}
-                    </strong>
-                    <small className={!i.enough ? 'warning-text' : ''}>
-                      {i.enough
-                        ? '已备齐'
-                        : i.presenceOnly
-                          ? '已备 · 用量待核对'
-                          : i.unknown
-                            ? '数量 / 单位待确认'
-                            : '还缺 ' +
-                              Math.max(0, i.need - i.have) +
-                              ' ' +
-                              i.unit}
-                    </small>
-                  </div>
-                ))}
-              </div>
+              <MealIngredients
+                recipe={recipe}
+                rows={ingredientRows}
+                disabled={busy || !!session}
+                history={
+                  detail?.sessionId
+                    ? s.sessions.find((item) => item.id === detail.sessionId)
+                        ?.mealOnlyIngredients
+                    : undefined
+                }
+                onToggle={
+                  detail?.sessionId
+                    ? undefined
+                    : (id, token) => {
+                        setMealConfirmations((previous) => {
+                          const other = previous.filter(
+                            (c) => c.ingredientId !== id,
+                          );
+                          return previous.some(
+                            (c) => c.ingredientId === id && c.token === token,
+                          )
+                            ? other
+                            : [...other, { ingredientId: id, token }];
+                        });
+                        setFoodChecked('');
+                      }
+                }
+              />
+              {!detail?.sessionId && (
+                <p className="meal-provision-note">
+                  冰箱没记录的用料，点“确认拥有”即可。这部分只用于本餐，不加入冰箱；点“已拥有”可取消确认。
+                </p>
+              )}
               <p className="muted">
                 调料、焯水和烹煮用水均列入用料；同一材料在准备和下锅步骤中可能重复出现，并不是需要额外再准备一份。加热时间还需结合食材大小与实际熟度判断。
               </p>
@@ -2124,7 +2176,7 @@ export default function Home() {
                       (cooking.ticket?.recipeId === recipe.id &&
                         cooking.ticket.dataset === dataset) ||
                       !foodChecked ||
-                      matching(s, recipe).some((item) => !item.enough)
+                      ingredientRows.some((item) => !item.ready)
                     }
                     onClick={async () => {
                       if (!foodChecked) return;
@@ -2138,11 +2190,17 @@ export default function Home() {
                               id,
                               undefined,
                               recipe.workbuddyVersion || RECIPE_VERSION,
+                              ingredientRows
+                                .filter((i) => i.confirmed)
+                                .map((i) => ({
+                                  ingredientId: i.id,
+                                  token: i.token,
+                                })),
                             ),
                           '这一餐已开始，步骤会保存在本机。',
                         )
                       ) {
-                        setDetail(null);
+                        closeRecipe();
                         setPage('cooking');
                       }
                     }}
@@ -2153,9 +2211,9 @@ export default function Home() {
                         ? '开始这道菜的演练'
                         : '食材备好了，开始做'}
                   </button>
-                  {matching(s, recipe).some((item) => !item.enough) && (
+                  {ingredientRows.some((item) => !item.ready) && (
                     <p className="warning-text">
-                      当前食材数量不足或尚未确认，请回到厨房核对。
+                      请在上方逐项确认本餐拥有的食材，再勾选核对后开始做。
                     </p>
                   )}
                 </>

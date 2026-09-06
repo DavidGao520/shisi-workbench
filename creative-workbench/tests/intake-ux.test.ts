@@ -18,10 +18,7 @@ void test('cooking keeps one version-bound food checkbox, with no named-review p
   assert.match(source, /if \(!foodChecked\) return;/);
   assert.match(source, /foodCheckVersion === checkKey/);
   assert.match(source, /recipe\.workbuddyVersion \|\| RECIPE_VERSION/);
-  assert.match(
-    source,
-    /matching\(s, recipe\)\.some\(\(item\) => !item.enough\)/,
-  );
+  assert.match(source, /ingredientRows\.some\(\(item\) => !item.ready\)/);
 });
 
 void test('photo actions use plain names and manual input has matching button styling', async () => {

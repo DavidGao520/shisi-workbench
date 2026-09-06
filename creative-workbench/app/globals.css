@@ -984,7 +984,8 @@ textarea {
 }
 .ingredient-list > div {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.7fr) auto;
+  align-items: center;
   gap: 12px;
   padding: 9px 0;
   border-bottom: 1px dashed var(--line);
@@ -998,6 +999,56 @@ textarea {
 }
 .ingredient-list small {
   text-align: right;
+}
+.meal-ingredient-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.meal-ownership,
+.meal-owned {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.meal-ownership {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.meal-ownership.needs-confirmation {
+  color: #a43d2c;
+  border-color: #d69b8e;
+  background: #fff6f2;
+}
+.meal-ownership.is-owned,
+.meal-owned {
+  color: #456033;
+  border-color: #9eb188;
+  background: #edf3e6;
+}
+.meal-owned {
+  padding: 8px 12px;
+  border-radius: 7px;
+}
+.meal-ownership:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.meal-ownership:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.meal-provision-note {
+  font-size: 13px;
+  color: #786c56;
+  line-height: 1.7;
 }
 .culture-panel {
   padding: 20px;

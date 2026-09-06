@@ -49,6 +49,19 @@ export type Consumption = {
   expectedRevision: number;
   remaining: Quantity;
 };
+// A confirmation belongs to one recipe, kitchen and observed ingredient state.
+// It is a meal-only draft, never an inventory batch or a candidate import.
+export type MealConfirmation = { ingredientId: string; token: string };
+export type MealOnlyIngredient = {
+  ingredientId: string;
+  amount: number;
+  unit: string;
+};
+export type StockAllocation = {
+  batchId: string;
+  amount: number;
+  unit: string;
+};
 export type Session = {
   id: string;
   recipeId: string;
@@ -65,6 +78,8 @@ export type Session = {
   familyMemory?: string;
   photo?: string;
   actualConsumption?: Consumption[];
+  mealOnlyIngredients?: MealOnlyIngredient[];
+  stockAllocation?: StockAllocation[];
   reviewDraft?: {
     rating: number;
     memory: string;
@@ -481,6 +496,49 @@ export function matching(
     };
   });
 }
+export function mealIngredients(
+  s: KitchenState,
+  r: Recipe,
+  confirmations: MealConfirmation[] = [],
+  date = today(),
+  servings = DEFAULT_SERVINGS,
+) {
+  return matching(s, r, date, servings).map((item) => {
+    const token = JSON.stringify([
+      s.dataset,
+      r.id,
+      r.workbuddyVersion || RECIPE_VERSION,
+      servings,
+      item.id,
+      item.need,
+      item.unit,
+      s.inventory
+        .filter((b) => inventoryIngredientId(b) === item.id)
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map((b) => [
+          b.id,
+          b.revision,
+          b.amount,
+          b.unit,
+          b.amountBand,
+          b.expiryDate,
+          isExpired(b, date),
+        ]),
+    ]);
+    const confirmed =
+      !item.enough &&
+      confirmations.some(
+        (c) => c.ingredientId === item.id && c.token === token,
+      );
+    return {
+      ...item,
+      token,
+      confirmed,
+      ready: item.enough || confirmed,
+      mealOnlyAmount: Math.max(0, item.need - item.have),
+    };
+  });
+}
 export function recommendations(s: KitchenState, date = today()) {
   return recipes
     .map((r) => {
@@ -545,6 +603,7 @@ export function startCooking(
   id = uid(),
   date = today(),
   expectedVersion?: string,
+  confirmations: MealConfirmation[] = [],
 ) {
   if (s.sessions.some((x) => x.id === id)) return;
   if (activeSession(s)) fail('还有一餐未完成，请先继续当前一餐。');
@@ -555,9 +614,33 @@ export function startCooking(
   )
     fail('做法版本已更新，请重新查看并核对。');
   // The page requires the meal-specific food/equipment checkbox, not a named reviewer.
-  // Historical review records remain untouched; current version and stock still gate start.
-  if (matching(s, r, date).some((item) => !item.enough))
-    fail('食材库存已改变，请返回推荐重新核对。');
+  // Recheck confirmations inside the storage transaction, against its latest stock.
+  const ingredients = mealIngredients(s, r, confirmations, date);
+  if (
+    new Set(confirmations.map((c) => c.ingredientId)).size !==
+      confirmations.length ||
+    confirmations.some(
+      (c) =>
+        !ingredients.some(
+          (i) => i.id === c.ingredientId && i.confirmed && i.token === c.token,
+        ),
+    )
+  )
+    fail('本餐食材确认已变化，请重新确认拥有。');
+  if (ingredients.some((item) => !item.ready))
+    fail('食材库存不足或已改变，请重新核对并确认本餐拥有所需食材。');
+  const mealOnlyIngredients = ingredients
+    .filter((i) => i.confirmed)
+    .map((i) => ({
+      ingredientId: i.id,
+      amount: i.mealOnlyAmount,
+      unit: i.unit,
+    }));
+  // Freeze real-stock allocation before cooking. Later restocks must not fill
+  // the meal-only gap again when the user opens or refreshes their review.
+  const stockAllocation = mealOnlyIngredients.length
+    ? allocateStock(s, r, DEFAULT_SERVINGS, date)
+    : undefined;
   s.sessions.unshift({
     id,
     recipeId,
@@ -568,6 +651,9 @@ export function startCooking(
     step: 0,
     createdAt: new Date().toISOString(),
     inventorySnapshot: structuredClone(s.inventory),
+    ...(mealOnlyIngredients.length
+      ? { mealOnlyIngredients, stockAllocation }
+      : {}),
   });
 }
 export function stepSession(s: KitchenState, id: string, step: number) {
@@ -581,13 +667,13 @@ export function stepSession(s: KitchenState, id: string, step: number) {
   delete session.timerEnd;
   delete session.timerRemaining;
 }
-export function remainingPlan(
+function allocateStock(
   s: KitchenState,
   r: Recipe,
   servings: number,
   date = today(),
-): Consumption[] {
-  const result: Consumption[] = [];
+): StockAllocation[] {
+  const result: StockAllocation[] = [];
   for (const ingredient of r.ingredients) {
     let need = ingredient.amount * servings;
     const candidates = s.inventory
@@ -608,15 +694,80 @@ export function remainingPlan(
       need -= consumed;
       result.push({
         batchId: b.id,
-        expectedRevision: b.revision,
-        remaining: {
-          amount: Math.round((b.amount - consumed) * 1000) / 1000,
-          unit: b.unit,
-        },
+        amount: consumed,
+        unit: b.unit,
       });
     }
   }
   return result;
+}
+export function remainingPlan(
+  s: KitchenState,
+  r: Recipe,
+  servings: number,
+  date = today(),
+): Consumption[] {
+  // Retain the original prefill semantics for sessions without meal-only provisions.
+  return allocateStock(s, r, servings, date).map((use) => {
+    const batch = s.inventory.find((b) => b.id === use.batchId)!;
+    return {
+      batchId: batch.id,
+      expectedRevision: batch.revision,
+      remaining: {
+        amount: Math.round((batch.amount! - use.amount) * 1000) / 1000,
+        unit: use.unit,
+      },
+    };
+  });
+}
+export function sessionRemainingPlan(
+  s: KitchenState,
+  session: Session,
+): Consumption[] {
+  if (!session.stockAllocation)
+    return remainingPlan(s, sessionRecipe(s, session), session.servings);
+  return session.stockAllocation.map((use) => {
+    const current = s.inventory.find((b) => b.id === use.batchId);
+    const original = session.inventorySnapshot.find(
+      (b) => b.id === use.batchId,
+    )!;
+    const compatible =
+      current?.amount !== undefined &&
+      current.unit === use.unit &&
+      inventoryIngredientId(current) === inventoryIngredientId(original);
+    const batch = compatible ? current! : original;
+    return {
+      batchId: use.batchId,
+      // A removed/retyped batch stays stale until the user explicitly removes it.
+      expectedRevision: compatible ? batch.revision : -1,
+      remaining: {
+        // Never round down past the saved allocation: inventory accepts decimals.
+        amount: Math.max(0, batch.amount! - use.amount),
+        unit: use.unit,
+      },
+    };
+  });
+}
+export function mealStockLimit(
+  session: Session,
+  batch: Batch,
+): number | undefined {
+  const original = session.inventorySnapshot.find((b) => b.id === batch.id);
+  const hasMealOnlyPortion = session.mealOnlyIngredients?.some(
+    (i) =>
+      i.ingredientId === inventoryIngredientId(batch) ||
+      (original && i.ingredientId === inventoryIngredientId(original)),
+  );
+  if (!hasMealOnlyPortion) return undefined;
+  const allocation = session.stockAllocation?.find(
+    (a) => a.batchId === batch.id,
+  );
+  return allocation &&
+    allocation.unit === batch.unit &&
+    original &&
+    inventoryIngredientId(original) === inventoryIngredientId(batch)
+    ? allocation.amount
+    : 0;
 }
 export function completeCooking(
   s: KitchenState,
@@ -665,6 +816,14 @@ export function completeCooking(
       fail('剩余量不能大于原量或静默换单位；补货请到我的厨房操作。');
     if (batch.amount !== undefined && q.amount === undefined)
       fail('精确数量批次请填写实际剩余数量。');
+    const limit = mealStockLimit(session, batch);
+    if (
+      limit !== undefined &&
+      (batch.amount === undefined ||
+        q.amount === undefined ||
+        batch.amount - q.amount > limit + 0.000001)
+    )
+      fail('本餐临时确认的食材不扣冰箱库存；只能核对开做时已分配的库存用量。');
     updates.push({ batch, q });
   }
   for (const { batch, q } of updates) {
