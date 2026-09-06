@@ -844,9 +844,7 @@ export default function Home() {
       <aside className="rail">
         <div className="brand">
           <span className="brand-seal">食</span>
-          <div>
-            中华食肆<small>从游戏的一餐，到生活的一餐</small>
-          </div>
+          <div>中华食肆</div>
         </div>
         <TabsList className="side-tabs">
           {pages.map((p) => (
@@ -862,9 +860,9 @@ export default function Home() {
         <div className="rail-note">
           <Leaf size={25} />
           <p>
-            好好吃饭，
+            从游戏的一餐
             <br />
-            把日子慢慢做香。
+            到生活的一餐
           </p>
           <small>国宴队 · 中华食肆</small>
         </div>
