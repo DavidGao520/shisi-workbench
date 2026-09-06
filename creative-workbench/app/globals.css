@@ -1319,8 +1319,7 @@ textarea {
   line-height: 1.8;
   margin: 10px 0;
 }
-.culture-panel a,
-.safety-note a {
+.culture-panel a {
   color: #8f472c;
   text-decoration: underline;
 }
@@ -1331,14 +1330,6 @@ textarea {
   display: block;
   margin-top: 8px;
   color: #807054;
-}
-.safety-note {
-  font-size: 13px;
-  line-height: 1.85;
-  color: #8e5939;
-  background: #f8eddc;
-  padding: 13px 17px;
-  border-radius: 7px;
 }
 .cooking-layout {
   display: grid;

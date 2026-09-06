@@ -87,8 +87,6 @@ import { renderBaiweiEntry } from '@/lib/archive-export';
 import {
   names,
   recipes,
-  safetyNote,
-  safetySource,
   detailedCookingSteps,
   recipePeople,
   RECIPE_VERSION,
@@ -1448,17 +1446,6 @@ export default function Home() {
                         stepIndex={session.step}
                       />
                     )}
-                    {sessionRecipe(s, session).safetyTips?.map((tip) => (
-                      <p className="safety-note" key={tip}>
-                        {tip}
-                      </p>
-                    ))}
-                    <p className="safety-note">
-                      {safetyNote}{' '}
-                      <a href={safetySource} target="_blank" rel="noreferrer">
-                        安全提示来源
-                      </a>
-                    </p>
                     {currentStep &&
                       !session.timerEnd &&
                       !session.timerRemaining && (

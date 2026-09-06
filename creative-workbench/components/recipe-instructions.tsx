@@ -3,7 +3,6 @@ import {
   cookingSteps,
   detailedCookingSteps,
   ingredientName,
-  safetyNote,
   safetySource,
   type Recipe,
 } from '../lib/recipes';
@@ -30,20 +29,6 @@ export function RecipeDetailSections({
             </p>
           ))}
           <RecipeInstructions recipe={recipe} batches={batches} />
-        </div>
-      </details>
-      <details className="recipe-disclosure recipe-disclosure--tips">
-        <summary>
-          <span>温馨提示</span>
-          <ChevronDown size={20} aria-hidden="true" />
-        </summary>
-        <div className="recipe-disclosure__content">
-          {recipe.safetyTips?.map((tip) => (
-            <p className="safety-note" key={tip}>
-              {tip}
-            </p>
-          ))}
-          <p className="safety-note">{safetyNote}</p>
         </div>
       </details>
       <RecipeSources recipe={recipe} />

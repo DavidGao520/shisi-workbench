@@ -171,7 +171,7 @@ void test('photo actions use plain names and manual input has matching button st
   assert.ok(tools.indexOf('手动补充') < tools.indexOf('调料清单'));
 });
 
-void test('meal setup and browser-storage paragraph are removed, recipe safety notes stay', async () => {
+void test('meal setup and browser-storage paragraph are removed, pre-cooking confirmation stays', async () => {
   const source = await page();
   assert.doesNotMatch(
     source,
@@ -181,7 +181,8 @@ void test('meal setup and browser-storage paragraph are removed, recipe safety n
     source,
     /保存在当前浏览器环境|清理浏览器数据可能丢失记录|s\.preferences/,
   );
-  assert.match(source, /safetyNote/);
+  assert.match(source, /我已核对食材、到期信息与过敏原，确认具备所需厨具。/);
+  assert.match(source, /checked=\{foodChecked\}/);
   assert.match(source, /DEFAULT_SERVINGS/);
 });
 

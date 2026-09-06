@@ -11,7 +11,7 @@ import {
   RecipeSources,
 } from '../components/recipe-instructions';
 
-void test('all 70 dish previews have three independently collapsed native disclosures with all original content', () => {
+void test('all 70 dish previews keep only cooking and references disclosures without a tips panel', () => {
   assert.equal(recipes.length, 70);
   for (const recipe of recipes) {
     const html = renderToStaticMarkup(
@@ -20,12 +20,11 @@ void test('all 70 dish previews have three independently collapsed native disclo
     const openings = [...html.matchAll(/<details\b[^>]*>/g)].map(
       (match) => match[0],
     );
-    assert.equal(openings.length, 3);
+    assert.equal(openings.length, 2);
     assert.ok(openings.every((tag) => !/\s(?:open|name)(?:=|\s|>)/.test(tag)));
     assert.match(html, /<summary><span>烹饪流程<\/span>/);
-    assert.match(html, /<summary><span>温馨提示<\/span>/);
     assert.match(html, /<summary><span>参考文献<\/span>/);
-    assert.ok(html.indexOf('温馨提示') < html.indexOf('参考文献'));
+    assert.ok(html.indexOf('烹饪流程') < html.indexOf('参考文献'));
     assert.ok(
       html.includes(
         renderToStaticMarkup(createElement(RecipeSources, { recipe })),
@@ -38,14 +37,8 @@ void test('all 70 dish previews have three independently collapsed native disclo
         ),
       ),
     );
-    for (const tip of [...(recipe.safetyTips || []), safetyNote])
-      assert.ok(
-        html.includes(
-          renderToStaticMarkup(
-            createElement('p', { className: 'safety-note' }, tip),
-          ),
-        ),
-      );
+    assert.doesNotMatch(html, /温馨提示|recipe-disclosure--tips|safety-note/);
+    assert.ok(!html.includes(safetyNote));
     assert.ok(!html.includes('预设家常做法 · 每步都有用料与计时'));
   }
 });
@@ -68,9 +61,34 @@ void test('legacy and WorkBuddy methods also keep complete steps and warnings in
       ),
     );
     assert.ok(!/<details[^>]*\sopen(?:=|\s|>)/.test(html));
+    assert.doesNotMatch(html, /温馨提示|recipe-disclosure--tips|safety-note/);
     for (const warning of recipe.workbuddyWarnings || [])
       assert.ok(html.includes(warning));
   }
+});
+
+void test('every live recipe step retains its instructions without repeated tips, and page timers remain available', () => {
+  for (const recipe of [...recipes, ...legacyRecipes]) {
+    for (let stepIndex = 0; stepIndex < recipe.steps.length; stepIndex++) {
+      const html = renderToStaticMarkup(
+        createElement(RecipeInstructions, { recipe, stepIndex }),
+      );
+      assert.doesNotMatch(html, /温馨提示|safety-note|安全提示来源/);
+      assert.ok(!html.includes(safetyNote));
+      assert.match(html, /recipe-step-instruction/);
+      if (recipe.detailSteps) {
+        assert.match(html, /recipe-step-time/);
+        assert.match(html, /recipe-step-materials/);
+        assert.match(html, /recipe-step-heat/);
+        assert.match(html, /recipe-step-check/);
+      }
+    }
+  }
+  const page = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(page, /safetyTips|safetyNote|safety-note|安全提示来源/);
+  assert.match(page, /按本步 \{currentStep\.minutes\}/);
+  assert.match(page, /Date\.now\(\) \+ currentStep\.minutes \* 60000/);
+  assert.match(page, /checked=\{foodChecked\}/);
 });
 
 void test('shared detail modal resets disclosures per recipe version and keeps live steps and safety confirmation outside', () => {
