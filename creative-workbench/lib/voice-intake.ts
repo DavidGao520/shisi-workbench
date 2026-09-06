@@ -1,5 +1,6 @@
 import { names } from './recipes';
 import { PRESENT_QUANTITY } from './seasonings';
+import { baiweiPantryAliases } from './pantry-catalog';
 import {
   confirmCandidate,
   parseImport,
@@ -18,17 +19,13 @@ const extraFoods =
     ' ',
   );
 const lexicon = new Map<string, string>([
+  ...extraFoods.map((name) => [name, 'other'] as [string, string]),
   ...Object.entries(names)
     .filter(([id]) => id !== 'other')
     .map(([id, name]) => [name, id] as [string, string]),
-  ...extraFoods.map((name) => [name, 'other'] as [string, string]),
-  ['大白菜', 'chinese_cabbage'],
-  ['白菜', 'chinese_cabbage'],
-  ['西红柿', 'tomato'],
+  ...Object.entries(baiweiPantryAliases),
   ['剩饭', 'cooked_rice'],
   ['米饭', 'cooked_rice'],
-  ['大米', 'rice'],
-  ['糖', 'sugar'],
   ['油', 'oil'],
   ['水', 'water'],
 ]);

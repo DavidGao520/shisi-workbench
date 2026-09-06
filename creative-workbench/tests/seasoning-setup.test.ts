@@ -67,11 +67,20 @@ function mealWithUnknownSeasoning() {
   return state;
 }
 
-void test('catalog has 24 distinct canonical seasonings, not fresh food or staples', () => {
-  assert.equal(seasonings.length, 24);
-  assert.equal(new Set(seasonings.map((item) => item.id)).size, 24);
+void test('catalog has 30 distinct canonical seasonings, including every compendium seasoning', () => {
+  assert.equal(seasonings.length, 30);
+  assert.equal(new Set(seasonings.map((item) => item.id)).size, 30);
   for (const item of seasonings) assert.equal(names[item.id], item.name);
   assert.ok(seasonings.some((item) => item.id === 'rosemary'));
+  for (const id of [
+    'chili',
+    'cumin',
+    'garlic',
+    'ginger',
+    'spring_onion',
+    'cilantro',
+  ])
+    assert.ok(seasonings.some((item) => item.id === id));
   assert.ok(
     !seasonings.some((item) =>
       ['rice', 'cooked_rice', 'egg', 'tomato'].includes(item.id),
@@ -96,8 +105,9 @@ void test('first-render checklist is unchecked and inert until confirmation', ()
   );
   assert.equal(writes, 0);
   assert.deepEqual(state, before);
-  assert.equal((html.match(/aria-checked="false"/g) || []).length, 24);
+  assert.equal((html.match(/aria-checked="false"/g) || []).length, 30);
   assert.ok(!html.includes('aria-checked="true"'));
+  assert.match(html, /22 种 · 按需选择/);
   assert.match(html, /确认加入 0 种调料/);
   assert.match(html, /暂时跳过/);
 });

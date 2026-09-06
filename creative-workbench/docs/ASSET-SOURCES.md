@@ -9,12 +9,14 @@
 | 西红柿炒鸡蛋菜谱封面 | Desktop/中华食肆/Demo/assets/dishes/tomato_egg.webp | 原游戏菜品图、菜名对应 | 卡牌效果、收益、饱腹/火候数值 |
 | 青椒炒鸡蛋菜谱封面 | Desktop/中华食肆/Demo/assets/dishes/green_pepper_egg.webp | 原游戏菜品图、菜名对应 | 游戏数值、现实加热时长 |
 | 番茄蛋汤 / 食材入口插画 | Desktop/中华食肆/Demo/assets/cards/tomato.webp | 原游戏番茄插画；明确不是成品汤照 | 不拿番茄图冒充用户成品照 |
-| 大白菜工作台库存卡 | `4567lizhen/Chinese-Cuisine@ae825f252ae982ec05d359edff44e226cef2fca2` 的 `public/assets/cards/card_frame_veg.webp` 与 `chinese_cabbage.webp` | 蔬菜空卡框与透明白菜插画；工作台动态叠加名称、校准状态、数量、到期日 | 饱腹横签、行动点、技能文案与其他战斗数值 |
+| 百味图食材与调料库存卡 | `4567lizhen/Chinese-Cuisine@ae825f252ae982ec05d359edff44e226cef2fca2` 的 `src/data/ingredients.ts`、`src/data/seasonings.ts` 与 `public/assets/cards/*.webp` | 47 种食材、16 种调料的透明插画及蔬菜 / 荤食 / 调料空卡框；工作台动态叠加名称、类别、校准状态、数量、到期日 | 饱腹横签、行动点、口味、技能文案与其他战斗数值 |
 | 我的厨房 / 百味图 | 用户提供的游戏截图 | 食材分类、收录与详情结构、暖色食肆视觉 | 不照搬战斗卡牌属性作为现实饮食知识 |
 
 这些原图从本机 Demo 目录复制，已打开核对；该目录不在 Git 内，**原图对应提交未知**。已知的另一个 sparse 游戏仓库 HEAD 为 ae825f252ae982ec05d359edff44e226cef2fca2，不能据此声称本机 Demo 图恰好来自该提交。番茄蛋汤原图未成功取得，因此本版使用明确标注的原游戏番茄食材插画，没有生成或伪装成品图。
 
-大白菜卡是例外：两份素材直接从上表所列游戏提交的 Git 对象提取，SHA-256 分别为 `ab272cacd97053ed7cfc7c1babf675ecca0b0481d4406a11685608b3dfcf5b54`（蔬菜卡框）和 `a4a243b0a7a1f9716450c1fd147a376bec5f12ce39ef57b1de2328f55c2765f5`（白菜）。两个仓库均服务于用户与 Jacky 的同一项目；游戏仓库未提供可据以对外授权的 LICENSE，公开再分发前仍需团队确认素材权利。
+库存卡素材直接从上表所列游戏提交提取。工作台以同一套大白菜卡片结构展示全部 63 项，并按游戏原分类使用绿色蔬食框、红色荤食框或橙色调料框；卡内只写现实库存信息。`rice.webp` 是生米插画，因此工作台保留“生大米”语义，不把它用于“熟米饭”。`scallion`（大葱）与 `spring_onion`（小葱）保持独立 ID，避免串图。
+
+三种卡框和 63 张运行时插画都以 WebP 放入自包含构建；其中原大白菜素材 SHA-256 仍为 `ab272cacd97053ed7cfc7c1babf675ecca0b0481d4406a11685608b3dfcf5b54`（蔬菜卡框）与 `a4a243b0a7a1f9716450c1fd147a376bec5f12ce39ef57b1de2328f55c2765f5`（白菜）。两个仓库均服务于用户与 Jacky 的同一项目；游戏仓库未提供可据以对外授权的 LICENSE，公开再分发前仍需团队确认素材权利。
 
 ## 三道现实菜谱
 

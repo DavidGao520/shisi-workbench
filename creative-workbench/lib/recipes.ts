@@ -1,18 +1,10 @@
+import { baiweiIngredientNames } from './pantry-catalog';
 import { seasoningNames } from './seasonings';
 export const RECIPE_VERSION = '2026-09-05-draft.1';
 export const names: Record<string, string> = {
-  tomato: '番茄',
-  egg: '鸡蛋',
-  green_pepper: '青椒',
-  oil: '食用油',
-  salt: '盐',
-  soy_sauce: '生抽',
+  ...baiweiIngredientNames,
   water: '饮用水',
-  rice: '生大米',
   cooked_rice: '熟米饭',
-  tofu: '豆腐',
-  potato: '土豆',
-  chinese_cabbage: '大白菜',
   other: '其他食材',
   ...seasoningNames,
 };

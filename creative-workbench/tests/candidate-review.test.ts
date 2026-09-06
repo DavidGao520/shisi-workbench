@@ -148,23 +148,40 @@ void test('expired records remain linked and keep their date; mixed fresh and ex
   );
 });
 
-void test('unknown quantity retains known stock; unknown foods keep separate names', () => {
+void test('unknown quantity retains known stock; catalogued and unknown foods keep separate identities', () => {
   const state = stocked();
   const candidate = incoming(state, '鸡蛋', 'stocktake', undefined);
   // Delete explicit quantity to represent a photo with no reported quantity.
   delete candidate.amount;
   delete candidate.unit;
   assert.equal(candidateReview(state, candidate).quantity.amount, 8);
-  for (const name of ['猪肉', '鸡肉']) {
-    const c = incoming(state, name);
-    assert.equal(c.canonicalIngredientId, 'other');
-    assert.equal(candidateReview(state, c).targetId, undefined);
-    confirmReviewedCandidate(state, c.key, candidateReview(state, c), {
+  const porkCandidate = incoming(state, '猪肉');
+  assert.equal(porkCandidate.canonicalIngredientId, 'pork');
+  assert.equal(candidateReview(state, porkCandidate).targetId, undefined);
+  confirmReviewedCandidate(
+    state,
+    porkCandidate.key,
+    candidateReview(state, porkCandidate),
+    {
       quantity: { amount: 300, unit: '克' },
-    });
-  }
+    },
+  );
+  const chicken = incoming(state, '鸡肉');
+  assert.equal(chicken.canonicalIngredientId, 'other');
+  assert.equal(candidateReview(state, chicken).targetId, undefined);
+  confirmReviewedCandidate(
+    state,
+    chicken.key,
+    candidateReview(state, chicken),
+    { quantity: { amount: 300, unit: '克' } },
+  );
   const pork = incoming(state, '猪肉');
   assert.equal(candidateReview(state, pork).targetId, state.inventory[1].id);
+  const chickenAgain = incoming(state, '鸡肉');
+  assert.equal(
+    candidateReview(state, chickenAgain).targetId,
+    state.inventory[2].id,
+  );
 });
 
 void test('restock creates its own batch and does not overwrite old expiry or quantity', () => {

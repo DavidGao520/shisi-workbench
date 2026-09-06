@@ -32,6 +32,7 @@ void test('spoken quantities: Chinese, decimals, halves, mass conversion, no inv
       ['大白菜', 1, '棵'],
     ],
   );
+  assert.equal(items[2].canonicalIngredientId, 'pork');
   assert.equal(items.at(-1)?.canonicalIngredientId, 'chinese_cabbage');
   const cabbagePostfix = extractIngredients('大白菜一棵').items[0];
   assert.deepEqual(
@@ -41,6 +42,24 @@ void test('spoken quantities: Chinese, decimals, halves, mass conversion, no inv
       cabbagePostfix.unit,
     ],
     ['chinese_cabbage', 1, '棵'],
+  );
+});
+
+void test('compendium foods and aromatics keep distinct canonical identities', () => {
+  const items = extractIngredients(
+    '洋葱、香菇、油麦菜、大蒜、小葱、大葱、香菜',
+  ).items;
+  assert.deepEqual(
+    items.map((item) => item.canonicalIngredientId),
+    [
+      'onion',
+      'shiitake_mushrooms',
+      'lamb_lettuce',
+      'garlic',
+      'spring_onion',
+      'scallion',
+      'cilantro',
+    ],
   );
 });
 void test('postfix quantities do not leak into next food', () => {

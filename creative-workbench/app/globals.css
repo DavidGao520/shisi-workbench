@@ -924,11 +924,18 @@ textarea {
   color: #a24d34;
 }
 .kitchen-ingredient-card {
+  --pantry-card-accent: #506238;
   width: min(100%, 272px);
   min-width: 0;
   color: #65481e;
   filter: drop-shadow(0 5px 7px rgba(49, 38, 18, 0.2));
   animation: ingredient-card-in 260ms ease-out both;
+}
+.kitchen-ingredient-card--meat {
+  --pantry-card-accent: #7f352b;
+}
+.kitchen-ingredient-card--spice {
+  --pantry-card-accent: #8b591d;
 }
 .kitchen-ingredient-card__visual {
   position: relative;
@@ -1048,7 +1055,7 @@ textarea {
   max-width: 100%;
   margin-top: 2px;
   overflow: hidden;
-  color: #506238;
+  color: var(--pantry-card-accent);
   font-family: 'Songti SC', 'STSong', serif;
   font-size: 21px;
   line-height: 1.2;

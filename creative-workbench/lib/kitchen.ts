@@ -1,5 +1,6 @@
 import { names, recipes, RECIPE_VERSION, type Recipe } from './recipes';
 import { isSeasoning, PRESENT_QUANTITY, seasoningNames } from './seasonings';
+import { baiweiPantryAliases } from './pantry-catalog';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
 export const units = ['个', '盒', '袋', '棵', '克', '毫升', '份'] as const;
@@ -189,27 +190,34 @@ const aliases: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(seasoningNames).map(([id, name]) => [name, id]),
   ),
-  糖: 'sugar',
-  番茄: 'tomato',
-  西红柿: 'tomato',
-  鸡蛋: 'egg',
-  青椒: 'green_pepper',
-  食用油: 'oil',
+  ...baiweiPantryAliases,
   油: 'oil',
-  盐: 'salt',
-  生抽: 'soy_sauce',
-  饮用水: 'water',
   水: 'water',
-  大米: 'rice',
-  生大米: 'rice',
+  饮用水: 'water',
+  // Real kitchens distinguish cooked rice from the game's raw-rice artwork.
   米饭: 'cooked_rice',
   剩饭: 'cooked_rice',
   熟米饭: 'cooked_rice',
-  豆腐: 'tofu',
-  土豆: 'potato',
-  大白菜: 'chinese_cabbage',
-  白菜: 'chinese_cabbage',
 };
+
+/** Upgrade legacy `other` records in memory without merging batches or inventing quantities. */
+export function normalizePantryIdentities(state: KitchenState) {
+  for (const batch of state.inventory) {
+    if (batch.canonicalIngredientId !== 'other') continue;
+    const id = aliases[batch.displayName];
+    if (id && id !== 'other') batch.canonicalIngredientId = id;
+  }
+  for (const candidate of state.candidates) {
+    if (
+      candidate.canonicalIngredientId !== undefined &&
+      candidate.canonicalIngredientId !== 'other'
+    )
+      continue;
+    const id = aliases[candidate.displayName];
+    if (id && id !== 'other') candidate.canonicalIngredientId = id;
+  }
+  return state;
+}
 /** Transport metadata is bound by the user's visible current dataset and import mode. */
 export function parseImport(
   raw: string,
@@ -312,11 +320,26 @@ export function parseImport(
     } else notes.push('原输入没有明确数量，等待人工确认。');
     if (c.confirmed !== undefined)
       notes.push('文件中的确认标记已忽略，需要你在这里确认。');
-    const canonicalIngredientId =
+    const suppliedIngredientId =
       typeof c.canonicalIngredientId === 'string' &&
       names[c.canonicalIngredientId]
         ? c.canonicalIngredientId
-        : aliases[displayName] || 'other';
+        : undefined;
+    const locallyMatchedId = aliases[displayName];
+    const canonicalIngredientId =
+      locallyMatchedId || suppliedIngredientId || 'other';
+    if (
+      locallyMatchedId &&
+      suppliedIngredientId &&
+      locallyMatchedId !== suppliedIngredientId
+    )
+      notes.push(
+        '输入类别与名称不一致，已按名称“' +
+          displayName +
+          '”匹配为“' +
+          names[locallyMatchedId] +
+          '”。',
+      );
     if (canonicalIngredientId === 'other')
       notes.push('暂未匹配内置菜谱，将按原名称记录。');
     return {

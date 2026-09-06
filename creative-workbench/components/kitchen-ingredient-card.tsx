@@ -1,6 +1,7 @@
 /* oxlint-disable next/no-img-element -- Layered inline game artwork must also render in the self-contained HTML build. */
 import { today } from '@/lib/kitchen';
-import { ingredientCardArt } from '@/lib/art';
+import { pantryCardArt } from '@/lib/art';
+import { PRESENT_QUANTITY } from '@/lib/seasonings';
 
 type CardStatus = 'pending' | 'confirmed';
 
@@ -55,19 +56,25 @@ export function KitchenIngredientCard({
   actionDisabled = false,
   onAction,
 }: KitchenIngredientCardProps) {
-  const cardArt = ingredientCardArt[ingredientId];
+  const cardArt = pantryCardArt[ingredientId];
   if (!cardArt) return null;
 
   const stateLabel = status === 'pending' ? '待校准' : '已校准';
+  const categoryLabel = cardArt.kind === 'seasoning' ? '调料' : '食材';
+  const quantityUnknown =
+    quantity === '数量待确认' || quantity === PRESENT_QUANTITY;
   const quantityLabel =
-    status === 'pending' && quantity !== '数量待确认'
-      ? '识别到 ' + quantity
+    status === 'pending'
+      ? quantityUnknown
+        ? '数量待确认'
+        : '识别到 ' + quantity
       : quantity;
   const expiry = expiryPresentation(expiryDate, status, expired);
   const dateLabel = expiryDate?.replaceAll('-', '.');
   const meta = batchId ? '批次 ' + batchId.slice(0, 6) : undefined;
   const accessibleLabel = [
     name,
+    categoryLabel,
     stateLabel,
     quantityLabel,
     expiry.label,
@@ -91,7 +98,7 @@ export function KitchenIngredientCard({
 
   return (
     <article
-      className={`kitchen-ingredient-card kitchen-ingredient-card--${status}${expired ? ' kitchen-ingredient-card--expired' : ''}`}
+      className={`kitchen-ingredient-card kitchen-ingredient-card--${status} kitchen-ingredient-card--${cardArt.theme}${expired ? ' kitchen-ingredient-card--expired' : ''}`}
       aria-label={accessibleLabel}
     >
       <div className="kitchen-ingredient-card__visual">
@@ -106,7 +113,7 @@ export function KitchenIngredientCard({
         />
         <img
           className="kitchen-ingredient-card__art"
-          src={cardArt.ingredient}
+          src={cardArt.image}
           width="512"
           height="512"
           alt=""
@@ -117,7 +124,9 @@ export function KitchenIngredientCard({
           {status === 'pending' ? '?' : '✓'}
         </span>
         <strong className="kitchen-ingredient-card__name">{name}</strong>
-        <span className="kitchen-ingredient-card__category">食材</span>
+        <span className="kitchen-ingredient-card__category">
+          {categoryLabel}
+        </span>
         <div className="kitchen-ingredient-card__details">
           <span className="kitchen-ingredient-card__state">{stateLabel}</span>
           <strong className="kitchen-ingredient-card__quantity">

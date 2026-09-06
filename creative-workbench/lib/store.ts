@@ -1,4 +1,9 @@
-import { emptyState, type Dataset, type KitchenState } from './kitchen';
+import {
+  emptyState,
+  normalizePantryIdentities,
+  type Dataset,
+  type KitchenState,
+} from './kitchen';
 const STORES = ['inventory', 'candidates', 'sessions', 'meta'] as const;
 /** Each dataset has one record per store; all four stores participate in one transaction. */
 export class IndexedDbStore {
@@ -78,6 +83,7 @@ export class IndexedDbStore {
             candidates: (values.candidates as KitchenState['candidates']) || [],
             sessions: (values.sessions as KitchenState['sessions']) || [],
           };
+          normalizePantryIdentities(output);
           if (!apply) return;
           try {
             apply(output);
