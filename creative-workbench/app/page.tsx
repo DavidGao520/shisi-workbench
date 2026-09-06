@@ -50,7 +50,6 @@ import { BaiweiGallery, BaiweiDishArt } from '@/components/baiwei-gallery';
 import {
   RecipeDetailSections,
   RecipeInstructions,
-  RecipeSources,
 } from '@/components/recipe-instructions';
 import { baiweiDishes } from '@/lib/baiwei';
 import '@/components/baiwei-gallery.css';
@@ -1997,15 +1996,11 @@ export default function Home() {
                   冰箱没记录的用料，点“确认拥有”即可。这部分只用于本餐，不加入冰箱；点“已拥有”可取消确认。
                 </p>
               )}
-              <p className="muted">
-                调料、焯水和烹煮用水均列入用料；同一材料在准备和下锅步骤中可能重复出现，并不是需要额外再准备一份。加热时间还需结合食材大小与实际熟度判断。
-              </p>
               <RecipeDetailSections
                 key={`${recipe.id}:${recipe.workbuddyVersion || RECIPE_VERSION}:${detail?.sessionId || ''}`}
                 recipe={recipe}
                 batches={detailServings}
               />
-              <RecipeSources recipe={recipe} />
               {!detail?.sessionId && (
                 <details className="paper workbuddy-cooking">
                   <summary>可选：请 WorkBuddy 另写一版做法</summary>

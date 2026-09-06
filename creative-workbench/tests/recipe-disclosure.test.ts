@@ -8,9 +8,10 @@ import { legacyRecipes } from '../lib/legacy-recipes';
 import {
   RecipeDetailSections,
   RecipeInstructions,
+  RecipeSources,
 } from '../components/recipe-instructions';
 
-void test('all 70 dish previews have two independently collapsed native disclosures with all original content', () => {
+void test('all 70 dish previews have three independently collapsed native disclosures with all original content', () => {
   assert.equal(recipes.length, 70);
   for (const recipe of recipes) {
     const html = renderToStaticMarkup(
@@ -19,10 +20,17 @@ void test('all 70 dish previews have two independently collapsed native disclosu
     const openings = [...html.matchAll(/<details\b[^>]*>/g)].map(
       (match) => match[0],
     );
-    assert.equal(openings.length, 2);
+    assert.equal(openings.length, 3);
     assert.ok(openings.every((tag) => !/\s(?:open|name)(?:=|\s|>)/.test(tag)));
     assert.match(html, /<summary><span>烹饪流程<\/span>/);
     assert.match(html, /<summary><span>温馨提示<\/span>/);
+    assert.match(html, /<summary><span>参考文献<\/span>/);
+    assert.ok(html.indexOf('温馨提示') < html.indexOf('参考文献'));
+    assert.ok(
+      html.includes(
+        renderToStaticMarkup(createElement(RecipeSources, { recipe })),
+      ),
+    );
     assert.ok(
       html.includes(
         renderToStaticMarkup(
@@ -84,12 +92,42 @@ void test('shared detail modal resets disclosures per recipe version and keeps l
     page.includes('我已核对食材、到期信息与过敏原，确认具备所需厨具。'),
   );
   assert.ok(!page.includes('预设家常做法 · 每步都有用料与计时'));
+  assert.ok(!page.includes('调料、焯水和烹煮用水均列入用料'));
+  assert.ok(!page.includes('<RecipeSources'));
   const css = readFileSync(
     new URL('../components/recipe-instructions.css', import.meta.url),
     'utf8',
   );
   assert.ok(css.includes('.recipe-disclosure > summary:focus-visible'));
   assert.ok(css.includes('.recipe-disclosure[open] > summary svg'));
+});
+
+void test('reference disclosure preserves links, attribution and adaptation for preset, legacy and generated recipes', () => {
+  for (const recipe of [
+    recipes[0],
+    ...legacyRecipes,
+    { ...recipes[0], workbuddyVersion: 'test' },
+  ]) {
+    const html = renderToStaticMarkup(createElement(RecipeSources, { recipe }));
+    assert.match(
+      html,
+      /^<details class="recipe-disclosure recipe-disclosure--sources"><summary><span>参考文献<\/span>/,
+    );
+    assert.ok(
+      html.indexOf('</summary>') < html.indexOf('culture-panel recipe-sources'),
+    );
+    assert.ok(
+      html.includes(
+        renderToStaticMarkup(createElement('p', null, recipe.knowledge)),
+      ),
+    );
+    assert.ok(html.includes(recipe.source.replace(/&/g, '&amp;')));
+    assert.ok(html.includes(recipe.author));
+    assert.ok(html.includes('通用熟度依据：香港食物安全中心'));
+    if (recipe.workbuddyVersion)
+      assert.ok(html.includes('当前步骤由 WorkBuddy 生成'));
+    assert.ok(!html.includes('与改编说明'));
+  }
 });
 
 void test('Baiwei story removes only the requested helper paragraphs and retains attribution and cooking history', () => {

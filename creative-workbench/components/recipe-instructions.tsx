@@ -46,6 +46,7 @@ export function RecipeDetailSections({
           <p className="safety-note">{safetyNote}</p>
         </div>
       </details>
+      <RecipeSources recipe={recipe} />
     </>
   );
 }
@@ -116,44 +117,49 @@ export function RecipeInstructions({
 
 export function RecipeSources({ recipe }: { recipe: Recipe }) {
   return (
-    <section className="culture-panel recipe-sources">
-      <p className="eyebrow">
-        家常做法 · {recipe.sources?.length ? '中文参考' : '历史参考'}与改编说明
-      </p>
-      <p>{recipe.knowledge}</p>
-      {recipe.sources?.length ? (
-        <ul>
-          {recipe.sources.map((source) => (
-            <li key={source.url}>
-              <a href={source.url} target="_blank" rel="noreferrer">
-                {source.title} ↗
-              </a>
-              <small>
-                {source.author} · {source.site} · 中文 · 核对于{' '}
-                {source.accessedAt}
-              </small>
-              <p>{source.supports}</p>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <a href={recipe.source} target="_blank" rel="noreferrer">
-          {recipe.author} ↗
-        </a>
-      )}
-      <small>
-        {recipe.workbuddyVersion
-          ? '当前步骤由 WorkBuddy 生成；上述链接是基础配方参考，并非生成内容的逐项验证。'
-          : '食材用量与步骤为家庭改编；每步分钟数是操作估时，含等待时间，不代表原作者精确计时或本平台已实做审校。'}
-      </small>
-      <a
-        className="recipe-safety-source"
-        href={safetySource}
-        target="_blank"
-        rel="noreferrer"
-      >
-        通用熟度依据：香港食物安全中心《烹煮及翻热》 ↗
-      </a>
-    </section>
+    <details className="recipe-disclosure recipe-disclosure--sources">
+      <summary>
+        <span>参考文献</span>
+        <ChevronDown size={20} aria-hidden="true" />
+      </summary>
+      <div className="recipe-disclosure__content">
+        <section className="culture-panel recipe-sources">
+          <p>{recipe.knowledge}</p>
+          {recipe.sources?.length ? (
+            <ul>
+              {recipe.sources.map((source) => (
+                <li key={source.url}>
+                  <a href={source.url} target="_blank" rel="noreferrer">
+                    {source.title} ↗
+                  </a>
+                  <small>
+                    {source.author} · {source.site} · 中文 · 核对于{' '}
+                    {source.accessedAt}
+                  </small>
+                  <p>{source.supports}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <a href={recipe.source} target="_blank" rel="noreferrer">
+              {recipe.author} ↗
+            </a>
+          )}
+          <small>
+            {recipe.workbuddyVersion
+              ? '当前步骤由 WorkBuddy 生成；上述链接是基础配方参考，并非生成内容的逐项验证。'
+              : '食材用量与步骤为家庭改编；每步分钟数是操作估时，含等待时间，不代表原作者精确计时或本平台已实做审校。'}
+          </small>
+          <a
+            className="recipe-safety-source"
+            href={safetySource}
+            target="_blank"
+            rel="noreferrer"
+          >
+            通用熟度依据：香港食物安全中心《烹煮及翻热》 ↗
+          </a>
+        </section>
+      </div>
+    </details>
   );
 }
