@@ -561,6 +561,12 @@ export default function Home() {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [error, setError] = useState('');
+  // Manual navigation dismisses old feedback; successful workflows keep their
+  // newly created notice when they move to the destination with setPage.
+  const navigate = useCallback((nextPage: string) => {
+    setMessage('');
+    setPage(nextPage);
+  }, []);
   const lock = useRef(false),
     datasetRef = useRef<Dataset>('real');
   const [dialog, setDialog] = useState<'manual' | 'workbuddy' | 'voice' | null>(
@@ -721,7 +727,7 @@ export default function Home() {
                 !pages.some((p) => p.id === v.view)
               )
                 throw new Error('Invalid view');
-              setPage(String(v.view));
+              navigate(String(v.view));
               return { opened: v.view };
             },
           },
@@ -732,7 +738,7 @@ export default function Home() {
       /* Unsupported optional registry does not block local UI. */
     }
     return () => abort.abort();
-  }, []);
+  }, [navigate]);
   const session = s ? activeSession(s) : undefined,
     rec = s ? recommendations(s) : [];
   const recipe =
@@ -833,7 +839,7 @@ export default function Home() {
   return (
     <Tabs
       value={page}
-      onValueChange={(v) => setPage(String(v))}
+      onValueChange={(v) => navigate(String(v))}
       orientation="vertical"
       className="kitchen-app"
       style={{ display: 'block' }}
@@ -977,7 +983,7 @@ export default function Home() {
                   </span>
                   <button
                     className="secondary"
-                    onClick={() => setPage('cooking')}
+                    onClick={() => navigate('cooking')}
                   >
                     继续这一餐
                   </button>
@@ -1006,7 +1012,7 @@ export default function Home() {
                     <button
                       className="primary"
                       onClick={() => {
-                        setPage('inventory');
+                        navigate('inventory');
                         setDialog('voice');
                       }}
                     >
@@ -1016,7 +1022,7 @@ export default function Home() {
                     <button
                       className="secondary"
                       onClick={() => {
-                        setPage('inventory');
+                        navigate('inventory');
                         setDialog('workbuddy');
                       }}
                     >
@@ -1069,7 +1075,7 @@ export default function Home() {
                   </p>
                   <button
                     className="secondary"
-                    onClick={() => setPage('inventory')}
+                    onClick={() => navigate('inventory')}
                   >
                     去我的厨房
                   </button>
@@ -1323,7 +1329,7 @@ export default function Home() {
                 </div>
               )}
               <div className="actions bottom-actions">
-                <button className="primary" onClick={() => setPage('today')}>
+                <button className="primary" onClick={() => navigate('today')}>
                   看看今天吃什么
                   <ArrowUpRight size={17} />
                 </button>
@@ -1342,7 +1348,7 @@ export default function Home() {
                   <ChefHat size={40} />
                   <h2>今天，想做哪一道？</h2>
                   <p>先选一道菜，确认食材和做法，再一步一步跟着做。</p>
-                  <button className="primary" onClick={() => setPage('today')}>
+                  <button className="primary" onClick={() => navigate('today')}>
                     去选一道菜
                   </button>
                 </div>
@@ -1859,7 +1865,7 @@ export default function Home() {
                   className="text-button"
                   onClick={() => {
                     setDialog(null);
-                    setPage('inventory');
+                    navigate('inventory');
                   }}
                 >
                   查看待确认食材
