@@ -87,6 +87,41 @@ void test('catalog has 30 distinct canonical seasonings, including every compend
     ),
   );
 });
+void test('every valid checklist size saves, including 25 through all 30 seasonings', () => {
+  for (let count = 1; count <= seasonings.length; count++) {
+    const state = emptyState('real');
+    const ids = seasonings.slice(0, count).map((item) => item.id);
+    assert.equal(confirm(state, ids), count);
+    assert.deepEqual(
+      state.inventory.map((item) => item.canonicalIngredientId),
+      ids,
+    );
+    const saved = structuredClone(state);
+    assert.equal(confirm(state, ids), 0);
+    assert.deepEqual(state, saved);
+  }
+});
+
+void test('all seasonings persist together and rejected oversized selections leave no partial data', async () => {
+  const store = new IndexedDbStore('setup-all-seasonings', new IDBFactory());
+  const ids = seasonings.map((item) => item.id);
+  const before = await store.read('real');
+  await assert.rejects(
+    store.change('real', (state) => confirm(state, [...ids, 'unknown'])),
+    /未知调料/,
+  );
+  assert.deepEqual(await store.read('real'), before);
+  await store.change('real', (state) =>
+    assert.equal(confirm(state, ids), ids.length),
+  );
+  store.close();
+  const saved = await store.read('real');
+  assert.equal(saved.inventory.length, ids.length);
+  assert.ok(saved.seasoningSetup?.completedAt);
+  assert.equal((await store.read('demo')).inventory.length, 0);
+  store.close();
+});
+
 void test('first-render checklist is unchecked and inert until confirmation', () => {
   const state = emptyState('real'),
     before = structuredClone(state);
