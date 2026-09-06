@@ -25,7 +25,12 @@ import {
   type MealRatings,
 } from '../lib/meal-ratings';
 
-const ratings: MealRatings = { taste: 5, difficulty: 1, appearance: 3 };
+const ratings: MealRatings = {
+  taste: 5,
+  difficulty: 1,
+  appearance: 3,
+  difficultyScale: 'easy-high',
+};
 const recipe = recipes.find((r) => r.id === 'golden_egg')!;
 function reviewing(): Session {
   return {
@@ -54,7 +59,7 @@ void test('three independent scores validate and copy without inventing an overa
   assert.equal(hasCompleteMealRatings(ratings), true);
   assert.equal(
     mealRatingSummary({ ratings }),
-    '好吃程度 5 / 5 · 制作难度 1 / 5（越高越难） · 卖相程度 3 / 5',
+    '好吃程度 5 / 5 · 制作难度 1 / 5（越高越简单） · 卖相程度 3 / 5',
   );
   const state = validState();
   finishCooking(state, 'meal', { ratings, memory: '好吃，做法简单' });
@@ -136,6 +141,7 @@ void test('partial draft keeps each value and old single-score drafts do not pre
     taste: 0,
     difficulty: 0,
     appearance: 0,
+    difficultyScale: 'easy-high',
   });
   const old = {
     rating: 4,
@@ -147,16 +153,18 @@ void test('partial draft keeps each value and old single-score drafts do not pre
     taste: 0,
     difficulty: 0,
     appearance: 0,
+    difficultyScale: 'easy-high',
   });
   assert.deepEqual(draft, old);
   assert.deepEqual(mealRatingsDraft({ taste: 5, difficulty: 0 }), {
     taste: 5,
     difficulty: 0,
     appearance: 0,
+    difficultyScale: 'easy-high',
   });
   assert.deepEqual(
     mealRatingsDraft({ taste: 6, difficulty: 2, appearance: NaN }),
-    { taste: 0, difficulty: 2, appearance: 0 },
+    { taste: 0, difficulty: 4, appearance: 0, difficultyScale: 'easy-high' },
   );
 });
 
@@ -164,7 +172,7 @@ void test('new partial drafts and completed three-dimensional records survive In
   const factory = new IDBFactory();
   let store = new IndexedDbStore('meal-rating-reopen', factory);
   const partial = {
-    ratings: { taste: 5, difficulty: 0, appearance: 3 },
+    ratings: { ...ratings, difficulty: 0 },
     memory: '再试一次',
     photo: 'data:image/png;base64,AA==',
   };
@@ -239,7 +247,7 @@ void test('rating control renders three named groups with five independent choic
     assert.ok(html.includes(`-${key}-label`));
     assert.ok(html.includes(`-${key}-hint`));
   }
-  assert.match(html, /1 星简单，5 星困难/);
+  assert.match(html, /1 星困难，5 星简单/);
   const empty = renderToStaticMarkup(
     createElement(MealRatingInput, {
       value: mealRatingsDraft(),
@@ -299,4 +307,65 @@ void test('unknown or malformed archived score never renders undefined or untrus
     }),
     '未评分',
   );
+});
+
+void test('old difficulty scale reverses once in drafts, history and export without mutating originals', () => {
+  for (let difficulty = 1; difficulty <= 5; difficulty++) {
+    const old = { taste: 5, difficulty, appearance: 3 };
+    const before = structuredClone(old);
+    const normalized = mealRatingsDraft(old);
+    assert.deepEqual(normalized, {
+      ...old,
+      difficulty: 6 - difficulty,
+      difficultyScale: 'easy-high',
+    });
+    assert.deepEqual(mealRatingsDraft(normalized), normalized);
+    assert.deepEqual(validateMealRatings(validateMealRatings(old)), normalized);
+    const session: Session = {
+      ...reviewing(),
+      status: 'completed',
+      ratings: old,
+    };
+    assert.ok(
+      mealRatingSummary(session).includes(
+        `制作难度 ${6 - difficulty} / 5（越高越简单）`,
+      ),
+    );
+    assert.ok(
+      renderBaiweiEntry(recipe, session, 'real').includes(
+        `制作难度 ${6 - difficulty} / 5（越高越简单）`,
+      ),
+    );
+    assert.deepEqual(old, before);
+    const state = validState();
+    finishCooking(state, 'meal', { ratings: old, memory: '' });
+    assert.deepEqual(state.sessions[0].ratings, normalized);
+  }
+});
+
+void test('easy-high draft persists and finishes without another reversal; unknown scales reject', async () => {
+  const store = new IndexedDbStore('difficulty-direction', new IDBFactory());
+  const old = { taste: 2, difficulty: 1, appearance: 4 };
+  const converted = mealRatingsDraft(old);
+  await store.change('real', (state) => {
+    state.sessions.push({
+      ...reviewing(),
+      reviewDraft: { ratings: converted, memory: '容易上手' },
+    });
+  });
+  store.close();
+  const draft = (await store.read('real')).sessions[0].reviewDraft!;
+  const restored = mealRatingsDraft(draft.ratings);
+  assert.equal(restored.difficulty, 5);
+  await store.change('real', (state) =>
+    finishCooking(state, 'meal', { ratings: restored, memory: draft.memory }),
+  );
+  const finished = (await store.read('real')).sessions[0];
+  assert.deepEqual(finished.ratings, converted);
+  assert.match(mealRatingSummary(finished), /制作难度 5 \/ 5（越高越简单）/);
+  assert.throws(
+    () => validateMealRatings({ ...ratings, difficultyScale: 'unknown' }),
+    /分别/,
+  );
+  store.close();
 });

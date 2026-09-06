@@ -18,7 +18,12 @@ import {
 const r = recipes.find((recipe) => recipe.id === 'golden_egg')!;
 const date = '2026-09-06';
 const feedback = {
-  ratings: { taste: 4, difficulty: 2, appearance: 5 },
+  ratings: {
+    taste: 4,
+    difficulty: 2,
+    appearance: 5,
+    difficultyScale: 'easy-high' as const,
+  },
   memory: '下次再试试',
   photo: 'data:image/png;base64,AA==',
 };
