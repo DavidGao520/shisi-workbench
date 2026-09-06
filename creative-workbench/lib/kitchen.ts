@@ -78,13 +78,14 @@ export type Session = {
   familyMemory?: string;
   photo?: string;
   actualConsumption?: Consumption[];
+  consumptionMode?: 'recipe-plan';
   mealOnlyIngredients?: MealOnlyIngredient[];
   stockAllocation?: StockAllocation[];
   reviewDraft?: {
     rating: number;
     memory: string;
     photo?: string;
-    consumption: Consumption[];
+    consumption?: Consumption[];
   };
   inventorySnapshot: Batch[];
 };
@@ -636,11 +637,8 @@ export function startCooking(
       amount: i.mealOnlyAmount,
       unit: i.unit,
     }));
-  // Freeze real-stock allocation before cooking. Later restocks must not fill
-  // the meal-only gap again when the user opens or refreshes their review.
-  const stockAllocation = mealOnlyIngredients.length
-    ? allocateStock(s, r, DEFAULT_SERVINGS, date)
-    : undefined;
+  // Every meal fixes its own real-stock plan; later restocks are not a substitute.
+  const stockAllocation = allocateStock(s, r, DEFAULT_SERVINGS, date);
   s.sessions.unshift({
     id,
     recipeId,
@@ -651,9 +649,8 @@ export function startCooking(
     step: 0,
     createdAt: new Date().toISOString(),
     inventorySnapshot: structuredClone(s.inventory),
-    ...(mealOnlyIngredients.length
-      ? { mealOnlyIngredients, stockAllocation }
-      : {}),
+    stockAllocation,
+    ...(mealOnlyIngredients.length ? { mealOnlyIngredients } : {}),
   });
 }
 export function stepSession(s: KitchenState, id: string, step: number) {
@@ -843,6 +840,67 @@ export function completeCooking(
   delete session.timerEnd;
   delete session.timerRemaining;
   delete session.reviewDraft;
+}
+/** Simple feedback flow: compute the saved recipe's deduction inside db.change. */
+export function finishCooking(
+  s: KitchenState,
+  id: string,
+  feedback: { rating: number; memory: string; photo?: string },
+  at = new Date().toISOString(),
+) {
+  const session = s.sessions.find((x) => x.id === id);
+  if (!session) fail('烹饪记录不存在。');
+  if (session.status === 'completed') return;
+  if (session.status !== 'reviewing') fail('请先完成跟做，再记录这一餐。');
+  let allocation = session.stockAllocation;
+  if (!allocation) {
+    // Older meals never borrow newly added stock. Use the original local start
+    // day, not today, so a meal finished after midnight retains its original plan.
+    const began = new Date(session.createdAt);
+    const startDate = /^\d{4}-\d{2}-\d{2}$/.test(session.createdAt)
+      ? session.createdAt
+      : [
+          began.getFullYear(),
+          String(began.getMonth() + 1).padStart(2, '0'),
+          String(began.getDate()).padStart(2, '0'),
+        ].join('-');
+    allocation = Number.isNaN(began.getTime())
+      ? []
+      : allocateStock(
+          { ...s, inventory: session.inventorySnapshot },
+          sessionRecipe(s, session),
+          session.servings,
+          startDate,
+        );
+  }
+  const consumption: Consumption[] = [];
+  for (const use of allocation) {
+    const original = session.inventorySnapshot.find(
+      (b) => b.id === use.batchId,
+    );
+    const current = s.inventory.find((b) => b.id === use.batchId);
+    // Removed, retyped or imprecise rows are left untouched, never replaced.
+    if (
+      !original ||
+      !current ||
+      current.amount === undefined ||
+      current.amount <= 0 ||
+      current.unit !== use.unit ||
+      inventoryIngredientId(current) !== inventoryIngredientId(original)
+    )
+      continue;
+    consumption.push({
+      batchId: current.id,
+      expectedRevision: current.revision,
+      remaining: {
+        amount: Math.max(0, current.amount - use.amount),
+        unit: current.unit,
+      },
+    });
+  }
+  // Ignore legacy draft.consumption: only the photo, score and comment are input.
+  completeCooking(s, id, { ...feedback, consumption }, at);
+  session.consumptionMode = 'recipe-plan';
 }
 export function archive(s: KitchenState) {
   return recipes

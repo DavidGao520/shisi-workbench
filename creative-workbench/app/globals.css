@@ -1134,15 +1134,21 @@ textarea {
 .timer strong {
   font-size: 21px;
 }
+.review-form {
+  max-width: 760px;
+}
 .review-form > h2 {
   font-size: 30px;
   margin: 8px 0 12px;
 }
-.review-grid {
+.review-fields {
   display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 35px;
-  margin: 25px 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  margin: 28px 0;
+}
+.review-fields > .field {
+  margin: 0;
 }
 .photo-upload {
   position: relative;
@@ -1187,46 +1193,6 @@ textarea {
 .rating span {
   font-size: 13px;
   margin-left: 10px;
-}
-.consume-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 13px 0;
-  border-bottom: 1px dashed var(--line);
-}
-.consume-row > div:first-child {
-  flex: 1;
-}
-.consume-row strong {
-  font-size: 15px;
-  font-weight: 500;
-}
-.consume-row small {
-  display: block;
-  font-size: 12px;
-  color: #8a775d;
-}
-.remaining-field {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14px;
-}
-.remaining-field input {
-  width: 75px;
-  padding: 8px;
-}
-.review-grid > .field {
-  margin-top: 15px;
-}
-.review-grid > div > .actions {
-  margin-top: 18px;
-  align-items: end;
-}
-.review-grid > div > .actions .field {
-  margin-bottom: 0;
-  flex: 1;
 }
 .review-form > .actions {
   margin-top: 18px;
@@ -1304,9 +1270,6 @@ textarea {
     grid-template-columns: 1fr 1fr;
   }
   .recipe-index {
-    grid-template-columns: 1fr;
-  }
-  .review-grid {
     grid-template-columns: 1fr;
   }
   .row-between > .muted {
@@ -1446,9 +1409,6 @@ textarea {
   }
   .culture-panel {
     padding: 17px;
-  }
-  .review-grid {
-    gap: 23px;
   }
   .archive-heading {
     align-items: baseline;

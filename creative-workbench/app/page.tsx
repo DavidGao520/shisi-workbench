@@ -85,7 +85,6 @@ import {
   safetySource,
   detailedCookingSteps,
   recipePeople,
-  ingredientName,
   RECIPE_VERSION,
   type Recipe,
 } from '@/lib/recipes';
@@ -93,31 +92,27 @@ import { art } from '@/lib/art';
 import {
   activeSession,
   bands,
-  completeCooking,
+  finishCooking,
   confirmCandidate,
   demoImport,
   DEFAULT_SERVINGS,
   emptyState,
   isExpired,
   mealIngredients,
-  mealStockLimit,
   parseImport,
   quantityText,
   recommendations,
   rejectCandidate,
-  sessionRemainingPlan,
   stage,
   startCooking,
   stepSession,
   uid,
   units,
   type Candidate,
-  type Consumption,
   type Dataset,
   type KitchenState,
   type Mode,
   type MealConfirmation,
-  type Quantity,
   type Session,
 } from '@/lib/kitchen';
 
@@ -404,271 +399,104 @@ function CandidateEditor({
   );
 }
 function ReviewForm({
-  s,
   session,
   busy,
   mutate,
   done,
   onError,
 }: {
-  s: KitchenState;
   session: Session;
   busy: boolean;
   mutate: Mutate;
   done: () => void;
   onError: (v: string) => void;
 }) {
-  const r = sessionRecipe(s, session);
-  const [rows, setRows] = useState<Consumption[]>(
-    () => session.reviewDraft?.consumption || sessionRemainingPlan(s, session),
-  );
   const [rating, setRating] = useState(session.reviewDraft?.rating || 0),
     [memory, setMemory] = useState(session.reviewDraft?.memory || ''),
     [photo, setPhoto] = useState(session.reviewDraft?.photo || ''),
-    [confirmed, setConfirmed] = useState(false),
     [photoBusy, setPhotoBusy] = useState(false);
-  const updateRow = (id: string, q: Quantity) => {
-    setRows((prev) =>
-      prev.map((row) => (row.batchId === id ? { ...row, remaining: q } : row)),
-    );
-    setConfirmed(false);
-  };
-  const [extra, setExtra] = useState('');
   return (
     <section className="paper review-form">
       <p className="eyebrow">掌柜复盘</p>
       <h2>这一餐，做得怎么样？</h2>
-      <p className="muted">
-        尚未扣减库存。请核对用过的食材，以及现在实际还剩多少。
-      </p>
-      {!!session.mealOnlyIngredients?.length && (
-        <p className="meal-provision-note">
-          本餐临时用料：
-          {session.mealOnlyIngredients
-            .map(
-              (i) =>
-                `${ingredientName(r, i.ingredientId)} ${i.amount} ${i.unit}`,
-            )
-            .join('、')}
-          。未加入冰箱，完成时不会再次扣减。
-        </p>
-      )}
-      <div className="review-grid">
-        <div>
-          <label className="photo-upload">
-            <Camera />
-            <span>{photo ? '更换成品照' : '留张成品照（可跳过）'}</span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={busy || photoBusy}
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                setPhotoBusy(true);
-                try {
-                  setPhoto(await photoData(f));
-                } catch (err) {
-                  onError(String((err as Error).message));
-                } finally {
-                  setPhotoBusy(false);
-                }
-              }}
-            />
-          </label>
-          {photo && (
-            <>
-              <img className="review-photo" src={photo} alt="本次成品照预览" />
-              <button className="text-button" onClick={() => setPhoto('')}>
-                移除照片
-              </button>
-            </>
-          )}
-          <p className="muted">只在本机保存，不上传、不由 AI 判断味道。</p>
-          <label className="field">
-            我的评分（必填）
-            <div className="rating">
-              {[1, 2, 3, 4, 5].map((v) => (
-                <button
-                  type="button"
-                  key={v}
-                  aria-label={v + ' 分'}
-                  aria-pressed={rating === v}
-                  onClick={() => setRating(v)}
-                >
-                  <Star
-                    fill={v <= rating ? '#bc8435' : 'none'}
-                    color="#bc8435"
-                  />
-                </button>
-              ))}
-              <span>{rating ? rating + ' / 5' : '还没评分'}</span>
-            </div>
-          </label>
-          <label className="field">
-            留一句家庭记忆或下次改进（可选）
-            <textarea
-              value={memory}
-              maxLength={2000}
-              onChange={(e) => setMemory(e.target.value)}
-              placeholder="比如：这一口，像小时候家里的晚饭。"
-            />
-          </label>
-        </div>
-        <div>
-          <h3>确认实际剩余</h3>
-          <p className="muted">
-            以下按菜谱预填，可修改。没有用到的批次可移除；不会自动扣未列出的食材。
-          </p>
-          {rows.length === 0 && <p className="muted">本餐无需扣减冰箱库存。</p>}
-          {rows.map((row) => {
-            const b = s.inventory.find((b) => b.id === row.batchId);
-            if (!b)
-              return (
-                <p key={row.batchId} className="warning-text">
-                  原批次不存在，不会改扣其他库存。
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setRows(rows.filter((x) => x.batchId !== row.batchId));
-                      setConfirmed(false);
-                    }}
-                  >
-                    从本餐核对清单移除
-                  </button>
-                </p>
-              );
-            return (
-              <div className="consume-row" key={row.batchId}>
-                <div>
-                  <strong>{b.displayName}</strong>
-                  <small>原有 {quantityText(b)}</small>
-                </div>
-                {row.remaining.amount !== undefined ? (
-                  <label className="remaining-field">
-                    <span className="sr-only">{b.displayName}实际剩余量</span>
-                    <input
-                      aria-label={b.displayName + '实际剩余量'}
-                      type="number"
-                      min={Math.max(
-                        0,
-                        (b.amount || 0) -
-                          (mealStockLimit(session, b) ?? (b.amount || 0)),
-                      )}
-                      max={b.amount}
-                      step="any"
-                      value={
-                        Number.isNaN(row.remaining.amount)
-                          ? ''
-                          : row.remaining.amount
-                      }
-                      onChange={(e) =>
-                        updateRow(b.id, {
-                          amount:
-                            e.target.value === ''
-                              ? NaN
-                              : Number(e.target.value),
-                          unit: b.unit,
-                        })
-                      }
-                    />
-                    <span>{b.unit}</span>
-                  </label>
-                ) : (
-                  <Choice
-                    label="剩余量"
-                    value={row.remaining.amountBand || '少量'}
-                    onChange={(v) => updateRow(b.id, { amountBand: v })}
-                    options={bands.map((v) => ({ value: v, label: v }))}
-                  />
-                )}
-                <button
-                  className="icon-button"
-                  aria-label={'未使用' + b.displayName + '，从消耗清单移除'}
-                  onClick={() => {
-                    setRows(rows.filter((x) => x.batchId !== b.id));
-                    setConfirmed(false);
-                  }}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            );
-          })}
-          <div className="actions">
-            <Choice
-              label="另用到一个批次"
-              value={extra}
-              onChange={setExtra}
-              options={s.inventory
-                .filter((b) => !rows.some((x) => x.batchId === b.id))
-                .filter((b) => mealStockLimit(session, b) !== 0)
-                .map((b) => ({
-                  value: b.id,
-                  label: b.displayName + ' · ' + quantityText(b),
-                }))}
-            />
-            <button
-              className="secondary"
-              disabled={!extra}
-              onClick={() => {
-                const b = s.inventory.find((b) => b.id === extra);
-                if (b)
-                  setRows([
-                    ...rows,
-                    {
-                      batchId: b.id,
-                      expectedRevision: b.revision,
-                      remaining:
-                        b.amount !== undefined
-                          ? { amount: b.amount, unit: b.unit }
-                          : { amountBand: b.amountBand },
-                    },
-                  ]);
-                setExtra('');
-                setConfirmed(false);
-              }}
-            >
-              加入核对
-            </button>
-          </div>
-          <button
-            className="text-button"
-            onClick={() => {
-              setRows(sessionRemainingPlan(s, session));
-              setConfirmed(false);
+      <div className="review-fields">
+        <label className="photo-upload">
+          <Camera />
+          <span>{photo ? '更换成品照' : '留张成品照（可跳过）'}</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={busy || photoBusy}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setPhotoBusy(true);
+              try {
+                setPhoto(await photoData(f));
+              } catch (err) {
+                onError(String((err as Error).message));
+              } finally {
+                setPhotoBusy(false);
+              }
             }}
-          >
-            按最新库存重新预填（会覆盖本次核对修改）
-          </button>
-        </div>
+          />
+        </label>
+        {photo && (
+          <>
+            <img className="review-photo" src={photo} alt="本次成品照预览" />
+            <button className="text-button" onClick={() => setPhoto('')}>
+              移除照片
+            </button>
+          </>
+        )}
+        <label className="field">
+          我的评分（必填）
+          <div className="rating">
+            {[1, 2, 3, 4, 5].map((v) => (
+              <button
+                type="button"
+                key={v}
+                aria-label={v + ' 分'}
+                aria-pressed={rating === v}
+                onClick={() => setRating(v)}
+              >
+                <Star fill={v <= rating ? '#bc8435' : 'none'} color="#bc8435" />
+              </button>
+            ))}
+            <span>{rating ? rating + ' / 5' : '还没评分'}</span>
+          </div>
+        </label>
+        <label className="field">
+          留一句家庭记忆或下次改进（可选）
+          <textarea
+            value={memory}
+            maxLength={2000}
+            onChange={(e) => setMemory(e.target.value)}
+            placeholder="比如：这一口，像小时候家里的晚饭。"
+          />
+        </label>
       </div>
-      <Tick
-        label="我已核对实际消耗；确认后才扣减库存并收录百味图。"
-        checked={confirmed}
-        onChange={setConfirmed}
-      />
       <div className="actions">
         <button
           className="primary"
-          disabled={busy || photoBusy || !rating || !confirmed}
+          disabled={busy || photoBusy || !rating}
           onClick={async () => {
+            if (busy || photoBusy || !rating) return;
             if (
               await mutate(
                 (state) =>
-                  completeCooking(state, session.id, {
+                  finishCooking(state, session.id, {
                     rating,
                     memory,
                     photo: photo || undefined,
-                    consumption: rows,
                   }),
-                '这一餐已收录，库存已更新。',
+                '这一餐已收录百味图。',
               )
             )
               done();
           }}
         >
-          确认完成，收录百味图
+          完成，收录百味图
           <ArrowUpRight size={17} />
         </button>
         <button
@@ -682,12 +510,15 @@ function ReviewForm({
                   rating,
                   memory,
                   photo: photo || undefined,
-                  consumption: rows,
+                  // Preserve old draft data without using its manual stock edits.
+                  ...(v.reviewDraft?.consumption
+                    ? { consumption: v.reviewDraft.consumption }
+                    : {}),
                 };
             }, '复盘草稿已保存，下次可以继续。')
           }
         >
-          保存草稿，稍后确认
+          保存草稿
         </button>
       </div>
     </section>
@@ -1476,7 +1307,6 @@ export default function Home() {
               ) : session.status === 'reviewing' ? (
                 <ReviewForm
                   key={session.id}
-                  s={s}
                   session={session}
                   busy={busy}
                   mutate={mutate}

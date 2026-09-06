@@ -345,7 +345,10 @@ void test('IndexedDB reopen keeps meal-only allocation, draft, atomic stale-writ
   });
   await assert.rejects(
     store.change('real', (s) =>
-      completeCooking(s, 'meal', saved.sessions[0].reviewDraft!),
+      completeCooking(s, 'meal', {
+        ...saved.sessions[0].reviewDraft!,
+        consumption: saved.sessions[0].reviewDraft!.consumption!,
+      }),
     ),
     /变化/,
   );
@@ -396,6 +399,6 @@ void test('page resets per-meal drafts on open, close and dataset change; final 
   }
   assert.match(page, /if \(!foodChecked\) return;/);
   assert.match(page, /ingredientRows\.some\(\(item\) => !item.ready\)/);
-  assert.match(page, /sessionRemainingPlan\(s, session\)/);
+  assert.match(page, /finishCooking\(state, session.id,/);
   assert.doesNotMatch(page, /remainingPlan\(s, r, session.servings\)/);
 });
