@@ -583,8 +583,7 @@ export default function Home() {
   const [mealConfirmations, setMealConfirmations] = useState<
     MealConfirmation[]
   >([]);
-  const [now, setNow] = useState(() => Date.now()),
-    [timerMinutes, setTimerMinutes] = useState('3');
+  const [now, setNow] = useState(() => Date.now());
   const reload = useCallback(async (d: Dataset) => {
     try {
       const data = await db.read(d);
@@ -1470,73 +1469,41 @@ export default function Home() {
                           分钟计时
                         </button>
                       )}
-                    <div className="timer">
-                      <Clock3 size={21} />
-                      {session.timerEnd || session.timerRemaining ? (
-                        <>
-                          <strong>
-                            {Math.ceil(
-                              Math.max(
-                                0,
-                                session.timerEnd
-                                  ? session.timerEnd - now
-                                  : session.timerRemaining || 0,
-                              ) / 60000,
-                            )}{' '}
-                            分钟
-                          </strong>
-                          <span>
-                            {session.timerEnd && now >= session.timerEnd
-                              ? '时间到了，请自行检查熟度。'
-                              : '提醒计时中 · 切后台可能延迟通知'}
-                          </span>
-                          <button
-                            className="text-button"
-                            onClick={() =>
-                              mutate((state) => {
-                                const v = activeSession(state);
-                                if (v) {
-                                  delete v.timerEnd;
-                                  delete v.timerRemaining;
-                                }
-                              })
-                            }
-                          >
-                            取消
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <label>
-                            <span className="sr-only">提醒分钟数</span>
-                            <input
-                              aria-label="提醒分钟数"
-                              type="number"
-                              min="1"
-                              max="1440"
-                              value={timerMinutes}
-                              onChange={(e) => setTimerMinutes(e.target.value)}
-                            />
-                          </label>
-                          <span>分钟后提醒</span>
-                          <button
-                            className="secondary"
-                            disabled={busy || session.status === 'paused'}
-                            onClick={() =>
-                              mutate((state) => {
-                                const n = Number(timerMinutes);
-                                if (!Number.isFinite(n) || n < 1 || n > 1440)
-                                  throw new Error('提醒时间应为 1–1440 分钟。');
-                                const v = activeSession(state);
-                                if (v) v.timerEnd = Date.now() + n * 60000;
-                              })
-                            }
-                          >
-                            开始计时
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {!!(session.timerEnd || session.timerRemaining) && (
+                      <div className="timer">
+                        <Clock3 size={21} />
+                        <strong>
+                          {Math.ceil(
+                            Math.max(
+                              0,
+                              session.timerEnd
+                                ? session.timerEnd - now
+                                : session.timerRemaining || 0,
+                            ) / 60000,
+                          )}{' '}
+                          分钟
+                        </strong>
+                        <span>
+                          {session.timerEnd && now >= session.timerEnd
+                            ? '时间到了，请自行检查熟度。'
+                            : '提醒计时中 · 切后台可能延迟通知'}
+                        </span>
+                        <button
+                          className="text-button"
+                          onClick={() =>
+                            mutate((state) => {
+                              const v = activeSession(state);
+                              if (v) {
+                                delete v.timerEnd;
+                                delete v.timerRemaining;
+                              }
+                            })
+                          }
+                        >
+                          取消
+                        </button>
+                      </div>
+                    )}
                     <div className="step-actions">
                       <button
                         className="secondary"

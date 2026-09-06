@@ -1377,9 +1377,6 @@ textarea {
   border-bottom: 1px solid var(--line);
   font-size: 14px;
 }
-.timer input {
-  width: 65px;
-}
 .timer strong {
   font-size: 21px;
 }
