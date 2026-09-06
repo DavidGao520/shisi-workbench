@@ -1,6 +1,6 @@
 /* oxlint-disable next/no-img-element -- Layered inline game artwork must also render in the self-contained HTML build. */
 import { today } from '@/lib/kitchen';
-import { pantryCardArt } from '@/lib/art';
+import { getPantryCardArt } from '@/lib/art';
 import { PRESENT_QUANTITY } from '@/lib/seasonings';
 
 type CardStatus = 'pending' | 'confirmed';
@@ -54,7 +54,7 @@ export function KitchenIngredientCard({
   triggerDisabled = false,
   onTrigger,
 }: KitchenIngredientCardProps) {
-  const cardArt = pantryCardArt[ingredientId];
+  const cardArt = getPantryCardArt(ingredientId, name);
   if (!cardArt) return null;
 
   const stateLabel = status === 'pending' ? '待校准' : '已校准';

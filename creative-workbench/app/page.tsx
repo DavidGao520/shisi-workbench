@@ -94,7 +94,7 @@ import {
   RECIPE_VERSION,
   type Recipe,
 } from '@/lib/recipes';
-import { art, pantryCardArt } from '@/lib/art';
+import { art, getPantryCardArt } from '@/lib/art';
 import {
   activeSession,
   bands,
@@ -279,7 +279,7 @@ function CandidateEditor({
   );
   const [band, setBand] = useState(review.quantity.amountBand || '少量');
   const [expiry, setExpiry] = useState(review.expiryDate || '');
-  const hasCardArt = !!pantryCardArt[review.ingredientId];
+  const hasCardArt = !!getPantryCardArt(review.ingredientId, review.name);
   const previewQuantity =
     kind === 'exact'
       ? amount === ''
@@ -1279,7 +1279,7 @@ export default function Home() {
               ) : (
                 <div className="inventory-grid">
                   {s.inventory.map((b) =>
-                    pantryCardArt[b.canonicalIngredientId] ? (
+                    getPantryCardArt(b.canonicalIngredientId, b.displayName) ? (
                       <KitchenIngredientCard
                         key={b.id}
                         ingredientId={b.canonicalIngredientId}

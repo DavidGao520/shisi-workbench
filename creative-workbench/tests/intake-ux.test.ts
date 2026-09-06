@@ -1,6 +1,70 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { pantryArtId } from '../lib/pantry-art';
+import {
+  emptyState,
+  matching,
+  normalizePantryIdentities,
+} from '../lib/kitchen';
+import { recipes } from '../lib/recipes';
+import { prepareVoiceDraft, confirmVoiceDraft } from '../lib/voice-intake';
+
+void test('generic chicken borrows whole-chicken artwork only for its exact display name', () => {
+  assert.equal(pantryArtId('other', '鸡肉'), 'whole_chicken');
+  assert.equal(pantryArtId('other', ' 鸡肉 '), 'whole_chicken');
+  assert.equal(pantryArtId('whole_chicken', '整鸡'), 'whole_chicken');
+  assert.equal(pantryArtId('chicken_drum', '鸡肉'), 'chicken_drum');
+  for (const name of ['鸭肉', '素鸡', '鸡肉丸', '熟鸡肉', '鸡胸肉'])
+    assert.equal(pantryArtId('other', name), 'other');
+});
+
+void test('chicken artwork leaves confirmed quantities, identity and recipe matching unchanged', () => {
+  const recipe = recipes.find((item) => item.id === 'white_cut_chicken')!;
+  for (const transcript of ['一盒鸡肉', '鸡肉1000克']) {
+    const state = emptyState('real');
+    const { rows } = prepareVoiceDraft(transcript, state, 'stocktake');
+    rows[0].expiryDate = '2026-09-23';
+    confirmVoiceDraft(state, 'real', rows);
+    const before = structuredClone(state.inventory);
+    const batch = state.inventory[0];
+    assert.equal(batch.displayName, '鸡肉');
+    assert.equal(batch.canonicalIngredientId, 'other');
+    assert.equal(batch.amount, transcript === '一盒鸡肉' ? 1 : 1000);
+    assert.equal(batch.unit, transcript === '一盒鸡肉' ? '盒' : '克');
+    assert.equal(
+      pantryArtId(batch.canonicalIngredientId, batch.displayName),
+      'whole_chicken',
+    );
+    normalizePantryIdentities(state);
+    assert.deepEqual(state.inventory, before);
+    assert.equal(
+      matching(state, recipe).find((item) => item.id === 'whole_chicken')!.have,
+      0,
+    );
+  }
+});
+
+void test('candidate, inventory and card rendering share the art-only resolver', async () => {
+  const source = await page();
+  const card = await readFile(
+    new URL('../components/kitchen-ingredient-card.tsx', import.meta.url),
+    'utf8',
+  );
+  const art = await readFile(new URL('../lib/art.ts', import.meta.url), 'utf8');
+  assert.ok(
+    source.includes('getPantryCardArt(review.ingredientId, review.name)'),
+  );
+  assert.ok(
+    source.includes('getPantryCardArt(b.canonicalIngredientId, b.displayName)'),
+  );
+  assert.ok(card.includes('getPantryCardArt(ingredientId, name)'));
+  assert.ok(
+    art.includes('pantryCardArt[pantryArtId(ingredientId, displayName)]'),
+  );
+  assert.ok(art.includes('whole_chicken: cardWholeChicken'));
+  assert.ok(art.includes('/cards/whole_chicken.webp?inline'));
+});
 
 // Source-level UX guard: not a claim of browser or microphone acceptance.
 const page = () =>
@@ -168,7 +232,7 @@ void test('confirmed inventory cards open calibration from the whole card', asyn
     .split('/>')[0];
   assert.doesNotMatch(pendingPreview, /triggerLabel|triggerDisabled|onTrigger/);
   const illustratedInventory = source
-    .split('pantryCardArt[b.canonicalIngredientId] ? (')[1]
+    .split('getPantryCardArt(b.canonicalIngredientId, b.displayName) ? (')[1]
     .split(') : (')[0];
   assert.doesNotMatch(illustratedInventory, /batchId/);
   assert.doesNotMatch(illustratedInventory, /actionLabel|校准余量/);

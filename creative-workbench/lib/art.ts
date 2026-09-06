@@ -25,6 +25,7 @@ import cardNoodle from '../public/art/cards/noodle.webp?inline';
 import cardLemon from '../public/art/cards/lemon.webp?inline';
 import cardMilk from '../public/art/cards/milk.webp?inline';
 import cardChickenDrum from '../public/art/cards/chicken_drum.webp?inline';
+import { pantryArtId } from './pantry-art';
 import cardPorkRibs from '../public/art/cards/pork_ribs.webp?inline';
 import cardSteak from '../public/art/cards/steak.webp?inline';
 import cardFish from '../public/art/cards/fish.webp?inline';
@@ -206,3 +207,7 @@ export const pantryCardArt: Record<string, PantryCardArt> = {
   ...baiweiPantryCardArt,
   ...workbenchSupplementalCardArt,
 };
+
+export function getPantryCardArt(ingredientId: string, displayName: string) {
+  return pantryCardArt[pantryArtId(ingredientId, displayName)];
+}
