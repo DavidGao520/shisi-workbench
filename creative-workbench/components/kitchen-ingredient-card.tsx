@@ -12,7 +12,6 @@ type KitchenIngredientCardProps = {
   quantity: string;
   expiryDate?: string;
   expired?: boolean;
-  batchId?: string;
   actionLabel?: string;
   actionDisabled?: boolean;
   onAction?: () => void;
@@ -51,7 +50,6 @@ export function KitchenIngredientCard({
   quantity,
   expiryDate,
   expired = false,
-  batchId,
   actionLabel,
   actionDisabled = false,
   onAction,
@@ -71,7 +69,6 @@ export function KitchenIngredientCard({
       : quantity;
   const expiry = expiryPresentation(expiryDate, status, expired);
   const dateLabel = expiryDate?.replaceAll('-', '.');
-  const meta = batchId ? '批次 ' + batchId.slice(0, 6) : undefined;
   const accessibleLabel = [
     name,
     categoryLabel,
@@ -79,7 +76,6 @@ export function KitchenIngredientCard({
     quantityLabel,
     expiry.label,
     expiryDate,
-    batchId ? '批次 ' + batchId.slice(0, 6) : undefined,
   ]
     .filter(Boolean)
     .join('，');
@@ -128,7 +124,9 @@ export function KitchenIngredientCard({
           {categoryLabel}
         </span>
         <div className="kitchen-ingredient-card__details">
-          <span className="kitchen-ingredient-card__state">{stateLabel}</span>
+          {status === 'pending' && (
+            <span className="kitchen-ingredient-card__state">{stateLabel}</span>
+          )}
           <strong className="kitchen-ingredient-card__quantity">
             {quantityLabel}
           </strong>
@@ -139,11 +137,8 @@ export function KitchenIngredientCard({
           </span>
           {expiryDate && <time dateTime={expiryDate}>{dateLabel}</time>}
         </div>
-        {(meta || action) && (
-          <div className="kitchen-ingredient-card__footer">
-            {meta && <span>{meta}</span>}
-            {action}
-          </div>
+        {action && (
+          <div className="kitchen-ingredient-card__footer">{action}</div>
         )}
       </div>
     </article>

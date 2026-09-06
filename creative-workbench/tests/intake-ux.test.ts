@@ -62,6 +62,29 @@ void test('candidate and voice review show quantities and expiry without identit
   assert.match(voice, /库存卡片分别校准余量/);
 });
 
+void test('confirmed illustrated cards rely on the checkmark and omit batch metadata', async () => {
+  const card = await readFile(
+    new URL('../components/kitchen-ingredient-card.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    card,
+    /status === 'pending' && \([\s\S]*?kitchen-ingredient-card__state/,
+  );
+  assert.doesNotMatch(card, /batchId|批次/);
+  const source = await page();
+  const illustratedInventory = source
+    .split('pantryCardArt[b.canonicalIngredientId] ? (')[1]
+    .split(') : (')[0];
+  assert.doesNotMatch(illustratedInventory, /batchId/);
+  assert.match(illustratedInventory, /actionLabel="校准余量"/);
+  assert.doesNotMatch(source, /批次 \{b\.id\.slice\(0, 6\)\}/);
+  assert.match(
+    source,
+    /className="inventory-item__actions"[\s\S]*?>\s*校准余量\s*</,
+  );
+});
+
 void test('kitchen has no user-facing candidate JSON import path', async () => {
   const source = await page();
   assert.equal(

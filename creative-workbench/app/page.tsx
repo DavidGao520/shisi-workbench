@@ -1394,7 +1394,6 @@ export default function Home() {
                         quantity={quantityText(b)}
                         expiryDate={b.expiryDate}
                         expired={isExpired(b)}
-                        batchId={b.id}
                         actionLabel="校准余量"
                         actionDisabled={busy}
                         onAction={() => void calibrateBatch(b)}
@@ -1420,8 +1419,7 @@ export default function Home() {
                               ? '到期 ' + b.expiryDate
                               : '未记录到期日期 · 不代表新鲜度'}
                         </small>
-                        <div className="row-between">
-                          <span className="muted">批次 {b.id.slice(0, 6)}</span>
+                        <div className="inventory-item__actions">
                           <button
                             className="text-button"
                             disabled={busy}
