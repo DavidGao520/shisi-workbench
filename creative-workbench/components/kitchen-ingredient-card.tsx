@@ -137,35 +137,6 @@ export function KitchenIngredientCard({
           </div>
         )}
       </div>
-
-      <div className="kitchen-ingredient-card__mobile-details">
-        <span className="kitchen-ingredient-card__mobile-state">
-          {status === 'pending' ? '? ' : '✓ '}
-          {stateLabel}
-        </span>
-        <strong>{quantityLabel}</strong>
-        <span
-          className={`kitchen-ingredient-card__expiry kitchen-ingredient-card__expiry--${expiry.tone}`}
-        >
-          {expiry.label}
-        </span>
-        {expiryDate && <time dateTime={expiryDate}>{dateLabel}</time>}
-        {(meta || (actionLabel && onAction)) && (
-          <div className="kitchen-ingredient-card__mobile-footer">
-            {meta && <span>{meta}</span>}
-            {actionLabel && onAction ? (
-              <button
-                type="button"
-                className="kitchen-ingredient-card__action"
-                disabled={actionDisabled}
-                onClick={onAction}
-              >
-                {actionLabel}
-              </button>
-            ) : null}
-          </div>
-        )}
-      </div>
     </article>
   );
 }

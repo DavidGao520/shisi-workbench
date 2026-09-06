@@ -1004,9 +1004,6 @@ textarea {
   outline: 3px solid #b46642;
   outline-offset: 1px;
 }
-.kitchen-ingredient-card__mobile-details {
-  display: none;
-}
 .kitchen-ingredient-card--expired .kitchen-ingredient-card__art {
   filter: grayscale(0.38) saturate(0.76)
     drop-shadow(2px 4px 4px rgba(48, 39, 20, 0.2));
@@ -1475,89 +1472,9 @@ textarea {
     font-size: 12px;
     min-height: 43px;
   }
-  .candidate-with-art > .kitchen-ingredient-card {
-    justify-self: stretch;
-  }
-  .kitchen-ingredient-card {
-    display: grid;
-    grid-template-columns: 112px minmax(0, 1fr);
-    width: 100%;
-    min-height: 168px;
-    overflow: hidden;
-    border: 1px solid #d9cfb8;
-    border-radius: 12px;
-    background: #fffaf0;
-    filter: none;
-  }
-  .kitchen-ingredient-card__visual {
-    width: 112px;
-    height: 168px;
-  }
-  .kitchen-ingredient-card__status {
-    font-size: 14px;
-  }
-  .kitchen-ingredient-card__name {
-    font-size: 10px;
-  }
-  .kitchen-ingredient-card__category {
-    font-size: 8px;
-  }
-  .kitchen-ingredient-card__details,
-  .kitchen-ingredient-card__footer {
-    display: none;
-  }
-  .kitchen-ingredient-card__mobile-details {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 12px 13px 8px;
-  }
-  .kitchen-ingredient-card__mobile-state {
-    display: inline-flex;
-    align-items: center;
-    min-height: 26px;
-    margin-bottom: 3px;
-    padding: 1px 8px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .kitchen-ingredient-card--pending .kitchen-ingredient-card__mobile-state {
-    color: #72420d;
-    background: #f7de9c;
-  }
-  .kitchen-ingredient-card--confirmed .kitchen-ingredient-card__mobile-state {
-    color: #3f5737;
-    background: #dde8d3;
-  }
-  .kitchen-ingredient-card__mobile-details > strong {
-    overflow: hidden;
-    color: #506238;
-    font-family: 'Songti SC', 'STSong', serif;
-    font-size: 22px;
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .kitchen-ingredient-card__mobile-details > .kitchen-ingredient-card__expiry {
-    font-size: 15px;
-  }
-  .kitchen-ingredient-card__mobile-details > time {
-    color: #817158;
-    font-size: 12px;
-    font-variant-numeric: tabular-nums;
-  }
-  .kitchen-ingredient-card__mobile-footer {
-    width: 100%;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: auto;
-    color: #75684f;
-    font-size: 11px;
+  .candidate-with-art > .kitchen-ingredient-card,
+  .inventory-grid > .kitchen-ingredient-card {
+    justify-self: center;
   }
   .storage-note {
     font-size: 12px;
