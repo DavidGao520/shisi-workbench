@@ -2074,8 +2074,6 @@ export default function Home() {
                     disabled={
                       busy ||
                       !!session ||
-                      (cooking.ticket?.recipeId === recipe.id &&
-                        cooking.ticket.dataset === dataset) ||
                       !foodChecked ||
                       ingredientRows.some((item) => !item.ready)
                     }
