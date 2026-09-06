@@ -6,6 +6,7 @@ import {
   candidateReview,
   confirmReviewedCandidate,
   inventoryEditCandidate,
+  stageInventoryEditCandidate,
 } from '../lib/candidate-review';
 import {
   emptyState,
@@ -105,6 +106,22 @@ void test('explicit card edit remembers the exact batch even among identical nam
   store.close();
 });
 
+void test('reopening a card reuses only its current calibration draft', () => {
+  const state = stocked();
+  const id = state.inventory[0].id;
+  const first = stageInventoryEditCandidate(state, id);
+  assert.equal(stageInventoryEditCandidate(state, id).key, first.key);
+  assert.equal(
+    state.candidates.filter((candidate) => candidate.stocktakeTarget?.id === id)
+      .length,
+    1,
+  );
+  state.inventory[0].revision++;
+  const current = stageInventoryEditCandidate(state, id);
+  assert.notEqual(current.key, first.key);
+  assert.equal(current.stocktakeTarget?.revision, state.inventory[0].revision);
+});
+
 void test('multiple matching batches block ambiguous photo or voice stocktake without a hidden chooser', () => {
   const state = stocked();
   state.inventory.push({ ...state.inventory[0], id: 'second' });
@@ -148,7 +165,7 @@ void test('expired records remain linked and keep their date; mixed fresh and ex
   );
 });
 
-void test('unknown quantity retains known stock; unknown foods keep separate names', () => {
+void test('unknown quantity retains known stock; catalogued and unknown foods keep separate identities', () => {
   const state = stocked();
   const candidate = incoming(state, '鸡蛋', 'stocktake', undefined);
   // Delete explicit quantity to represent a photo with no reported quantity.

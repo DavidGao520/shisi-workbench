@@ -5,6 +5,72 @@ import { readFile } from 'node:fs/promises';
 // Source-level UX guard: not a claim of browser or microphone acceptance.
 const page = () =>
   readFile(new URL('../app/page.tsx', import.meta.url), 'utf8');
+const styles = () =>
+  readFile(new URL('../app/globals.css', import.meta.url), 'utf8');
+
+void test('ingredient names share the card centerline with the category label', async () => {
+  const source = await styles();
+  const nameRule = source
+    .split('.kitchen-ingredient-card__name {')[1]
+    .split('}')[0];
+  const categoryRule = source
+    .split('.kitchen-ingredient-card__category {')[1]
+    .split('}')[0];
+  assert.match(nameRule, /left: 50%/);
+  assert.match(nameRule, /transform: translate\(-50%, -50%\)/);
+  assert.equal(
+    Number(nameRule.match(/left: (\d+)%/)?.[1]),
+    Number(categoryRule.match(/left: (\d+)%/)?.[1]) +
+      Number(categoryRule.match(/width: (\d+)%/)?.[1]) / 2,
+  );
+});
+
+void test('illustrated candidate layout stacks before the three-field form loses its minimum width', async () => {
+  const source = await styles();
+  const rule = (selector: string) =>
+    source.split(selector + ' {')[1].split('}')[0];
+  const workspace = rule('.workspace');
+  const card = rule('.candidate');
+  const art = rule('.candidate-with-art');
+  const fields = rule('.candidate-editor-body > .stocktake-fields');
+  const railWidth = Number(workspace.match(/margin-left: (\d+)px/)![1]);
+  const horizontalPadding =
+    2 * Number(workspace.match(/padding: 0 (\d+)px/)![1]);
+  const inset =
+    2 *
+    (Number(card.match(/padding: (\d+)px/)![1]) +
+      Number(card.match(/border: (\d+)px/)![1]));
+  const artWidth = Number(art.match(/minmax\(\d+px, (\d+)px\)/)![1]);
+  const artGap = Number(art.match(/gap: (\d+)px/)![1]);
+  const minimums = [...fields.matchAll(/minmax\(\s*(\d+)px/g)].map((match) =>
+    Number(match[1]),
+  );
+  assert.equal(minimums.length, 3);
+  const fieldGap = Number(rule('.form-grid').match(/gap: 0 (\d+)px/)![1]);
+  const required =
+    minimums.reduce((sum, value) => sum + value, 0) + 2 * fieldGap;
+  const stackAt = Number(
+    source.match(
+      /@media \(max-width: (\d+)px\) \{\s*\.candidate-with-art \{\s*grid-template-columns: 1fr;/,
+    )![1],
+  );
+  for (const viewport of [1101, 1200, 1250, 1251, 1440]) {
+    const available =
+      viewport -
+      railWidth -
+      horizontalPadding -
+      inset -
+      (viewport > stackAt ? artWidth + artGap : 0);
+    assert.ok(
+      available >= required,
+      `${viewport}px: ${available}px available, ${required}px required`,
+    );
+  }
+  assert.match(
+    rule('.candidate--calibration .candidate-editor-body > .stocktake-fields'),
+    /grid-template-columns: 1fr;/,
+  );
+});
 
 void test('cooking keeps one version-bound food checkbox, with no named-review panel or hidden blocker', async () => {
   const source = await page();
@@ -66,7 +132,7 @@ void test('candidate and voice review show quantities and expiry without identit
   );
   assert.match(candidate, /数量形式/);
   assert.match(candidate, /到期日期/);
-  assert.match(source, /inventoryEditCandidate\(state, b.id\)/);
+  assert.match(source, /stageInventoryEditCandidate\(state, b\.id\)/);
   const voice = await readFile(
     new URL('../components/voice-intake.tsx', import.meta.url),
     'utf8',
@@ -75,6 +141,55 @@ void test('candidate and voice review show quantities and expiry without identit
   assert.match(voice, /数量形式/);
   assert.match(voice, /到期日期/);
   assert.match(voice, /库存卡片分别校准余量/);
+});
+
+void test('confirmed inventory cards open calibration from the whole card', async () => {
+  const card = await readFile(
+    new URL('../components/kitchen-ingredient-card.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    card,
+    /status === 'pending' && \([\s\S]*?kitchen-ingredient-card__state/,
+  );
+  assert.doesNotMatch(card, /batchId|批次/);
+  assert.doesNotMatch(card, /__action|__footer/);
+  assert.match(card, /status === 'confirmed' && triggerLabel && onTrigger/);
+  assert.match(
+    card,
+    /className="kitchen-ingredient-card__trigger"[\s\S]*?aria-label=\{`\$\{accessibleLabel\}。\$\{triggerLabel\}`\}[\s\S]*?disabled=\{triggerDisabled\}[\s\S]*?onClick=\{onTrigger\}/,
+  );
+  const source = await page();
+  const candidateEditor = source
+    .split('function CandidateEditor(')[1]
+    .split('function ReviewForm(')[0];
+  const pendingPreview = candidateEditor
+    .split('<KitchenIngredientCard')[1]
+    .split('/>')[0];
+  assert.doesNotMatch(pendingPreview, /triggerLabel|triggerDisabled|onTrigger/);
+  const illustratedInventory = source
+    .split('pantryCardArt[b.canonicalIngredientId] ? (')[1]
+    .split(') : (')[0];
+  assert.doesNotMatch(illustratedInventory, /batchId/);
+  assert.doesNotMatch(illustratedInventory, /actionLabel|校准余量/);
+  assert.match(illustratedInventory, /triggerDisabled=\{busy\}/);
+  assert.match(
+    illustratedInventory,
+    /onTrigger=\{\(\) => void calibrateBatch\(b\)\}/,
+  );
+  assert.doesNotMatch(source, /批次 \{b\.id\.slice\(0, 6\)\}/);
+  assert.doesNotMatch(source, /inventory-item__actions/);
+  assert.match(
+    source,
+    /className="inventory-item__trigger"[\s\S]*?disabled=\{busy\}[\s\S]*?onClick=\{\(\) => void calibrateBatch\(b\)\}/,
+  );
+  const calibration = source
+    .split('const calibrateBatch = async')[1]
+    .split('const changeDataset')[0];
+  assert.match(calibration, /stageInventoryEditCandidate\(state, b\.id\)/);
+  assert.match(source, /open=\{!!calibrationCandidate\}/);
+  assert.match(source, /variant="calibration"/);
+  assert.match(source, /核对数量形式、数量和到期日期/);
 });
 
 void test('kitchen has no user-facing candidate JSON import path', async () => {

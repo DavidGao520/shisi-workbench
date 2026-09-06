@@ -28,10 +28,12 @@
 - source：workbuddy-image 或 workbuddy-voice-transcript；不要把模拟样例标成真实照片。
 - 必填：schemaVersion、requestId、source、createdAt、warnings、candidates。完整 Envelope 还需 dataset、mode。缺元数据的提取结果不是完整协议通过。
 - candidates：1–50 项，每项 candidateId 在本包唯一、displayName、warnings 数组。rawMention 只保留真实原片段；图片无需伪造“原话”。
-- amount 是非负有限数，必须搭配 unit：个 / 盒 / 袋 / 克 / 毫升 / 份。不自动把瓶、碗、根换成份。 unsupported 原量词写入 rawMention 或 warnings，amount 留空。
+- amount 是非负有限数，必须搭配 unit：个 / 盒 / 袋 / 棵 / 克 / 毫升 / 份。不自动把瓶、碗、根换成份。 unsupported 原量词写入 rawMention 或 warnings，amount 留空。
 - amountBand：充足 / 少量 / 即将用完；与 amount 互斥。没有数量依据时，两个都不写。
 - confidence 可选 0–1，不是食品安全或新鲜度判断。
-- 已支持 canonicalIngredientId：tomato / egg / green_pepper / oil / salt / soy_sauce / water / rice / cooked_rice / tofu / potato / other。不认识的食材可留空，让用户选“其他食材”；不得硬套错误 ID。
+- 百味图 47 种食材 canonicalIngredientId：tomato / egg / potato / pork / rice / tofu / green_pepper / onion / shiitake_mushrooms / lamb_lettuce / carrot / chinese_cabbage / eggplant / green_beans / soy_beans / flour / noodle / lemon / milk / chicken_drum / pork_ribs / steak / fish / shrimp / pork_belly / whole_chicken / crayfish / wood_ear / cucumber / pineapple / scallion / tea_leaves / clam / sea_cucumber / pork_intestine / pig_trotter / goose / crab / squid / oyster / scallop / lamb / lotus_root / matsutake / pickled_cabbage / coconut / cured_sausage。
+- 百味图 16 种调料 canonicalIngredientId：salt / chili / vinegar / sugar / bay_leaf / chili_oil / cumin / dark_soy_sauce / doubanjiang / garlic / ginger / spring_onion / sichuan_pepper / soy_sauce / star_anise / cilantro。工作台还支持 oil / cooking_wine / starch 等清单内调料。
+- 现实库存另外区分 water 与 cooked_rice；游戏 rice 的图是生米，所以“米饭 / 熟米饭 / 剩饭”使用 cooked_rice，“大米 / 生大米”使用 rice。scallion 是大葱，spring_onion 是小葱。其他不认识的食材可留空或使用 other；不得硬套错误 ID。
 - confirmed 不能出现在候选协议中。HTML 即便收到也会忽略，用户仍需确认。
 - 新照片/新盘点用新 requestId；同次结果重传保留 ID，避免重复入库。
 - 页面遇到不支持的单位，会保留警告并清空精确数量等待确认，而不是静默转换。

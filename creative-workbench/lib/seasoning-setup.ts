@@ -1,4 +1,9 @@
-import { isSeasoning, PRESENT_QUANTITY, seasoningNames } from './seasonings';
+import {
+  isSeasoning,
+  PRESENT_QUANTITY,
+  seasoningNames,
+  seasonings,
+} from './seasonings';
 import {
   isExpired,
   today,
@@ -41,7 +46,7 @@ export function confirmSeasoningSetup(
     throw new Error('本次选择标识无效，请重新打开调料清单。');
   if (
     !Array.isArray(input.selectedIds) ||
-    input.selectedIds.length > 24 ||
+    input.selectedIds.length > seasonings.length ||
     input.selectedIds.some((id) => typeof id !== 'string' || !isSeasoning(id))
   )
     throw new Error('清单包含未知调料，尚未保存，请重新选择。');

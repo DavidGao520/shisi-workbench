@@ -19,7 +19,7 @@ void test('spoken quantities: Chinese, decimals, halves, mass conversion, no inv
   assert.equal(spokenNumber('一千五'), undefined);
   assert.equal(spokenNumber('一百二'), undefined);
   const { items } = extractIngredients(
-    '两个番茄和三个鸡蛋，还有半斤猪肉，一公斤土豆，一盒豆腐',
+    '两个番茄和三个鸡蛋，还有半斤猪肉，一公斤土豆，一盒豆腐，一棵白菜',
   );
   assert.deepEqual(
     items.map((i) => [i.displayName, i.amount, i.unit]),
@@ -29,6 +29,36 @@ void test('spoken quantities: Chinese, decimals, halves, mass conversion, no inv
       ['猪肉', 250, '克'],
       ['土豆', 1000, '克'],
       ['豆腐', 1, '盒'],
+      ['大白菜', 1, '棵'],
+    ],
+  );
+  assert.equal(items[2].canonicalIngredientId, 'pork');
+  assert.equal(items.at(-1)?.canonicalIngredientId, 'chinese_cabbage');
+  const cabbagePostfix = extractIngredients('大白菜一棵').items[0];
+  assert.deepEqual(
+    [
+      cabbagePostfix.canonicalIngredientId,
+      cabbagePostfix.amount,
+      cabbagePostfix.unit,
+    ],
+    ['chinese_cabbage', 1, '棵'],
+  );
+});
+
+void test('compendium foods and aromatics keep distinct canonical identities', () => {
+  const items = extractIngredients(
+    '洋葱、香菇、油麦菜、大蒜、小葱、大葱、香菜',
+  ).items;
+  assert.deepEqual(
+    items.map((item) => item.canonicalIngredientId),
+    [
+      'onion',
+      'shiitake_mushrooms',
+      'lamb_lettuce',
+      'garlic',
+      'spring_onion',
+      'scallion',
+      'cilantro',
     ],
   );
 });
@@ -139,6 +169,109 @@ void test('processed-food names never become raw tofu or overwrite its stocktake
     [100, 500, 250],
   );
 });
+void test('unknown compound foods never become raw ingredients through substring matching', () => {
+  for (const text of [
+    '一袋鱼丸',
+    '猪肉脯200克',
+    '虾滑300克',
+    '姜汁一瓶',
+    '牛奶糖一袋',
+    '盐焗鸡一只',
+    '蛋白粉一罐',
+    '鱼香肉丝一份',
+  ]) {
+    const result = extractIngredients(text);
+    assert.equal(result.items.length, 0, text);
+    assert.ok(
+      result.warnings.some((warning) => warning.includes('完整')),
+      text,
+    );
+  }
+  const mixed = extractIngredients('买了鱼丸和两个鸡蛋');
+  assert.deepEqual(
+    mixed.items.map((item) => [item.canonicalIngredientId, item.amount]),
+    [['egg', 2]],
+  );
+  assert.ok(mixed.warnings.length);
+  assert.deepEqual(
+    extractIngredients('牛奶、白糖').items.map(
+      (item) => item.canonicalIngredientId,
+    ),
+    ['milk', 'sugar'],
+  );
+});
+
+void test('green garlic and unresolved compounds cannot overwrite existing raw-food stock', () => {
+  const state = emptyState('real');
+  state.inventory = [
+    { id: 'raw-garlic', displayName: '大蒜', canonicalIngredientId: 'garlic' },
+    { id: 'raw-fish', displayName: '鱼', canonicalIngredientId: 'fish' },
+  ].map((item) => ({
+    ...item,
+    amount: 1000,
+    unit: '克',
+    revision: 1,
+    confirmed: true,
+    createdAt: '2026-09-06',
+    updatedAt: '2026-09-06',
+  }));
+  const before = structuredClone(state.inventory);
+  const draft = prepareVoiceDraft('200克蒜苗，一袋鱼丸', state, 'stocktake');
+  assert.deepEqual(
+    draft.rows.map((row) => row.ingredientId),
+    ['green_garlic'],
+  );
+  confirmVoiceDraft(state, 'real', draft.rows);
+  assert.deepEqual(state.inventory.slice(0, 2), before);
+  assert.equal(state.inventory[2].canonicalIngredientId, 'green_garlic');
+  assert.equal(state.inventory[2].amount, 200);
+});
+
+void test('exact prepared, custom and separated foods survive compound guarding', () => {
+  const items = extractIngredients(
+    '干香菇20克，泡发木耳80克，椰子水100毫升，一棵白菜，蒜苗200克，鱼豆腐300克',
+  ).items;
+  assert.deepEqual(
+    items.map((item) => [item.canonicalIngredientId, item.amount]),
+    [
+      ['dried_shiitake', 20],
+      ['rehydrated_wood_ear', 80],
+      ['coconut_water', 100],
+      ['chinese_cabbage', 1],
+      ['green_garlic', 200],
+      ['other', 300],
+    ],
+  );
+  assert.deepEqual(
+    extractIngredients('鱼丸200克', [
+      { displayName: '鱼丸', canonicalIngredientId: 'other' },
+    ]).items.map((item) => [
+      item.displayName,
+      item.canonicalIngredientId,
+      item.amount,
+    ]),
+    [['鱼丸', 'other', 200]],
+  );
+});
+
+void test('ordinary inventory lead-ins and punctuation are not mistaken for compounds', () => {
+  assert.deepEqual(
+    extractIngredients('食材是鸡蛋、猪肉、虾仁').items.map(
+      (item) => item.canonicalIngredientId,
+    ),
+    ['egg', 'pork', 'peeled_shrimp'],
+  );
+  assert.deepEqual(
+    extractIngredients('家里有鸡蛋呢').items.map(
+      (item) => item.canonicalIngredientId,
+    ),
+    ['egg'],
+  );
+  assert.equal(extractIngredients('鸡蛋：3个').items[0].amount, 3);
+  assert.equal(extractIngredients('蔬菜有：番茄两个').items[0].amount, 2);
+  assert.equal(extractIngredients('鸡蛋液500克').items.length, 0);
+});
+
 void test('uncertain, repeated and corrected quantities remain for explicit review', () => {
   for (const text of [
     '鸡蛋两三个',

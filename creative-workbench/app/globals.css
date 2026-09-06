@@ -21,6 +21,9 @@
   --green: #4c6044;
   --paper: #fffdf8;
   --line: #ded5c5;
+  --calibration-pending: #9a661e;
+  --calibration-confirmed: #425d39;
+  --expiry-danger: #a8402e;
 }
 * {
   box-sizing: border-box;
@@ -853,10 +856,10 @@ textarea {
   border-radius: 10px;
   padding: 23px;
 }
-.candidate > .form-grid {
+.candidate-editor-body > .form-grid {
   margin-top: 20px;
 }
-.candidate > .stocktake-fields {
+.candidate-editor-body > .stocktake-fields {
   grid-template-columns: minmax(130px, 1fr) minmax(210px, 1.3fr) minmax(
       180px,
       1fr
@@ -866,12 +869,23 @@ textarea {
 .candidate .warning-text {
   margin: 0 0 15px;
 }
+.candidate-with-art {
+  display: grid;
+  grid-template-columns: minmax(240px, 272px) minmax(0, 1fr);
+  align-items: start;
+  gap: 30px;
+}
+.candidate-editor-body {
+  min-width: 0;
+}
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 272px));
+  align-items: start;
+  gap: 20px;
 }
 .inventory-item {
+  position: relative;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -910,6 +924,217 @@ textarea {
 .expired small {
   color: #a24d34;
 }
+.kitchen-ingredient-card {
+  --pantry-card-accent: #506238;
+  position: relative;
+  width: min(100%, 272px);
+  min-width: 0;
+  border-radius: 16px;
+  color: #65481e;
+  filter: drop-shadow(0 5px 7px rgba(49, 38, 18, 0.2));
+  animation: ingredient-card-in 260ms ease-out both;
+}
+.kitchen-ingredient-card--meat {
+  --pantry-card-accent: #7f352b;
+}
+.kitchen-ingredient-card--spice {
+  --pantry-card-accent: #8b591d;
+}
+.kitchen-ingredient-card__visual {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  isolation: isolate;
+  user-select: none;
+}
+.kitchen-ingredient-card__frame,
+.kitchen-ingredient-card__art {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+.kitchen-ingredient-card__frame {
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+.kitchen-ingredient-card__art {
+  left: 15%;
+  top: 16.5%;
+  z-index: 2;
+  width: 70%;
+  height: 37%;
+  object-fit: contain;
+  filter: drop-shadow(2px 4px 4px rgba(48, 39, 20, 0.28));
+}
+.kitchen-ingredient-card__status,
+.kitchen-ingredient-card__name,
+.kitchen-ingredient-card__category,
+.kitchen-ingredient-card__details {
+  position: absolute;
+  z-index: 3;
+}
+.kitchen-ingredient-card__status {
+  left: 4.3%;
+  top: 3.8%;
+  width: 17%;
+  height: 11.5%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 0 #fff6d7;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__status {
+  color: var(--calibration-pending);
+  background: rgba(247, 222, 156, 0.48);
+}
+.kitchen-ingredient-card--confirmed .kitchen-ingredient-card__status {
+  color: var(--calibration-confirmed);
+  background: rgba(221, 232, 211, 0.54);
+}
+.kitchen-ingredient-card__name {
+  top: 10%;
+  left: 50%;
+  width: 74%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen-ingredient-card__category {
+  top: 56.8%;
+  left: 24%;
+  width: 52%;
+  transform: translateY(-50%);
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+.kitchen-ingredient-card__details {
+  top: 60.5%;
+  left: 16%;
+  width: 68%;
+  height: 22%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__details {
+  top: 62.5%;
+  height: 26%;
+  justify-content: center;
+}
+.kitchen-ingredient-card__state {
+  color: #7c6a4e;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__state {
+  color: var(--calibration-pending);
+}
+.kitchen-ingredient-card__quantity {
+  max-width: 100%;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--pantry-card-accent);
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 21px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__quantity {
+  font-size: 19px;
+}
+.kitchen-ingredient-card__expiry {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.kitchen-ingredient-card__expiry--normal {
+  color: #596948;
+}
+.kitchen-ingredient-card__expiry--unknown {
+  color: #7d725f;
+}
+.kitchen-ingredient-card__expiry--soon {
+  color: var(--calibration-pending);
+}
+.kitchen-ingredient-card__expiry--urgent,
+.kitchen-ingredient-card__expiry--expired {
+  color: var(--expiry-danger);
+}
+.kitchen-ingredient-card__details time {
+  color: #817158;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+.kitchen-ingredient-card__trigger,
+.inventory-item__trigger {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.kitchen-ingredient-card__trigger:not(:disabled):hover,
+.inventory-item__trigger:not(:disabled):hover {
+  background: rgba(241, 238, 205, 0.1);
+  box-shadow: inset 0 0 0 2px rgba(111, 125, 67, 0.52);
+}
+.kitchen-ingredient-card__trigger:focus-visible,
+.inventory-item__trigger:focus-visible {
+  outline: 3px solid #6f7d43;
+  outline-offset: 3px;
+}
+.kitchen-ingredient-card__trigger:disabled,
+.inventory-item__trigger:disabled {
+  cursor: wait;
+}
+.kitchen-ingredient-card--expired .kitchen-ingredient-card__art {
+  filter: grayscale(0.38) saturate(0.76)
+    drop-shadow(2px 4px 4px rgba(48, 39, 20, 0.2));
+}
+@keyframes ingredient-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .bottom-actions {
   justify-content: space-between;
   margin-top: 24px;
@@ -936,6 +1161,15 @@ textarea {
 .kitchen-dialog [data-slot='dialog-description'] {
   font-size: 14px;
   line-height: 1.8;
+}
+.candidate--calibration {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.candidate--calibration .candidate-editor-body > .stocktake-fields {
+  grid-template-columns: 1fr;
+  margin-top: 0;
 }
 .dialog-close {
   position: absolute;
@@ -1316,20 +1550,29 @@ textarea {
   gap: 18px;
 }
 @media (max-width: 1100px) {
-  .candidate > .stocktake-fields {
+  .candidate-editor-body > .stocktake-fields {
     grid-template-columns: 1fr 1fr;
   }
   .cooking-layout {
     grid-template-columns: 210px 1fr;
   }
   .inventory-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(224px, 272px));
   }
   .recipe-index {
     grid-template-columns: 1fr;
   }
   .row-between > .muted {
     max-width: 190px;
+  }
+}
+/* Stack artwork before it leaves less than 556px for quantity/date fields. */
+@media (max-width: 1250px) {
+  .candidate-with-art {
+    grid-template-columns: 1fr;
+  }
+  .candidate-with-art > .kitchen-ingredient-card {
+    justify-self: center;
   }
 }
 @media (max-width: 700px) {
@@ -1378,10 +1621,11 @@ textarea {
     grid-template-columns: 1fr;
     gap: 0;
   }
-  .candidate > .stocktake-fields {
+  .candidate-editor-body > .stocktake-fields {
     grid-template-columns: 1fr;
   }
   .inventory-grid {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
   .inventory-item {
@@ -1393,14 +1637,16 @@ textarea {
   .ingredient-mark {
     display: none;
   }
-  .inventory-item .row-between:last-child {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 1px;
-  }
   .inventory-item small {
     font-size: 12px;
     min-height: 43px;
+  }
+  .candidate-with-art > .kitchen-ingredient-card,
+  .inventory-grid > .kitchen-ingredient-card {
+    justify-self: center;
+  }
+  .storage-note {
+    font-size: 12px;
   }
   .section-head .search {
     max-width: 150px;
@@ -1495,6 +1741,9 @@ textarea {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .kitchen-ingredient-card {
+    animation: none;
+  }
   * {
     transition: none !important;
     animation: none !important;

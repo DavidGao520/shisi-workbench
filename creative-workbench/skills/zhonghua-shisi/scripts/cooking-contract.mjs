@@ -41,7 +41,7 @@ export function validateCookingRequest(input) {
       !Number.isFinite(item.amount) ||
       item.amount <= 0 ||
       item.amount > 1000000 ||
-      !['个', '盒', '袋', '克', '毫升', '份'].includes(item.unit)
+      !['个', '盒', '袋', '棵', '克', '毫升', '份'].includes(item.unit)
     )
       fail('菜谱用料无效，未创建任务。');
     ids.add(item.id);

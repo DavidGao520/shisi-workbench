@@ -1,5 +1,6 @@
 import {
   confirmCandidate,
+  stage,
   uid,
   type Candidate,
   type KitchenState,
@@ -111,4 +112,23 @@ export function inventoryEditCandidate(
     status: 'pending',
     stocktakeTarget: { id: batch.id, revision: batch.revision },
   };
+}
+
+export function stageInventoryEditCandidate(
+  state: KitchenState,
+  id: string,
+): Candidate {
+  const batch = state.inventory.find((item) => item.id === id);
+  if (!batch) throw new Error('这份食材已不存在，请重新读取库存。');
+  const existing = state.candidates.find(
+    (candidate) =>
+      candidate.status === 'pending' &&
+      candidate.mode === 'stocktake' &&
+      candidate.stocktakeTarget?.id === batch.id &&
+      candidate.stocktakeTarget.revision === batch.revision,
+  );
+  if (existing) return existing;
+  const candidate = inventoryEditCandidate(state, id);
+  stage(state, [candidate]);
+  return candidate;
 }

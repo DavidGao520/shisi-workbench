@@ -26,6 +26,9 @@ export function SeasoningChecklist({
   const owned = ownedSeasonings(state);
   const pending = selected.filter((id) => !owned.has(id));
   const common = seasoningGroups[0].items.filter((item) => !owned.has(item.id));
+  const additionalCount = seasoningGroups
+    .slice(1)
+    .reduce((total, entry) => total + entry.items.length, 0);
   const commonSelected =
     common.length > 0 && common.every((item) => pending.includes(item.id));
   const save = async (skip: boolean) => {
@@ -104,7 +107,7 @@ export function SeasoningChecklist({
       {group(seasoningGroups[0])}
       <details className="seasoning-more">
         <summary>
-          更多酱料与香料 <span>16 种 · 按需选择</span>
+          更多酱料与香料 <span>{additionalCount} 种 · 按需选择</span>
           <ChevronRight size={17} />
         </summary>
         {seasoningGroups.slice(1).map(group)}

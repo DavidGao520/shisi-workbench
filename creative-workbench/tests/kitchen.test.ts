@@ -13,6 +13,7 @@ import {
   emptyState,
   matching,
   parseImport,
+  quantityText,
   recommendations,
   rejectCandidate,
   remainingPlan,
@@ -75,6 +76,43 @@ function review(s: KitchenState) {
 function input(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({ ...JSON.parse(demoImport()), ...overrides });
 }
+void test('cabbage alias becomes its own confirmed batch with quantity and expiry', () => {
+  const s = emptyState('demo');
+  const [candidate] = parseImport(
+    input({
+      candidates: [
+        {
+          candidateId: 'cabbage-1',
+          displayName: '白菜',
+          amount: 1,
+          unit: '棵',
+          warnings: [],
+        },
+      ],
+    }),
+    'demo',
+    'stocktake',
+  );
+  assert.equal(candidate.canonicalIngredientId, 'chinese_cabbage');
+  stage(s, [candidate]);
+  confirmCandidate(
+    s,
+    candidate.key,
+    {
+      name: '大白菜',
+      ingredientId: 'chinese_cabbage',
+      quantity: { amount: 1, unit: '棵' },
+      expiryDate: '2026-09-10',
+    },
+    '2026-09-06T10:00:00+08:00',
+  );
+  assert.equal(candidate.status, 'confirmed');
+  assert.equal(s.inventory.length, 1);
+  assert.equal(s.inventory[0].canonicalIngredientId, 'chinese_cabbage');
+  assert.equal(s.inventory[0].confirmed, true);
+  assert.equal(quantityText(s.inventory[0]), '1 棵');
+  assert.equal(s.inventory[0].expiryDate, '2026-09-10');
+});
 void test('pending candidates are not inventory or recommendations', () => {
   const s = emptyState('demo');
   stage(s, parseImport(demoImport(), 'demo', 'stocktake'));

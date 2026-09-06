@@ -44,7 +44,7 @@ def transcribe(runtime, payload):
     segments, _ = model.transcribe(
         audio, language="zh", beam_size=5, vad_filter=True,
         condition_on_previous_text=False,
-        initial_prompt="以下是普通话食材盘点，数量单位包括：个、盒、袋、斤、公斤、克、毫升、份。",
+        initial_prompt="以下是普通话食材盘点，数量单位包括：个、盒、袋、棵、斤、公斤、克、毫升、份。",
         vad_parameters={"min_silence_duration_ms": 350},
     )
     text = "".join(s.text for s in segments if s.no_speech_prob < 0.8).strip()

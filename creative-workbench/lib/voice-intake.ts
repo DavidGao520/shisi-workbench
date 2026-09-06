@@ -30,8 +30,6 @@ const baseLexicon = new Map<string, string>([
   ['西红柿', 'tomato'],
   ['剩饭', 'cooked_rice'],
   ['米饭', 'cooked_rice'],
-  ['大米', 'rice'],
-  ['糖', 'sugar'],
   ['油', 'oil'],
   ['水', 'water'],
 ]);
@@ -78,15 +76,40 @@ export function spokenNumber(raw: string): number | undefined {
 }
 const numberToken = '[零〇一二两三四五六七八九十百千点半\\d.]+';
 const measure =
-  '(公斤|千克|毫升|个|枚|只|盒|袋|克|斤|两|升|份|瓶|碗|根|把|块|包|罐|颗)';
+  '(公斤|千克|毫升|个|枚|只|盒|袋|棵|克|斤|两|升|份|瓶|碗|根|把|块|包|罐|颗)';
 const beforeQuantity = new RegExp(
   '(' + numberToken + ')\\s*' + measure + '\\s*(?:的)?$',
 );
 const afterQuantity = new RegExp(
-  '^\\s*(?:还有|有|还剩|剩|大约|约)?\\s*(' + numberToken + ')\\s*' + measure,
+  '^\\s*[:：]?\\s*(?:还有|有|还剩|剩|大约|约)?\\s*(' +
+    numberToken +
+    ')\\s*' +
+    measure,
 );
 const negative =
   /没有|没买|没了|用完|吃完|不要|别记|不记|不加|不剩|不是|(?:想|准备|打算|需要|要|计划)(?:买|做|吃)/;
+
+// A known word inside a compound is not evidence of its raw ingredient.
+// Exact prepared/custom foods still win the longest-match lexicon above.
+function foodBoundaries(before: string, after: string) {
+  const left = before.trim();
+  const right = after.trim();
+  return (
+    (!left ||
+      /\s$/.test(before) ||
+      beforeQuantity.test(left) ||
+      /(?:[、和与跟及:：]|还有|有|还剩|剩|只记|记|买了|放着|存着|的|是|一点|有点|少量|一些)$/.test(
+        left,
+      )) &&
+    (!right ||
+      /^\s/.test(after) ||
+      afterQuantity.test(right) ||
+      /^(?:呢|啊|呀|哦|吧|了)+$/.test(right) ||
+      /^(?:[、和与跟及]|还有|有|还剩|剩|都|没有|没了|用完|吃完|不要|一点|有点|少量|充足|即将用完|大概|大约|约|差不多|大半|半个多|左右)/.test(
+        right,
+      ))
+  );
+}
 
 export function extractIngredients(
   transcript: string,
@@ -149,6 +172,15 @@ export function extractIngredients(
         );
         continue;
       }
+      const touchesPrevious = i > 0 && before.length === 0;
+      const touchesNext = i < matches.length - 1 && after.length === 0;
+      if (touchesPrevious || touchesNext || !foodBoundaries(before, after)) {
+        unresolved = true;
+        notes.push(
+          '有复合或加工食材未完整识别，未按部分名称入库；请核对原话或手动补充。',
+        );
+        continue;
+      }
       const id = lexicon.get(word)!;
       const name = id === 'other' ? word : names[id];
       const warnings: string[] = [];
@@ -183,7 +215,7 @@ export function extractIngredients(
             unit = unit === '升' ? '毫升' : '克';
           }
           if (unit === '枚' && id === 'egg') unit = '个';
-          if (['个', '盒', '袋', '克', '毫升', '份'].includes(unit))
+          if (['个', '盒', '袋', '棵', '克', '毫升', '份'].includes(unit))
             q = { amount, unit };
           else
             warnings.push(

@@ -1,3 +1,4 @@
+import { baiweiIngredientNames, baiweiPantryAliases } from './pantry-catalog';
 import { seasoningNames } from './seasonings';
 import { legacyRecipes, LEGACY_RECIPE_VERSION } from './legacy-recipes';
 import homeRecipeData from './home-recipes.json';
@@ -43,6 +44,7 @@ export const recipes: Recipe[] = [
   };
 });
 export const names: Record<string, string> = {
+  ...baiweiIngredientNames,
   ...Object.fromEntries(
     homeRecipes.flatMap((recipe) =>
       recipe.ingredients.map((item) => [item.id, item.name]),
@@ -52,7 +54,6 @@ export const names: Record<string, string> = {
   egg: '鸡蛋',
   green_pepper: '青椒',
   water: '饮用水',
-  rice: '生大米',
   cooked_rice: '熟米饭',
   tofu: '豆腐',
   potato: '土豆',
@@ -111,6 +112,7 @@ export const names: Record<string, string> = {
 };
 
 export const ingredientAliases: Record<string, string> = {
+  ...baiweiPantryAliases,
   ...Object.fromEntries(
     homeRecipes.flatMap((recipe) =>
       recipe.ingredients.map((item) => [item.name, item.id]),
@@ -152,6 +154,10 @@ export const ingredientAliases: Record<string, string> = {
   松茸: 'matsutake',
   粉藕: 'lotus_root',
   香油: 'sesame_oil',
+  // Game source labels describe artwork; real inventory must keep cooked rice distinct.
+  米饭: 'cooked_rice',
+  剩饭: 'cooked_rice',
+  油: 'oil',
 };
 /** Recognize exact legacy names without rewriting stored inventory on read. */
 export function inventoryIngredientId(item: {

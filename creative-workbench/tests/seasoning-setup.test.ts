@@ -67,17 +67,61 @@ function mealWithUnknownSeasoning() {
   return state;
 }
 
-void test('catalog has 24 distinct canonical seasonings, not fresh food or staples', () => {
-  assert.equal(seasonings.length, 24);
-  assert.equal(new Set(seasonings.map((item) => item.id)).size, 24);
+void test('catalog has 30 distinct canonical seasonings, including every compendium seasoning', () => {
+  assert.equal(seasonings.length, 30);
+  assert.equal(new Set(seasonings.map((item) => item.id)).size, 30);
   for (const item of seasonings) assert.equal(names[item.id], item.name);
   assert.ok(seasonings.some((item) => item.id === 'rosemary'));
+  for (const id of [
+    'chili',
+    'cumin',
+    'garlic',
+    'ginger',
+    'spring_onion',
+    'cilantro',
+  ])
+    assert.ok(seasonings.some((item) => item.id === id));
   assert.ok(
     !seasonings.some((item) =>
       ['rice', 'cooked_rice', 'egg', 'tomato'].includes(item.id),
     ),
   );
 });
+void test('every valid checklist size saves, including 25 through all 30 seasonings', () => {
+  for (let count = 1; count <= seasonings.length; count++) {
+    const state = emptyState('real');
+    const ids = seasonings.slice(0, count).map((item) => item.id);
+    assert.equal(confirm(state, ids), count);
+    assert.deepEqual(
+      state.inventory.map((item) => item.canonicalIngredientId),
+      ids,
+    );
+    const saved = structuredClone(state);
+    assert.equal(confirm(state, ids), 0);
+    assert.deepEqual(state, saved);
+  }
+});
+
+void test('all seasonings persist together and rejected oversized selections leave no partial data', async () => {
+  const store = new IndexedDbStore('setup-all-seasonings', new IDBFactory());
+  const ids = seasonings.map((item) => item.id);
+  const before = await store.read('real');
+  await assert.rejects(
+    store.change('real', (state) => confirm(state, [...ids, 'unknown'])),
+    /未知调料/,
+  );
+  assert.deepEqual(await store.read('real'), before);
+  await store.change('real', (state) =>
+    assert.equal(confirm(state, ids), ids.length),
+  );
+  store.close();
+  const saved = await store.read('real');
+  assert.equal(saved.inventory.length, ids.length);
+  assert.ok(saved.seasoningSetup?.completedAt);
+  assert.equal((await store.read('demo')).inventory.length, 0);
+  store.close();
+});
+
 void test('first-render checklist is unchecked and inert until confirmation', () => {
   const state = emptyState('real'),
     before = structuredClone(state);
@@ -96,8 +140,9 @@ void test('first-render checklist is unchecked and inert until confirmation', ()
   );
   assert.equal(writes, 0);
   assert.deepEqual(state, before);
-  assert.equal((html.match(/aria-checked="false"/g) || []).length, 24);
+  assert.equal((html.match(/aria-checked="false"/g) || []).length, 30);
   assert.ok(!html.includes('aria-checked="true"'));
+  assert.match(html, /22 种 · 按需选择/);
   assert.match(html, /确认加入 0 种调料/);
   assert.match(html, /暂时跳过/);
 });

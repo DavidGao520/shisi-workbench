@@ -57,6 +57,7 @@ import '@/components/recipe-instructions.css';
 import { baiweiImages, baiweiPlate } from '@/lib/baiwei-art';
 import { needsSeasoningOnboarding } from '@/lib/seasoning-setup';
 import { Progress } from '@/components/ui/progress';
+import { KitchenIngredientCard } from '@/components/kitchen-ingredient-card';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -68,7 +69,7 @@ import { IndexedDbStore } from '@/lib/store';
 import {
   candidateReview,
   confirmReviewedCandidate,
-  inventoryEditCandidate,
+  stageInventoryEditCandidate,
 } from '@/lib/candidate-review';
 import {
   BRIDGE_URL,
@@ -93,7 +94,7 @@ import {
   RECIPE_VERSION,
   type Recipe,
 } from '@/lib/recipes';
-import { art } from '@/lib/art';
+import { art, pantryCardArt } from '@/lib/art';
 import {
   activeSession,
   bands,
@@ -113,6 +114,7 @@ import {
   stepSession,
   uid,
   units,
+  type Batch,
   type Candidate,
   type Dataset,
   type KitchenState,
@@ -254,12 +256,17 @@ function CandidateEditor({
   s,
   busy,
   mutate,
+  variant = 'candidate',
+  onResolved,
 }: {
   candidate: Candidate;
   s: KitchenState;
   busy: boolean;
   mutate: Mutate;
+  variant?: 'candidate' | 'calibration';
+  onResolved?: () => void;
 }) {
+  const isCalibration = variant === 'calibration';
   const latestReview = candidateReview(s, c);
   const [review, setReview] = useState(() => latestReview);
   const stale = latestReview.fingerprint !== review.fingerprint;
@@ -272,6 +279,13 @@ function CandidateEditor({
   );
   const [band, setBand] = useState(review.quantity.amountBand || '少量');
   const [expiry, setExpiry] = useState(review.expiryDate || '');
+  const hasCardArt = !!pantryCardArt[review.ingredientId];
+  const previewQuantity =
+    kind === 'exact'
+      ? amount === ''
+        ? '数量待确认'
+        : quantityText({ amount: Number(amount), unit })
+      : band;
   const visibleWarnings = c.warnings.filter(
     (warning) =>
       ![
@@ -280,125 +294,144 @@ function CandidateEditor({
       ].includes(warning),
   );
   return (
-    <article className="candidate">
-      <div className="row-between">
-        <h3>{c.displayName}</h3>
-        <span className="tag amber">
-          待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
-        </span>
-      </div>
-      {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
-      <div className="form-grid stocktake-fields">
-        <Choice
-          label="数量形式"
-          value={kind}
-          onChange={setKind}
-          options={[
-            { value: 'exact', label: '精确数量' },
-            { value: 'band', label: '数量不确定' },
-          ]}
+    <article
+      className={`candidate${hasCardArt && !isCalibration ? ' candidate-with-art' : ''}${isCalibration ? ' candidate--calibration' : ''}`}
+    >
+      {hasCardArt && !isCalibration && (
+        <KitchenIngredientCard
+          ingredientId={review.ingredientId}
+          name={review.name}
+          status="pending"
+          quantity={previewQuantity}
+          expiryDate={expiry || undefined}
         />
-        {kind === 'exact' ? (
-          <div className="quantity-pair">
-            <label className="field">
-              数量
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </label>
-            <Choice
-              label="单位"
-              value={unit}
-              onChange={setUnit}
-              options={units.map((v) => ({ value: v, label: v }))}
-            />
+      )}
+      <div className="candidate-editor-body">
+        {!isCalibration && (
+          <div className="row-between">
+            <h3>{review.name}</h3>
+            <span className="tag amber">
+              待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
+            </span>
           </div>
-        ) : (
-          <Choice
-            label="数量档"
-            value={band}
-            onChange={setBand}
-            options={bands.map((v) => ({ value: v, label: v }))}
-          />
         )}
-        <label className="field">
-          到期日期（不知道可留空）
-          <input
-            type="date"
-            value={expiry}
-            onChange={(e) => setExpiry(e.target.value)}
+        {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
+        <div className="form-grid stocktake-fields">
+          <Choice
+            label="数量形式"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: 'exact', label: '精确数量' },
+              { value: 'band', label: '数量不确定' },
+            ]}
           />
-        </label>
-      </div>
-      {review.problem && <p className="warning-text">{review.problem}</p>}
-      {stale && (
-        <p className="warning-text">
-          库存有更新，请重新核对。
+          {kind === 'exact' ? (
+            <div className="quantity-pair">
+              <label className="field">
+                数量
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </label>
+              <Choice
+                label="单位"
+                value={unit}
+                onChange={setUnit}
+                options={units.map((v) => ({ value: v, label: v }))}
+              />
+            </div>
+          ) : (
+            <Choice
+              label="数量档"
+              value={band}
+              onChange={setBand}
+              options={bands.map((v) => ({ value: v, label: v }))}
+            />
+          )}
+          <label className="field">
+            到期日期（不知道可留空）
+            <input
+              type="date"
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+            />
+          </label>
+        </div>
+        {review.problem && <p className="warning-text">{review.problem}</p>}
+        {stale && (
+          <p className="warning-text">
+            库存有更新，请重新核对。
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() => {
+                setReview(latestReview);
+                setAmount(
+                  latestReview.quantity.amount === undefined
+                    ? ''
+                    : String(latestReview.quantity.amount),
+                );
+                setUnit(latestReview.quantity.unit || '克');
+                setKind(latestReview.quantity.amountBand ? 'band' : 'exact');
+                setBand(latestReview.quantity.amountBand || '少量');
+                setExpiry(latestReview.expiryDate || '');
+              }}
+            >
+              重新核对
+            </button>
+          </p>
+        )}
+        {visibleWarnings.length > 0 && (
+          <p className="warning-text">{visibleWarnings.join('；')}</p>
+        )}
+        <div className="actions">
+          <button
+            className="primary"
+            disabled={
+              busy ||
+              stale ||
+              !!review.problem ||
+              (kind === 'exact' && amount === '')
+            }
+            onClick={async () => {
+              const saved = await mutate(
+                (state) =>
+                  confirmReviewedCandidate(state, c.key, review, {
+                    quantity:
+                      kind === 'exact'
+                        ? { amount: Number(amount), unit }
+                        : { amountBand: band },
+                    expiryDate: expiry || undefined,
+                  }),
+                isCalibration ? '库存信息已更新。' : '已确认入库。',
+              );
+              if (saved) onResolved?.();
+            }}
+          >
+            <Check size={17} />
+            {isCalibration ? '保存校准' : '确认这一项'}
+          </button>
           <button
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              setReview(latestReview);
-              setAmount(
-                latestReview.quantity.amount === undefined
-                  ? ''
-                  : String(latestReview.quantity.amount),
+            onClick={async () => {
+              const saved = await mutate(
+                (state) => rejectCandidate(state, c.key),
+                isCalibration
+                  ? '已取消校准，原库存保持不变。'
+                  : '已拒绝，不会进入库存。',
               );
-              setUnit(latestReview.quantity.unit || '克');
-              setKind(latestReview.quantity.amountBand ? 'band' : 'exact');
-              setBand(latestReview.quantity.amountBand || '少量');
-              setExpiry(latestReview.expiryDate || '');
+              if (saved) onResolved?.();
             }}
           >
-            重新核对
+            {isCalibration ? '取消校准' : '不记录这项'}
           </button>
-        </p>
-      )}
-      {visibleWarnings.length > 0 && (
-        <p className="warning-text">{visibleWarnings.join('；')}</p>
-      )}
-      <div className="actions">
-        <button
-          className="primary"
-          disabled={
-            busy ||
-            stale ||
-            !!review.problem ||
-            (kind === 'exact' && amount === '')
-          }
-          onClick={() =>
-            mutate(
-              (state) =>
-                confirmReviewedCandidate(state, c.key, review, {
-                  quantity:
-                    kind === 'exact'
-                      ? { amount: Number(amount), unit }
-                      : { amountBand: band },
-                  expiryDate: expiry || undefined,
-                }),
-              '已确认入库。',
-            )
-          }
-        >
-          <Check size={17} />
-          确认这一项
-        </button>
-        <button
-          className="text-button"
-          disabled={busy}
-          onClick={() =>
-            mutate(
-              (state) => rejectCandidate(state, c.key),
-              '已拒绝，不会进入库存。',
-            )
-          }
-        >
-          不记录这项
-        </button>
+        </div>
       </div>
     </article>
   );
@@ -541,6 +574,7 @@ export default function Home() {
     } | null>(null),
     [reset, setReset] = useState(false),
     [clear, setClear] = useState(false);
+  const [calibrationKey, setCalibrationKey] = useState<string | null>(null);
   const [seasoningOpen, setSeasoningOpen] = useState(false);
   const [mode, setMode] = useState<Mode>('stocktake'),
     [manualName, setManualName] = useState('番茄'),
@@ -736,6 +770,9 @@ export default function Home() {
     : '';
   const foodChecked = !!checkKey && foodCheckVersion === checkKey;
   const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
+  const calibrationCandidate = calibrationKey
+    ? pending.find((candidate) => candidate.key === calibrationKey)
+    : undefined;
   const loadSample = async () => {
     if (!s || dataset !== 'demo') return;
     if (
@@ -773,6 +810,13 @@ export default function Home() {
         : added + ' 种调料已记录。其他食材可以用语音或拍照录入。',
     );
   };
+  const calibrateBatch = async (b: Batch) => {
+    let candidateKey = '';
+    const saved = await mutate((state) => {
+      candidateKey = stageInventoryEditCandidate(state, b.id).key;
+    }, '请核对数量形式、数量和到期日期。');
+    if (saved && candidateKey) setCalibrationKey(candidateKey);
+  };
   const changeDataset = (d: Dataset) => {
     if (!busy) {
       setState(undefined);
@@ -783,6 +827,7 @@ export default function Home() {
       setMealConfirmations([]);
       setFoodChecked('');
       setSeasoningOpen(false);
+      setCalibrationKey(null);
       datasetRef.current = d;
       setDataset(d);
       setPage('today');
@@ -1238,45 +1283,51 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="inventory-grid">
-                  {s.inventory.map((b) => (
-                    <article
-                      className={
-                        'inventory-item ' + (isExpired(b) ? 'expired' : '')
-                      }
-                      key={b.id}
-                    >
-                      <div className="row-between">
-                        <h3>{b.displayName}</h3>
-                        <span className="ingredient-mark">
-                          {b.displayName.slice(0, 1)}
-                        </span>
-                      </div>
-                      <p className="inventory-amount">{quantityText(b)}</p>
-                      <small>
-                        {isExpired(b)
-                          ? '已过期 · 不计入推荐'
-                          : b.expiryDate
-                            ? '到期 ' + b.expiryDate
-                            : '未记录到期日期 · 不代表新鲜度'}
-                      </small>
-                      <div className="row-between">
-                        <span className="muted">批次 {b.id.slice(0, 6)}</span>
+                  {s.inventory.map((b) =>
+                    pantryCardArt[b.canonicalIngredientId] ? (
+                      <KitchenIngredientCard
+                        key={b.id}
+                        ingredientId={b.canonicalIngredientId}
+                        name={b.displayName}
+                        status="confirmed"
+                        quantity={quantityText(b)}
+                        expiryDate={b.expiryDate}
+                        expired={isExpired(b)}
+                        triggerLabel={`打开${b.displayName}的数量形式、数量和到期日期校准`}
+                        triggerDisabled={busy}
+                        onTrigger={() => void calibrateBatch(b)}
+                      />
+                    ) : (
+                      <article
+                        className={
+                          'inventory-item ' + (isExpired(b) ? 'expired' : '')
+                        }
+                        key={b.id}
+                      >
+                        <div className="row-between">
+                          <h3>{b.displayName}</h3>
+                          <span className="ingredient-mark">
+                            {b.displayName.slice(0, 1)}
+                          </span>
+                        </div>
+                        <p className="inventory-amount">{quantityText(b)}</p>
+                        <small>
+                          {isExpired(b)
+                            ? '已过期 · 不计入推荐'
+                            : b.expiryDate
+                              ? '到期 ' + b.expiryDate
+                              : '未记录到期日期 · 不代表新鲜度'}
+                        </small>
                         <button
-                          className="text-button"
+                          type="button"
+                          className="inventory-item__trigger"
+                          aria-label={`校准${b.displayName}：当前${quantityText(b)}，${b.expiryDate ? `到期${b.expiryDate}` : '未记录到期日期'}。填写数量形式、数量和到期日期`}
                           disabled={busy}
-                          onClick={() =>
-                            mutate((state) => {
-                              stage(state, [
-                                inventoryEditCandidate(state, b.id),
-                              ]);
-                            }, '请核对数量和到期日期后确认。')
-                          }
-                        >
-                          校准余量
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                          onClick={() => void calibrateBatch(b)}
+                        />
+                      </article>
+                    ),
+                  )}
                 </div>
               )}
               <div className="actions bottom-actions">
@@ -1591,6 +1642,48 @@ export default function Home() {
               busy={busy}
               mutate={mutate}
               done={finishSeasonings}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!calibrationCandidate}
+        onOpenChange={(value) => {
+          if (!value && !busy) setCalibrationKey(null);
+        }}
+      >
+        <DialogContent
+          className="kitchen-dialog calibration-dialog"
+          showCloseButton={false}
+        >
+          <button
+            className="dialog-close icon-button"
+            aria-label="关闭库存校准"
+            disabled={busy}
+            onClick={() => setCalibrationKey(null)}
+          >
+            <X />
+          </button>
+          <DialogTitle>
+            校准「{calibrationCandidate?.displayName || '食材'}」余量
+          </DialogTitle>
+          <DialogDescription>
+            核对数量形式、数量和到期日期。保存后才会更新这张库存卡。
+          </DialogDescription>
+          {error && (
+            <p className="warning-text" role="alert">
+              {error}
+            </p>
+          )}
+          {s && calibrationCandidate && (
+            <CandidateEditor
+              key={calibrationCandidate.key}
+              candidate={calibrationCandidate}
+              s={s}
+              busy={busy}
+              mutate={mutate}
+              variant="calibration"
+              onResolved={() => setCalibrationKey(null)}
             />
           )}
         </DialogContent>
