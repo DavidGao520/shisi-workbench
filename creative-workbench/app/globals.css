@@ -1023,17 +1023,6 @@ textarea {
   margin-top: 8px;
   color: #807054;
 }
-.review-gate {
-  background: #f6ecdb;
-  padding: 20px;
-  border-radius: 8px;
-  border: 1px solid #ddc8a1;
-}
-.review-gate > p {
-  font-size: 14px;
-  margin: 12px 0;
-  color: #7b684e;
-}
 .safety-note {
   font-size: 13px;
   line-height: 1.85;

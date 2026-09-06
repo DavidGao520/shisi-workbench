@@ -127,6 +127,11 @@ void test('all 70 recipes complete without any model request and survive Indexed
   const store = new IndexedDbStore('home-cookbook-test', new IDBFactory());
   for (const recipe of recipes) {
     const state = stocked(recipe);
+    const realState = structuredClone(state);
+    realState.dataset = 'real';
+    startCooking(realState, recipe.id, recipe.id, today);
+    assert.equal(realState.sessions[0].status, 'cooking');
+    assert.deepEqual(realState.reviews, {});
     assert.ok(matching(state, recipe, today).every((item) => item.enough));
     assert.ok(
       recommendations(state, today).every(

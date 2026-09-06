@@ -6,6 +6,24 @@ import { readFile } from 'node:fs/promises';
 const page = () =>
   readFile(new URL('../app/page.tsx', import.meta.url), 'utf8');
 
+void test('cooking keeps one version-bound food checkbox, with no named-review panel or hidden blocker', async () => {
+  const source = await page();
+  assert.doesNotMatch(
+    source,
+    /review-gate|实际审校人|填写真正完成核对的人|记录本次人工审校|待人工审校|reviewRecipe|reviewed\(|reviewChecks|reviewCheckVersion|reviewer/,
+  );
+  assert.match(source, /我已核对食材、到期信息与过敏原，确认具备所需厨具。/);
+  assert.match(source, /checked=\{foodChecked\}/);
+  assert.match(source, /!foodChecked \|\|/);
+  assert.match(source, /if \(!foodChecked\) return;/);
+  assert.match(source, /foodCheckVersion === checkKey/);
+  assert.match(source, /recipe\.workbuddyVersion \|\| RECIPE_VERSION/);
+  assert.match(
+    source,
+    /matching\(s, recipe\)\.some\(\(item\) => !item.enough\)/,
+  );
+});
+
 void test('photo actions use plain names and manual input has matching button styling', async () => {
   const source = await page();
   assert.match(source, /拍照录入食材/);

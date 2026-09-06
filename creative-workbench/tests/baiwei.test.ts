@@ -188,13 +188,13 @@ void test('all 70 preset recipe IDs map to the game catalog, retaining the origi
   assert.equal(otherBaiweiRecords(state).length, 0);
 });
 
-void test('all catalog recipes have methods but never bypass real-kitchen review', () => {
+void test('all catalog recipes have methods but never bypass real-kitchen stock checks', () => {
   const state = emptyState('real');
   assert.equal(
     baiweiCollection(state).filter((entry) => !entry.recipe).length,
     0,
   );
-  assert.throws(() => startCooking(state, 'boiled_fish', 'fake', date), /人工/);
+  assert.throws(() => startCooking(state, 'boiled_fish', 'fake', date), /库存/);
   assert.equal(state.sessions.length, 0);
 });
 

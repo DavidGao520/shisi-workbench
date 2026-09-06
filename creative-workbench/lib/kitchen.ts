@@ -554,8 +554,8 @@ export function startCooking(
     expectedVersion !== (r.workbuddyVersion || RECIPE_VERSION)
   )
     fail('做法版本已更新，请重新查看并核对。');
-  if (s.dataset === 'real' && !reviewed(s, r))
-    fail('现实跟做前，先逐项完成人工菜谱审校；样例厨房可演练。');
+  // The page requires the meal-specific food/equipment checkbox, not a named reviewer.
+  // Historical review records remain untouched; current version and stock still gate start.
   if (matching(s, r, date).some((item) => !item.enough))
     fail('食材库存已改变，请返回推荐重新核对。');
   s.sessions.unshift({

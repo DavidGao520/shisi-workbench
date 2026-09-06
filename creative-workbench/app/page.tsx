@@ -104,8 +104,6 @@ import {
   recommendations,
   rejectCandidate,
   remainingPlan,
-  reviewRecipe,
-  reviewed,
   stage,
   startCooking,
   stepSession,
@@ -690,8 +688,6 @@ export default function Home() {
     [manualAmount, setManualAmount] = useState(''),
     [manualUnit, setManualUnit] = useState('克');
   const [search, setSearch] = useState(''),
-    [reviewer, setReviewer] = useState(''),
-    [reviewCheckVersion, setReviewChecks] = useState(''),
     [foodCheckVersion, setFoodChecked] = useState('');
   const [now, setNow] = useState(() => Date.now()),
     [timerMinutes, setTimerMinutes] = useState('3');
@@ -782,7 +778,6 @@ export default function Home() {
         added = receiveCookingSteps(state, entry);
       });
       if (saved && added) {
-        setReviewChecks('');
         setFoodChecked('');
         setMessage(
           'WorkBuddy 的做法已到，请查看步骤并核对后开始。库存没有扣减。',
@@ -862,13 +857,11 @@ export default function Home() {
       : undefined;
   const openRecipe = (r: Recipe, sessionId?: string) => {
     setDetail({ recipeId: r.id, sessionId });
-    setReviewChecks('');
     setFoodChecked('');
   };
   const checkKey = recipe
     ? `${dataset}:${recipe.id}:${recipe.workbuddyVersion || RECIPE_VERSION}`
     : '';
-  const reviewChecks = !!checkKey && reviewCheckVersion === checkKey;
   const foodChecked = !!checkKey && foodCheckVersion === checkKey;
   const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
   const loadSample = async () => {
@@ -1255,11 +1248,7 @@ export default function Home() {
                       <RecipeArt recipe={r} />
                       <div>
                         <strong>{r.title}</strong>
-                        <small>
-                          {reviewed(s, r)
-                            ? '已由 ' + s.reviews[r.id].by + ' 人工审校'
-                            : '做法草稿 · 待人工审校'}
-                        </small>
+                        <small>预设家常做法 · 约 {r.minutes} 分钟</small>
                       </div>
                       <ChevronRight size={18} />
                     </button>
@@ -1999,12 +1988,10 @@ export default function Home() {
                     {recipePeople(recipe, detailServings)} 人份 ·{' '}
                     {recipe.equipment}
                   </DialogDescription>
-                  <span
-                    className={'tag ' + (reviewed(s, recipe) ? '' : 'amber')}
-                  >
-                    {reviewed(s, recipe)
-                      ? '人工审校：' + s.reviews[recipe.id].by
-                      : '做法草稿 · 待人工审校'}
+                  <span className="tag">
+                    {recipe.workbuddyVersion
+                      ? 'WorkBuddy 做法'
+                      : '预设家常做法'}
                   </span>
                 </div>
               </div>
@@ -2111,53 +2098,6 @@ export default function Home() {
                   )}
                 </details>
               )}
-              {!detail?.sessionId &&
-                !reviewed(s, recipe) &&
-                dataset === 'real' && (
-                  <section className="review-gate">
-                    <h3>现实跟做前，先把做法核对一遍</h3>
-                    <p>
-                      {recipe.workbuddyVersion
-                        ? '这份做法由 WorkBuddy 生成，可能存在错误。'
-                        : '这些配方由来源整理，尚未实做。'}
-                      请由有烹饪经验的人核对份量、处理顺序和熟度提示；勾选不会代表平台或专业机构认证。
-                    </p>
-                    <label className="field">
-                      实际审校人
-                      <input
-                        value={reviewer}
-                        maxLength={50}
-                        onChange={(e) => setReviewer(e.target.value)}
-                        placeholder="填写真正完成核对的人"
-                      />
-                    </label>
-                    <Tick
-                      label="我已逐项核对以上份量、步骤与安全提示，确认这版做法适用于实际跟做。"
-                      checked={reviewChecks}
-                      onChange={(checked) =>
-                        setReviewChecks(checked ? checkKey : '')
-                      }
-                    />
-                    <button
-                      className="secondary"
-                      disabled={busy || !reviewChecks || !reviewer.trim()}
-                      onClick={() =>
-                        mutate(
-                          (state) =>
-                            reviewRecipe(
-                              state,
-                              recipe.id,
-                              reviewer,
-                              recipe.workbuddyVersion || RECIPE_VERSION,
-                            ),
-                          '已记录本人的人工审校，未冒充外部认证。',
-                        )
-                      }
-                    >
-                      记录本次人工审校
-                    </button>
-                  </section>
-                )}
               {error && (
                 <p role="alert" className="warning-text">
                   {error}
@@ -2184,10 +2124,10 @@ export default function Home() {
                       (cooking.ticket?.recipeId === recipe.id &&
                         cooking.ticket.dataset === dataset) ||
                       !foodChecked ||
-                      (dataset === 'real' && !reviewed(s, recipe)) ||
                       matching(s, recipe).some((item) => !item.enough)
                     }
                     onClick={async () => {
+                      if (!foodChecked) return;
                       const id = uid();
                       if (
                         await mutate(

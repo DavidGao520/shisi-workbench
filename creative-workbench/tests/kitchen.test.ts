@@ -16,7 +16,6 @@ import {
   recommendations,
   rejectCandidate,
   remainingPlan,
-  reviewRecipe,
   stage,
   startCooking,
   stepSession,
@@ -334,13 +333,13 @@ void test('ambiguous bands and boxes do not count as exact eggs', () => {
     false,
   );
 });
-void test('draft recipes cannot start real cooking until actual review is recorded', () => {
+void test('real cooking needs no named reviewer and never fabricates review records', () => {
   const s = golden();
   s.dataset = 'real';
-  assert.throws(() => startCooking(s, 'tomato_egg', 'real-1', date), /人工/);
-  reviewRecipe(s, 'tomato_egg', '测试审校人');
+  const reviewsBefore = structuredClone(s.reviews);
   startCooking(s, 'tomato_egg', 'real-1', date);
   assert.equal(s.sessions[0].status, 'cooking');
+  assert.deepEqual(s.reviews, reviewsBefore);
 });
 void test('progress never consumes food; only confirmed completion does', () => {
   const s = ready();
