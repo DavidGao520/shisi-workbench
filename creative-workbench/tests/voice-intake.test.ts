@@ -254,6 +254,24 @@ void test('exact prepared, custom and separated foods survive compound guarding'
   );
 });
 
+void test('ordinary inventory lead-ins and punctuation are not mistaken for compounds', () => {
+  assert.deepEqual(
+    extractIngredients('食材是鸡蛋、猪肉、虾仁').items.map(
+      (item) => item.canonicalIngredientId,
+    ),
+    ['egg', 'pork', 'peeled_shrimp'],
+  );
+  assert.deepEqual(
+    extractIngredients('家里有鸡蛋呢').items.map(
+      (item) => item.canonicalIngredientId,
+    ),
+    ['egg'],
+  );
+  assert.equal(extractIngredients('鸡蛋：3个').items[0].amount, 3);
+  assert.equal(extractIngredients('蔬菜有：番茄两个').items[0].amount, 2);
+  assert.equal(extractIngredients('鸡蛋液500克').items.length, 0);
+});
+
 void test('uncertain, repeated and corrected quantities remain for explicit review', () => {
   for (const text of [
     '鸡蛋两三个',

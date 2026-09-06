@@ -81,7 +81,10 @@ const beforeQuantity = new RegExp(
   '(' + numberToken + ')\\s*' + measure + '\\s*(?:的)?$',
 );
 const afterQuantity = new RegExp(
-  '^\\s*(?:还有|有|还剩|剩|大约|约)?\\s*(' + numberToken + ')\\s*' + measure,
+  '^\\s*[:：]?\\s*(?:还有|有|还剩|剩|大约|约)?\\s*(' +
+    numberToken +
+    ')\\s*' +
+    measure,
 );
 const negative =
   /没有|没买|没了|用完|吃完|不要|别记|不记|不加|不剩|不是|(?:想|准备|打算|需要|要|计划)(?:买|做|吃)/;
@@ -95,12 +98,13 @@ function foodBoundaries(before: string, after: string) {
     (!left ||
       /\s$/.test(before) ||
       beforeQuantity.test(left) ||
-      /(?:[、和与跟及]|还有|有|还剩|剩|只记|记|买了|放着|存着|的|一点|有点|少量|一些)$/.test(
+      /(?:[、和与跟及:：]|还有|有|还剩|剩|只记|记|买了|放着|存着|的|是|一点|有点|少量|一些)$/.test(
         left,
       )) &&
     (!right ||
       /^\s/.test(after) ||
       afterQuantity.test(right) ||
+      /^(?:呢|啊|呀|哦|吧|了)+$/.test(right) ||
       /^(?:[、和与跟及]|还有|有|还剩|剩|都|没有|没了|用完|吃完|不要|一点|有点|少量|充足|即将用完|大概|大约|约|差不多|大半|半个多|左右)/.test(
         right,
       ))
