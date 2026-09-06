@@ -54,7 +54,7 @@ import { IndexedDbStore } from '@/lib/store';
 import {
   candidateReview,
   confirmReviewedCandidate,
-  inventoryEditCandidate,
+  stageInventoryEditCandidate,
 } from '@/lib/candidate-review';
 import {
   BRIDGE_URL,
@@ -231,12 +231,17 @@ function CandidateEditor({
   s,
   busy,
   mutate,
+  variant = 'candidate',
+  onResolved,
 }: {
   candidate: Candidate;
   s: KitchenState;
   busy: boolean;
   mutate: Mutate;
+  variant?: 'candidate' | 'calibration';
+  onResolved?: () => void;
 }) {
+  const isCalibration = variant === 'calibration';
   const latestReview = candidateReview(s, c);
   const [review, setReview] = useState(() => latestReview);
   const stale = latestReview.fingerprint !== review.fingerprint;
@@ -264,8 +269,10 @@ function CandidateEditor({
       ].includes(warning),
   );
   return (
-    <article className={`candidate${hasCardArt ? ' candidate-with-art' : ''}`}>
-      {hasCardArt && (
+    <article
+      className={`candidate${hasCardArt && !isCalibration ? ' candidate-with-art' : ''}${isCalibration ? ' candidate--calibration' : ''}`}
+    >
+      {hasCardArt && !isCalibration && (
         <KitchenIngredientCard
           ingredientId={review.ingredientId}
           name={review.name}
@@ -275,12 +282,14 @@ function CandidateEditor({
         />
       )}
       <div className="candidate-editor-body">
-        <div className="row-between">
-          <h3>{review.name}</h3>
-          <span className="tag amber">
-            待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
-          </span>
-        </div>
+        {!isCalibration && (
+          <div className="row-between">
+            <h3>{review.name}</h3>
+            <span className="tag amber">
+              待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
+            </span>
+          </div>
+        )}
         {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
         <div className="form-grid stocktake-fields">
           <Choice
@@ -364,8 +373,8 @@ function CandidateEditor({
               !!review.problem ||
               (kind === 'exact' && amount === '')
             }
-            onClick={() =>
-              mutate(
+            onClick={async () => {
+              const saved = await mutate(
                 (state) =>
                   confirmReviewedCandidate(state, c.key, review, {
                     quantity:
@@ -374,24 +383,28 @@ function CandidateEditor({
                         : { amountBand: band },
                     expiryDate: expiry || undefined,
                   }),
-                '已确认入库。',
-              )
-            }
+                isCalibration ? '库存信息已更新。' : '已确认入库。',
+              );
+              if (saved) onResolved?.();
+            }}
           >
             <Check size={17} />
-            确认这一项
+            {isCalibration ? '保存校准' : '确认这一项'}
           </button>
           <button
             className="text-button"
             disabled={busy}
-            onClick={() =>
-              mutate(
+            onClick={async () => {
+              const saved = await mutate(
                 (state) => rejectCandidate(state, c.key),
-                '已拒绝，不会进入库存。',
-              )
-            }
+                isCalibration
+                  ? '已取消校准，原库存保持不变。'
+                  : '已拒绝，不会进入库存。',
+              );
+              if (saved) onResolved?.();
+            }}
           >
-            不记录这项
+            {isCalibration ? '取消校准' : '不记录这项'}
           </button>
         </div>
       </div>
@@ -680,6 +693,7 @@ export default function Home() {
     } | null>(null),
     [reset, setReset] = useState(false),
     [clear, setClear] = useState(false);
+  const [calibrationKey, setCalibrationKey] = useState<string | null>(null);
   const [seasoningOpen, setSeasoningOpen] = useState(false);
   const [mode, setMode] = useState<Mode>('stocktake'),
     [manualName, setManualName] = useState('番茄'),
@@ -863,6 +877,9 @@ export default function Home() {
   const reviewChecks = !!checkKey && reviewCheckVersion === checkKey;
   const foodChecked = !!checkKey && foodCheckVersion === checkKey;
   const pending = s?.candidates.filter((c) => c.status === 'pending') || [];
+  const calibrationCandidate = calibrationKey
+    ? pending.find((candidate) => candidate.key === calibrationKey)
+    : undefined;
   const loadSample = async () => {
     if (!s || dataset !== 'demo') return;
     if (
@@ -900,10 +917,13 @@ export default function Home() {
         : added + ' 种调料已记录。其他食材可以用语音或拍照录入。',
     );
   };
-  const calibrateBatch = (b: Batch) =>
-    mutate((state) => {
-      stage(state, [inventoryEditCandidate(state, b.id)]);
-    }, '请核对数量和到期日期后确认。');
+  const calibrateBatch = async (b: Batch) => {
+    let candidateKey = '';
+    const saved = await mutate((state) => {
+      candidateKey = stageInventoryEditCandidate(state, b.id).key;
+    }, '请核对数量形式、数量和到期日期。');
+    if (saved && candidateKey) setCalibrationKey(candidateKey);
+  };
   const changeDataset = (d: Dataset) => {
     if (!busy) {
       setState(undefined);
@@ -912,6 +932,7 @@ export default function Home() {
       setDialog(null);
       setDetail(null);
       setSeasoningOpen(false);
+      setCalibrationKey(null);
       datasetRef.current = d;
       setDataset(d);
       setPage('today');
@@ -1394,9 +1415,9 @@ export default function Home() {
                         quantity={quantityText(b)}
                         expiryDate={b.expiryDate}
                         expired={isExpired(b)}
-                        actionLabel="校准余量"
-                        actionDisabled={busy}
-                        onAction={() => void calibrateBatch(b)}
+                        triggerLabel={`打开${b.displayName}的数量形式、数量和到期日期校准`}
+                        triggerDisabled={busy}
+                        onTrigger={() => void calibrateBatch(b)}
                       />
                     ) : (
                       <article
@@ -1419,15 +1440,13 @@ export default function Home() {
                               ? '到期 ' + b.expiryDate
                               : '未记录到期日期 · 不代表新鲜度'}
                         </small>
-                        <div className="inventory-item__actions">
-                          <button
-                            className="text-button"
-                            disabled={busy}
-                            onClick={() => void calibrateBatch(b)}
-                          >
-                            校准余量
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          className="inventory-item__trigger"
+                          aria-label={`校准${b.displayName}：当前${quantityText(b)}，${b.expiryDate ? `到期${b.expiryDate}` : '未记录到期日期'}。填写数量形式、数量和到期日期`}
+                          disabled={busy}
+                          onClick={() => void calibrateBatch(b)}
+                        />
                       </article>
                     ),
                   )}
@@ -1762,6 +1781,48 @@ export default function Home() {
               busy={busy}
               mutate={mutate}
               done={finishSeasonings}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!calibrationCandidate}
+        onOpenChange={(value) => {
+          if (!value && !busy) setCalibrationKey(null);
+        }}
+      >
+        <DialogContent
+          className="kitchen-dialog calibration-dialog"
+          showCloseButton={false}
+        >
+          <button
+            className="dialog-close icon-button"
+            aria-label="关闭库存校准"
+            disabled={busy}
+            onClick={() => setCalibrationKey(null)}
+          >
+            <X />
+          </button>
+          <DialogTitle>
+            校准「{calibrationCandidate?.displayName || '食材'}」余量
+          </DialogTitle>
+          <DialogDescription>
+            核对数量形式、数量和到期日期。保存后才会更新这张库存卡。
+          </DialogDescription>
+          {error && (
+            <p className="warning-text" role="alert">
+              {error}
+            </p>
+          )}
+          {s && calibrationCandidate && (
+            <CandidateEditor
+              key={calibrationCandidate.key}
+              candidate={calibrationCandidate}
+              s={s}
+              busy={busy}
+              mutate={mutate}
+              variant="calibration"
+              onResolved={() => setCalibrationKey(null)}
             />
           )}
         </DialogContent>

@@ -6,6 +6,7 @@ import {
   candidateReview,
   confirmReviewedCandidate,
   inventoryEditCandidate,
+  stageInventoryEditCandidate,
 } from '../lib/candidate-review';
 import {
   emptyState,
@@ -103,6 +104,22 @@ void test('explicit card edit remembers the exact batch even among identical nam
     [8, 10],
   );
   store.close();
+});
+
+void test('reopening a card reuses only its current calibration draft', () => {
+  const state = stocked();
+  const id = state.inventory[0].id;
+  const first = stageInventoryEditCandidate(state, id);
+  assert.equal(stageInventoryEditCandidate(state, id).key, first.key);
+  assert.equal(
+    state.candidates.filter((candidate) => candidate.stocktakeTarget?.id === id)
+      .length,
+    1,
+  );
+  state.inventory[0].revision++;
+  const current = stageInventoryEditCandidate(state, id);
+  assert.notEqual(current.key, first.key);
+  assert.equal(current.stocktakeTarget?.revision, state.inventory[0].revision);
 });
 
 void test('multiple matching batches block ambiguous photo or voice stocktake without a hidden chooser', () => {

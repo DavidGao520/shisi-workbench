@@ -12,9 +12,9 @@ type KitchenIngredientCardProps = {
   quantity: string;
   expiryDate?: string;
   expired?: boolean;
-  actionLabel?: string;
-  actionDisabled?: boolean;
-  onAction?: () => void;
+  triggerLabel?: string;
+  triggerDisabled?: boolean;
+  onTrigger?: () => void;
 };
 
 const dayMs = 24 * 60 * 60 * 1000;
@@ -50,9 +50,9 @@ export function KitchenIngredientCard({
   quantity,
   expiryDate,
   expired = false,
-  actionLabel,
-  actionDisabled = false,
-  onAction,
+  triggerLabel,
+  triggerDisabled = false,
+  onTrigger,
 }: KitchenIngredientCardProps) {
   const cardArt = pantryCardArt[ingredientId];
   if (!cardArt) return null;
@@ -80,22 +80,12 @@ export function KitchenIngredientCard({
     .filter(Boolean)
     .join('，');
 
-  const action =
-    actionLabel && onAction ? (
-      <button
-        type="button"
-        className="kitchen-ingredient-card__action"
-        disabled={actionDisabled}
-        onClick={onAction}
-      >
-        {actionLabel}
-      </button>
-    ) : null;
+  const interactive = status === 'confirmed' && triggerLabel && onTrigger;
 
   return (
     <article
       className={`kitchen-ingredient-card kitchen-ingredient-card--${status} kitchen-ingredient-card--${cardArt.theme}${expired ? ' kitchen-ingredient-card--expired' : ''}`}
-      aria-label={accessibleLabel}
+      aria-label={interactive ? undefined : accessibleLabel}
     >
       <div className="kitchen-ingredient-card__visual">
         <img
@@ -137,10 +127,16 @@ export function KitchenIngredientCard({
           </span>
           {expiryDate && <time dateTime={expiryDate}>{dateLabel}</time>}
         </div>
-        {action && (
-          <div className="kitchen-ingredient-card__footer">{action}</div>
-        )}
       </div>
+      {interactive && (
+        <button
+          type="button"
+          className="kitchen-ingredient-card__trigger"
+          aria-label={`${accessibleLabel}。${triggerLabel}`}
+          disabled={triggerDisabled}
+          onClick={onTrigger}
+        />
+      )}
     </article>
   );
 }

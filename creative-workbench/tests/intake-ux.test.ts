@@ -51,7 +51,7 @@ void test('candidate and voice review show quantities and expiry without identit
   );
   assert.match(candidate, /数量形式/);
   assert.match(candidate, /到期日期/);
-  assert.match(source, /inventoryEditCandidate\(state, b.id\)/);
+  assert.match(source, /stageInventoryEditCandidate\(state, b\.id\)/);
   const voice = await readFile(
     new URL('../components/voice-intake.tsx', import.meta.url),
     'utf8',
@@ -62,7 +62,7 @@ void test('candidate and voice review show quantities and expiry without identit
   assert.match(voice, /库存卡片分别校准余量/);
 });
 
-void test('confirmed illustrated cards rely on the checkmark and omit batch metadata', async () => {
+void test('confirmed inventory cards open calibration from the whole card', async () => {
   const card = await readFile(
     new URL('../components/kitchen-ingredient-card.tsx', import.meta.url),
     'utf8',
@@ -72,17 +72,43 @@ void test('confirmed illustrated cards rely on the checkmark and omit batch meta
     /status === 'pending' && \([\s\S]*?kitchen-ingredient-card__state/,
   );
   assert.doesNotMatch(card, /batchId|批次/);
+  assert.doesNotMatch(card, /__action|__footer/);
+  assert.match(card, /status === 'confirmed' && triggerLabel && onTrigger/);
+  assert.match(
+    card,
+    /className="kitchen-ingredient-card__trigger"[\s\S]*?aria-label=\{`\$\{accessibleLabel\}。\$\{triggerLabel\}`\}[\s\S]*?disabled=\{triggerDisabled\}[\s\S]*?onClick=\{onTrigger\}/,
+  );
   const source = await page();
+  const candidateEditor = source
+    .split('function CandidateEditor(')[1]
+    .split('function ReviewForm(')[0];
+  const pendingPreview = candidateEditor
+    .split('<KitchenIngredientCard')[1]
+    .split('/>')[0];
+  assert.doesNotMatch(pendingPreview, /triggerLabel|triggerDisabled|onTrigger/);
   const illustratedInventory = source
     .split('pantryCardArt[b.canonicalIngredientId] ? (')[1]
     .split(') : (')[0];
   assert.doesNotMatch(illustratedInventory, /batchId/);
-  assert.match(illustratedInventory, /actionLabel="校准余量"/);
+  assert.doesNotMatch(illustratedInventory, /actionLabel|校准余量/);
+  assert.match(illustratedInventory, /triggerDisabled=\{busy\}/);
+  assert.match(
+    illustratedInventory,
+    /onTrigger=\{\(\) => void calibrateBatch\(b\)\}/,
+  );
   assert.doesNotMatch(source, /批次 \{b\.id\.slice\(0, 6\)\}/);
+  assert.doesNotMatch(source, /inventory-item__actions/);
   assert.match(
     source,
-    /className="inventory-item__actions"[\s\S]*?>\s*校准余量\s*</,
+    /className="inventory-item__trigger"[\s\S]*?disabled=\{busy\}[\s\S]*?onClick=\{\(\) => void calibrateBatch\(b\)\}/,
   );
+  const calibration = source
+    .split('const calibrateBatch = async')[1]
+    .split('const changeDataset')[0];
+  assert.match(calibration, /stageInventoryEditCandidate\(state, b\.id\)/);
+  assert.match(source, /open=\{!!calibrationCandidate\}/);
+  assert.match(source, /variant="calibration"/);
+  assert.match(source, /核对数量形式、数量和到期日期/);
 });
 
 void test('kitchen has no user-facing candidate JSON import path', async () => {
