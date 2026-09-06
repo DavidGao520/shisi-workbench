@@ -1,7 +1,7 @@
 import { names, recipes, RECIPE_VERSION, type Recipe } from './recipes';
 export type Dataset = 'real' | 'demo';
 export type Mode = 'stocktake' | 'restock';
-export const units = ['个', '盒', '袋', '克', '毫升', '份'] as const;
+export const units = ['个', '盒', '袋', '棵', '克', '毫升', '份'] as const;
 export const bands = ['充足', '少量', '即将用完', '用完'] as const;
 export type Quantity = { amount?: number; unit?: string; amountBand?: string };
 export type Candidate = Quantity & {
@@ -174,6 +174,8 @@ const aliases: Record<string, string> = {
   熟米饭: 'cooked_rice',
   豆腐: 'tofu',
   土豆: 'potato',
+  大白菜: 'chinese_cabbage',
+  白菜: 'chinese_cabbage',
 };
 /** Transport metadata is bound by the user's visible current dataset and import mode. */
 export function parseImport(

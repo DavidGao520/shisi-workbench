@@ -21,6 +21,9 @@
   --green: #4c6044;
   --paper: #fffdf8;
   --line: #ded5c5;
+  --calibration-pending: #9a661e;
+  --calibration-confirmed: #425d39;
+  --expiry-danger: #a8402e;
 }
 * {
   box-sizing: border-box;
@@ -750,16 +753,26 @@ textarea {
   border-radius: 10px;
   padding: 23px;
 }
-.candidate > .form-grid {
+.candidate-editor-body > .form-grid {
   margin-top: 20px;
 }
 .candidate .warning-text {
   margin: 0 0 15px;
 }
+.candidate-with-art {
+  display: grid;
+  grid-template-columns: minmax(240px, 272px) minmax(0, 1fr);
+  align-items: start;
+  gap: 30px;
+}
+.candidate-editor-body {
+  min-width: 0;
+}
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 272px));
+  align-items: start;
+  gap: 20px;
 }
 .inventory-item {
   background: var(--paper);
@@ -799,6 +812,208 @@ textarea {
 .expired .inventory-amount,
 .expired small {
   color: #a24d34;
+}
+.kitchen-ingredient-card {
+  width: min(100%, 272px);
+  min-width: 0;
+  color: #65481e;
+  filter: drop-shadow(0 5px 7px rgba(49, 38, 18, 0.2));
+  animation: ingredient-card-in 260ms ease-out both;
+}
+.kitchen-ingredient-card__visual {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  isolation: isolate;
+  user-select: none;
+}
+.kitchen-ingredient-card__frame,
+.kitchen-ingredient-card__art {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+.kitchen-ingredient-card__frame {
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+.kitchen-ingredient-card__art {
+  left: 15%;
+  top: 16.5%;
+  z-index: 2;
+  width: 70%;
+  height: 37%;
+  object-fit: contain;
+  filter: drop-shadow(2px 4px 4px rgba(48, 39, 20, 0.28));
+}
+.kitchen-ingredient-card__status,
+.kitchen-ingredient-card__name,
+.kitchen-ingredient-card__category,
+.kitchen-ingredient-card__details,
+.kitchen-ingredient-card__footer {
+  position: absolute;
+  z-index: 3;
+}
+.kitchen-ingredient-card__status {
+  left: 4.3%;
+  top: 3.8%;
+  width: 17%;
+  height: 11.5%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 0 #fff6d7;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__status {
+  color: var(--calibration-pending);
+  background: rgba(247, 222, 156, 0.48);
+}
+.kitchen-ingredient-card--confirmed .kitchen-ingredient-card__status {
+  color: var(--calibration-confirmed);
+  background: rgba(221, 232, 211, 0.54);
+}
+.kitchen-ingredient-card__name {
+  top: 10%;
+  left: 18%;
+  width: 74%;
+  transform: translateY(-50%);
+  overflow: hidden;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen-ingredient-card__category {
+  top: 56.8%;
+  left: 24%;
+  width: 52%;
+  transform: translateY(-50%);
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+.kitchen-ingredient-card__details {
+  top: 61.5%;
+  left: 16%;
+  width: 68%;
+  height: 21%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  text-align: center;
+}
+.kitchen-ingredient-card__state {
+  color: #7c6a4e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__state {
+  color: var(--calibration-pending);
+}
+.kitchen-ingredient-card--confirmed .kitchen-ingredient-card__state {
+  color: var(--calibration-confirmed);
+}
+.kitchen-ingredient-card__quantity {
+  max-width: 100%;
+  margin-top: 2px;
+  overflow: hidden;
+  color: #506238;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 23px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kitchen-ingredient-card--pending .kitchen-ingredient-card__quantity {
+  font-size: 19px;
+}
+.kitchen-ingredient-card__expiry {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.kitchen-ingredient-card__expiry--normal {
+  color: #596948;
+}
+.kitchen-ingredient-card__expiry--unknown {
+  color: #7d725f;
+}
+.kitchen-ingredient-card__expiry--soon {
+  color: var(--calibration-pending);
+}
+.kitchen-ingredient-card__expiry--urgent,
+.kitchen-ingredient-card__expiry--expired {
+  color: var(--expiry-danger);
+}
+.kitchen-ingredient-card__details time {
+  color: #817158;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+.kitchen-ingredient-card__footer {
+  top: 82.5%;
+  left: 14%;
+  width: 72%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: #75684f;
+  font-size: 11px;
+}
+.kitchen-ingredient-card__action {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #8b4b2d;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.kitchen-ingredient-card__action:hover {
+  text-decoration: underline;
+}
+.kitchen-ingredient-card__action:focus-visible {
+  outline: 3px solid #b46642;
+  outline-offset: 1px;
+}
+.kitchen-ingredient-card__mobile-details {
+  display: none;
+}
+.kitchen-ingredient-card--expired .kitchen-ingredient-card__art {
+  filter: grayscale(0.38) saturate(0.76)
+    drop-shadow(2px 4px 4px rgba(48, 39, 20, 0.2));
+}
+@keyframes ingredient-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .bottom-actions {
   justify-content: space-between;
@@ -1152,7 +1367,7 @@ textarea {
     grid-template-columns: 210px 1fr;
   }
   .inventory-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(224px, 272px));
   }
   .recipe-index {
     grid-template-columns: 1fr;
@@ -1162,6 +1377,14 @@ textarea {
   }
   .row-between > .muted {
     max-width: 190px;
+  }
+}
+@media (max-width: 900px) {
+  .candidate-with-art {
+    grid-template-columns: 1fr;
+  }
+  .candidate-with-art > .kitchen-ingredient-card {
+    justify-self: center;
   }
 }
 @media (max-width: 700px) {
@@ -1225,6 +1448,7 @@ textarea {
     gap: 0;
   }
   .inventory-grid {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
   .inventory-item {
@@ -1244,6 +1468,90 @@ textarea {
   .inventory-item small {
     font-size: 12px;
     min-height: 43px;
+  }
+  .candidate-with-art > .kitchen-ingredient-card {
+    justify-self: stretch;
+  }
+  .kitchen-ingredient-card {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    width: 100%;
+    min-height: 168px;
+    overflow: hidden;
+    border: 1px solid #d9cfb8;
+    border-radius: 12px;
+    background: #fffaf0;
+    filter: none;
+  }
+  .kitchen-ingredient-card__visual {
+    width: 112px;
+    height: 168px;
+  }
+  .kitchen-ingredient-card__status {
+    font-size: 14px;
+  }
+  .kitchen-ingredient-card__name {
+    font-size: 10px;
+  }
+  .kitchen-ingredient-card__category {
+    font-size: 8px;
+  }
+  .kitchen-ingredient-card__details,
+  .kitchen-ingredient-card__footer {
+    display: none;
+  }
+  .kitchen-ingredient-card__mobile-details {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 13px 8px;
+  }
+  .kitchen-ingredient-card__mobile-state {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    margin-bottom: 3px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .kitchen-ingredient-card--pending .kitchen-ingredient-card__mobile-state {
+    color: #72420d;
+    background: #f7de9c;
+  }
+  .kitchen-ingredient-card--confirmed .kitchen-ingredient-card__mobile-state {
+    color: #3f5737;
+    background: #dde8d3;
+  }
+  .kitchen-ingredient-card__mobile-details > strong {
+    overflow: hidden;
+    color: #506238;
+    font-family: 'Songti SC', 'STSong', serif;
+    font-size: 22px;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kitchen-ingredient-card__mobile-details > .kitchen-ingredient-card__expiry {
+    font-size: 15px;
+  }
+  .kitchen-ingredient-card__mobile-details > time {
+    color: #817158;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kitchen-ingredient-card__mobile-footer {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: auto;
+    color: #75684f;
+    font-size: 11px;
   }
   .storage-note {
     font-size: 12px;
@@ -1341,6 +1649,9 @@ textarea {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .kitchen-ingredient-card {
+    animation: none;
+  }
   * {
     transition: none !important;
     animation: none !important;

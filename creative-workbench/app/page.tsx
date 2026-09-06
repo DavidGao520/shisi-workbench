@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { KitchenIngredientCard } from '@/components/kitchen-ingredient-card';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -62,7 +63,7 @@ import {
   cookingSteps,
   type Recipe,
 } from '@/lib/recipes';
-import { art } from '@/lib/art';
+import { art, ingredientCardArt } from '@/lib/art';
 import {
   activeSession,
   archive,
@@ -86,6 +87,7 @@ import {
   uid,
   units,
   type Candidate,
+  type Batch,
   type Consumption,
   type Dataset,
   type KitchenState,
@@ -237,143 +239,162 @@ function CandidateEditor({
       (b) => b.canonicalIngredientId === ingredient,
     ),
     batch = batches.find((b) => b.id === target);
+  const hasCardArt = !!ingredientCardArt[ingredient];
+  const previewQuantity =
+    kind === 'exact'
+      ? amount === ''
+        ? '数量待确认'
+        : quantityText({ amount: Number(amount), unit })
+      : band;
   return (
-    <article className="candidate">
-      <div className="row-between">
-        <h3>{c.displayName}</h3>
-        <span className="tag amber">
-          待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
-        </span>
-      </div>
-      {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
-      <div className="form-grid">
-        <Choice
-          label="对应食材"
-          value={ingredient}
-          onChange={(v) => {
-            setIngredient(v);
-            setTarget('');
-          }}
-          options={ingredientOptions}
+    <article className={`candidate${hasCardArt ? ' candidate-with-art' : ''}`}>
+      {hasCardArt && (
+        <KitchenIngredientCard
+          ingredientId={ingredient}
+          name={name}
+          status="pending"
+          quantity={previewQuantity}
+          expiryDate={expiry || undefined}
+          contextLabel={c.mode === 'stocktake' ? '盘点候选' : '补货候选'}
         />
-        <label className="field">
-          显示名称
-          <input
-            value={name}
-            maxLength={60}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <Choice
-          label="数量形式"
-          value={kind}
-          onChange={setKind}
-          options={[
-            { value: 'exact', label: '精确数量' },
-            { value: 'band', label: '数量不确定' },
-          ]}
-        />
-        {kind === 'exact' ? (
-          <div className="quantity-pair">
-            <label className="field">
-              数量
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </label>
-            <Choice
-              label="单位"
-              value={unit}
-              onChange={setUnit}
-              options={units.map((v) => ({ value: v, label: v }))}
-            />
-          </div>
-        ) : (
-          <Choice
-            label="数量档"
-            value={band}
-            onChange={setBand}
-            options={bands.map((v) => ({ value: v, label: v }))}
-          />
-        )}
-        <label className="field">
-          到期日期（不知道可留空）
-          <input
-            type="date"
-            value={expiry}
-            onChange={(e) => setExpiry(e.target.value)}
-          />
-        </label>
-        <Choice
-          label={c.mode === 'stocktake' ? '校准哪一批？' : '添加到哪里？'}
-          value={target}
-          onChange={(v) => {
-            setTarget(v);
-            const b = batches.find((x) => x.id === v);
-            if (b) setExpiry(b.expiryDate || '');
-          }}
-          options={[
-            { value: 'new', label: '明确新建一个批次' },
-            ...batches.map((b) => ({
-              value: b.id,
-              label:
-                b.displayName +
-                ' · ' +
-                quantityText(b) +
-                (b.expiryDate ? ' · ' + b.expiryDate : ''),
-            })),
-          ]}
-        />
-      </div>
-      {c.warnings.length > 0 && (
-        <p className="warning-text">{c.warnings.join('；')}</p>
       )}
-      <div className="actions">
-        <button
-          className="primary"
-          disabled={
-            busy ||
-            !ingredient ||
-            !target ||
-            (kind === 'exact' && amount === '')
-          }
-          onClick={() =>
-            mutate(
-              (state) =>
-                confirmCandidate(state, c.key, {
-                  name,
-                  ingredientId: ingredient,
-                  quantity:
-                    kind === 'exact'
-                      ? { amount: Number(amount), unit }
-                      : { amountBand: band },
-                  expiryDate: expiry || undefined,
-                  targetId: target === 'new' ? undefined : target,
-                  targetRevision: batch?.revision,
-                }),
-              '已确认入库。',
-            )
-          }
-        >
-          <Check size={17} />
-          确认这一项
-        </button>
-        <button
-          className="text-button"
-          disabled={busy}
-          onClick={() =>
-            mutate(
-              (state) => rejectCandidate(state, c.key),
-              '已拒绝，不会进入库存。',
-            )
-          }
-        >
-          不记录这项
-        </button>
+      <div className="candidate-editor-body">
+        <div className="row-between">
+          <h3>{name}</h3>
+          <span className="tag amber">
+            待确认 · {c.mode === 'stocktake' ? '盘点' : '补货'}
+          </span>
+        </div>
+        {c.rawMention && <p className="muted">原始提及：{c.rawMention}</p>}
+        <div className="form-grid">
+          <Choice
+            label="对应食材"
+            value={ingredient}
+            onChange={(v) => {
+              setIngredient(v);
+              setTarget('');
+            }}
+            options={ingredientOptions}
+          />
+          <label className="field">
+            显示名称
+            <input
+              value={name}
+              maxLength={60}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <Choice
+            label="数量形式"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: 'exact', label: '精确数量' },
+              { value: 'band', label: '数量不确定' },
+            ]}
+          />
+          {kind === 'exact' ? (
+            <div className="quantity-pair">
+              <label className="field">
+                数量
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </label>
+              <Choice
+                label="单位"
+                value={unit}
+                onChange={setUnit}
+                options={units.map((v) => ({ value: v, label: v }))}
+              />
+            </div>
+          ) : (
+            <Choice
+              label="数量档"
+              value={band}
+              onChange={setBand}
+              options={bands.map((v) => ({ value: v, label: v }))}
+            />
+          )}
+          <label className="field">
+            到期日期（不知道可留空）
+            <input
+              type="date"
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+            />
+          </label>
+          <Choice
+            label={c.mode === 'stocktake' ? '校准哪一批？' : '添加到哪里？'}
+            value={target}
+            onChange={(v) => {
+              setTarget(v);
+              const b = batches.find((x) => x.id === v);
+              if (b) setExpiry(b.expiryDate || '');
+            }}
+            options={[
+              { value: 'new', label: '明确新建一个批次' },
+              ...batches.map((b) => ({
+                value: b.id,
+                label:
+                  b.displayName +
+                  ' · ' +
+                  quantityText(b) +
+                  (b.expiryDate ? ' · ' + b.expiryDate : ''),
+              })),
+            ]}
+          />
+        </div>
+        {c.warnings.length > 0 && (
+          <p className="warning-text">{c.warnings.join('；')}</p>
+        )}
+        <div className="actions">
+          <button
+            className="primary"
+            disabled={
+              busy ||
+              !ingredient ||
+              !target ||
+              (kind === 'exact' && amount === '')
+            }
+            onClick={() =>
+              mutate(
+                (state) =>
+                  confirmCandidate(state, c.key, {
+                    name,
+                    ingredientId: ingredient,
+                    quantity:
+                      kind === 'exact'
+                        ? { amount: Number(amount), unit }
+                        : { amountBand: band },
+                    expiryDate: expiry || undefined,
+                    targetId: target === 'new' ? undefined : target,
+                    targetRevision: batch?.revision,
+                  }),
+                '已确认入库。',
+              )
+            }
+          >
+            <Check size={17} />
+            确认这一项
+          </button>
+          <button
+            className="text-button"
+            disabled={busy}
+            onClick={() =>
+              mutate(
+                (state) => rejectCandidate(state, c.key),
+                '已拒绝，不会进入库存。',
+              )
+            }
+          >
+            不记录这项
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -846,6 +867,26 @@ export default function Home() {
     s?.inventory.filter((b) =>
       b.amount === undefined ? b.amountBand !== '用完' : b.amount > 0,
     ).length || 0;
+  const calibrateBatch = (b: Batch) =>
+    mutate((state) => {
+      const id = uid();
+      stage(state, [
+        {
+          key: JSON.stringify([id, 'edit']),
+          candidateId: 'edit',
+          requestId: id,
+          displayName: b.displayName,
+          canonicalIngredientId: b.canonicalIngredientId,
+          amount: b.amount,
+          unit: b.unit,
+          amountBand: b.amountBand,
+          warnings: ['请在下方选择原批次进行盘点校准。'],
+          mode: 'stocktake',
+          source: 'manual-form',
+          status: 'pending',
+        },
+      ]);
+    }, '已创建盘点候选，请指定原批次后确认。');
   const changeDataset = (d: Dataset) => {
     if (!busy) {
       setState(undefined);
@@ -1334,62 +1375,55 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="inventory-grid">
-                  {s.inventory.map((b) => (
-                    <article
-                      className={
-                        'inventory-item ' + (isExpired(b) ? 'expired' : '')
-                      }
-                      key={b.id}
-                    >
-                      <div className="row-between">
-                        <h3>{b.displayName}</h3>
-                        <span className="ingredient-mark">
-                          {b.displayName.slice(0, 1)}
-                        </span>
-                      </div>
-                      <p className="inventory-amount">{quantityText(b)}</p>
-                      <small>
-                        {isExpired(b)
-                          ? '已过期 · 不计入推荐'
-                          : b.expiryDate
-                            ? '到期 ' + b.expiryDate
-                            : '未记录到期日期 · 不代表新鲜度'}
-                      </small>
-                      <div className="row-between">
-                        <span className="muted">批次 {b.id.slice(0, 6)}</span>
-                        <button
-                          className="text-button"
-                          disabled={busy}
-                          onClick={() =>
-                            mutate((state) => {
-                              const id = uid();
-                              stage(state, [
-                                {
-                                  key: JSON.stringify([id, 'edit']),
-                                  candidateId: 'edit',
-                                  requestId: id,
-                                  displayName: b.displayName,
-                                  canonicalIngredientId:
-                                    b.canonicalIngredientId,
-                                  amount: b.amount,
-                                  unit: b.unit,
-                                  amountBand: b.amountBand,
-                                  warnings: [
-                                    '请在下方选择原批次进行盘点校准。',
-                                  ],
-                                  mode: 'stocktake',
-                                  source: 'manual-form',
-                                  status: 'pending',
-                                },
-                              ]);
-                            }, '已创建盘点候选，请指定原批次后确认。')
-                          }
-                        >
-                          校准余量
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                  {s.inventory.map((b) =>
+                    ingredientCardArt[b.canonicalIngredientId] ? (
+                      <KitchenIngredientCard
+                        key={b.id}
+                        ingredientId={b.canonicalIngredientId}
+                        name={b.displayName}
+                        status="confirmed"
+                        quantity={quantityText(b)}
+                        expiryDate={b.expiryDate}
+                        expired={isExpired(b)}
+                        batchId={b.id}
+                        actionLabel="校准余量"
+                        actionDisabled={busy}
+                        onAction={() => void calibrateBatch(b)}
+                      />
+                    ) : (
+                      <article
+                        className={
+                          'inventory-item ' + (isExpired(b) ? 'expired' : '')
+                        }
+                        key={b.id}
+                      >
+                        <div className="row-between">
+                          <h3>{b.displayName}</h3>
+                          <span className="ingredient-mark">
+                            {b.displayName.slice(0, 1)}
+                          </span>
+                        </div>
+                        <p className="inventory-amount">{quantityText(b)}</p>
+                        <small>
+                          {isExpired(b)
+                            ? '已过期 · 不计入推荐'
+                            : b.expiryDate
+                              ? '到期 ' + b.expiryDate
+                              : '未记录到期日期 · 不代表新鲜度'}
+                        </small>
+                        <div className="row-between">
+                          <span className="muted">批次 {b.id.slice(0, 6)}</span>
+                          <button
+                            className="text-button"
+                            disabled={busy}
+                            onClick={() => void calibrateBatch(b)}
+                          >
+                            校准余量
+                          </button>
+                        </div>
+                      </article>
+                    ),
+                  )}
                 </div>
               )}
               <div className="actions bottom-actions">

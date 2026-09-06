@@ -11,6 +11,7 @@ export const names: Record<string, string> = {
   cooked_rice: '熟米饭',
   tofu: '豆腐',
   potato: '土豆',
+  chinese_cabbage: '大白菜',
   other: '其他食材',
 };
 export type Recipe = {
