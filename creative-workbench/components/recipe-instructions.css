@@ -29,6 +29,46 @@
   font-weight: 700;
   color: var(--red);
 }
+.recipe-disclosure {
+  border-bottom: 1px solid var(--line);
+}
+.recipe-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 16px 0;
+  list-style: none;
+  cursor: pointer;
+  font-family: 'Songti SC', 'STSong', serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.recipe-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.recipe-disclosure > summary:focus-visible {
+  outline: 3px solid #b46642;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.recipe-disclosure > summary svg {
+  flex-shrink: 0;
+  color: var(--red);
+  transform: rotate(-90deg);
+}
+.recipe-disclosure[open] > summary svg {
+  transform: rotate(0deg);
+}
+.recipe-disclosure__content {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+.recipe-disclosure__content > .recipe-instructions {
+  margin: 0;
+}
 .recipe-step-heading {
   display: flex;
   align-items: baseline;

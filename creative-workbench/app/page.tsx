@@ -48,6 +48,7 @@ import {
 } from '@/lib/meal-ratings';
 import { BaiweiGallery, BaiweiDishArt } from '@/components/baiwei-gallery';
 import {
+  RecipeDetailSections,
   RecipeInstructions,
   RecipeSources,
 } from '@/components/recipe-instructions';
@@ -1999,23 +2000,11 @@ export default function Home() {
               <p className="muted">
                 调料、焯水和烹煮用水均列入用料；同一材料在准备和下锅步骤中可能重复出现，并不是需要额外再准备一份。加热时间还需结合食材大小与实际熟度判断。
               </p>
-              <h3>
-                {recipe.workbuddyVersion
-                  ? 'WorkBuddy 生成的做法'
-                  : '预设家常做法 · 每步都有用料与计时'}
-              </h3>
-              {recipe.workbuddyWarnings?.map((warning, index) => (
-                <p className="warning-text" key={index}>
-                  {warning}
-                </p>
-              ))}
-              <RecipeInstructions recipe={recipe} batches={detailServings} />
-              {recipe.safetyTips?.map((tip) => (
-                <p className="safety-note" key={tip}>
-                  {tip}
-                </p>
-              ))}
-              <p className="safety-note">{safetyNote}</p>
+              <RecipeDetailSections
+                key={`${recipe.id}:${recipe.workbuddyVersion || RECIPE_VERSION}:${detail?.sessionId || ''}`}
+                recipe={recipe}
+                batches={detailServings}
+              />
               <RecipeSources recipe={recipe} />
               {!detail?.sessionId && (
                 <details className="paper workbuddy-cooking">

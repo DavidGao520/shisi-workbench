@@ -256,9 +256,6 @@ export function BaiweiGallery({
                 <h3>这道菜的故事</h3>
                 <p>{selected.dish.story}</p>
                 <p className="baiwei-note">《中华食肆》游戏原作故事 · 国宴队</p>
-                <p className="baiwei-note">
-                  包含传说与文学表达，尚未逐条作史实考证；不作为烹饪或健康建议。
-                </p>
               </section>
               {selected.recipe ? (
                 <button
@@ -277,16 +274,12 @@ export function BaiweiGallery({
                   {sample ? '我的演练记录' : '我的做菜记录'} ·{' '}
                   {selected.history.length} 次
                 </h3>
-                {selected.history.length ? (
+                {selected.history.length > 0 && (
                   <History
                     history={selected.history}
                     sample={sample}
                     onOpenRecipe={openRecipe}
                   />
-                ) : (
-                  <p className="baiwei-note">
-                    还没做过。确认完成制作后，照片、评分和食忆会留在这里。
-                  </p>
                 )}
               </section>
             </>

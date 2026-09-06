@@ -1,10 +1,54 @@
+import { ChevronDown } from 'lucide-react';
 import {
   cookingSteps,
   detailedCookingSteps,
   ingredientName,
+  safetyNote,
   safetySource,
   type Recipe,
 } from '../lib/recipes';
+
+/** Details previews are collapsible; the live cooking step stays directly visible. */
+export function RecipeDetailSections({
+  recipe,
+  batches = 1,
+}: {
+  recipe: Recipe;
+  batches?: number;
+}) {
+  return (
+    <>
+      <details className="recipe-disclosure recipe-disclosure--steps">
+        <summary>
+          <span>烹饪流程</span>
+          <ChevronDown size={20} aria-hidden="true" />
+        </summary>
+        <div className="recipe-disclosure__content">
+          {recipe.workbuddyWarnings?.map((warning, index) => (
+            <p className="warning-text" key={index}>
+              {warning}
+            </p>
+          ))}
+          <RecipeInstructions recipe={recipe} batches={batches} />
+        </div>
+      </details>
+      <details className="recipe-disclosure recipe-disclosure--tips">
+        <summary>
+          <span>温馨提示</span>
+          <ChevronDown size={20} aria-hidden="true" />
+        </summary>
+        <div className="recipe-disclosure__content">
+          {recipe.safetyTips?.map((tip) => (
+            <p className="safety-note" key={tip}>
+              {tip}
+            </p>
+          ))}
+          <p className="safety-note">{safetyNote}</p>
+        </div>
+      </details>
+    </>
+  );
+}
 
 export function RecipeInstructions({
   recipe,
