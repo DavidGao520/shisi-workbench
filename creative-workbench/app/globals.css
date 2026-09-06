@@ -139,6 +139,7 @@ small {
   font-size: 15px;
   gap: 13px;
   flex: none;
+  transition-property: background-color, color, box-shadow;
 }
 .side-tabs [data-slot='tabs-trigger'][data-active] {
   background: #a8402e !important;
@@ -330,12 +331,14 @@ small {
   }
   .side-tabs [data-slot='tabs-trigger'] {
     justify-content: center;
-    padding: 9px 5px;
+    flex-direction: column;
+    min-width: 0;
+    padding: 8px 3px;
     font-size: 13px;
-    gap: 5px;
+    gap: 4px;
     width: auto;
     flex: 1;
-    min-height: 43px;
+    min-height: 60px;
   }
   .side-tabs svg {
     width: 16px;
@@ -417,6 +420,16 @@ body {
   background: #ffffff30;
   border-radius: 20px;
   padding: 0 6px;
+}
+@media (max-width: 700px) {
+  .side-tabs .nav-count {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    margin: 0;
+    font-size: 10px;
+    padding: 0 4px;
+  }
 }
 .workspace > [data-slot='tabs-content'] {
   font-size: 16px;
