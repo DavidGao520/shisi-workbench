@@ -10,7 +10,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { bands, uid, units, type KitchenState, type Mode } from '@/lib/kitchen';
-import { BRIDGE_URL } from '@/lib/workbuddy-bridge';
+import {
+  checkVoiceService,
+  transcribeVoice,
+  voiceServiceForPage,
+  type VoiceService,
+} from '@/lib/voice-service';
 import {
   prepareVoiceDraft,
   confirmVoiceDraft,
@@ -49,6 +54,7 @@ export function VoiceIntake({
   const [error, setError] = useState('');
   const [seconds, setSeconds] = useState(0);
   const [clientId] = useState(uid);
+  const [service, setService] = useState<VoiceService | null>(null);
   const controller = useRef<VoiceRecorder | null>(null);
   const request = useRef<AbortController | null>(null);
   const generation = useRef(0);
@@ -61,27 +67,26 @@ export function VoiceIntake({
   const check = useCallback(async () => {
     const version = ++generation.current;
     setPhase('checking');
+    setService(null);
     setError('');
     try {
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder)
         throw new Error(
-          '此浏览器无法录音，请用最新版 Chrome 或 Safari 打开本地工作台。',
+          '此浏览器无法录音，请用 Chrome 或 Safari 打开 HTTPS 工作台，或直接输入食材。',
         );
-      if (location.origin !== new URL(BRIDGE_URL).origin)
+      const nextService = voiceServiceForPage(
+        location.origin,
+        !!document.querySelector('meta[name="kitchen-workspace"]'),
+      );
+      if (nextService.kind === 'cloud' && !window.OfflineAudioContext)
         throw new Error(
-          '语音识别需要从本地工作台入口打开；当前页面不是该入口。',
+          '此浏览器暂不支持录音处理，请换用 Chrome 或 Safari，或直接输入食材。',
         );
-      const response = await fetch('/voice/status', {
-        headers: { 'X-Kitchen-Client': clientId },
-        signal: AbortSignal.timeout(5000),
-        cache: 'no-store',
-      });
-      const result = (await response.json()) as { ready?: boolean };
-      if (!response.ok || !result.ready)
-        throw new Error(
-          '本机语音服务未就绪。首次使用请双击完整包里的「初始化语音.command」，完成后重试。',
-        );
-      if (version === generation.current) setPhase('idle');
+      await checkVoiceService(nextService, clientId, AbortSignal.timeout(5000));
+      if (version === generation.current) {
+        setService(nextService);
+        setPhase('idle');
+      }
     } catch (e) {
       if (version === generation.current) {
         setError((e as Error).message);
@@ -118,7 +123,7 @@ export function VoiceIntake({
     );
     setRows(result.rows);
     setNotes(result.warnings);
-    setPhase('review');
+    setPhase(service ? 'review' : 'unavailable');
     setError(
       result.rows.length
         ? ''
@@ -126,7 +131,17 @@ export function VoiceIntake({
     );
   };
   const start = () => {
-    if (['recording', 'recognizing', 'permission'].includes(phase) || busy)
+    if (
+      [
+        'recording',
+        'recognizing',
+        'permission',
+        'checking',
+        'unavailable',
+      ].includes(phase) ||
+      busy ||
+      !service
+    )
       return;
     const version = ++generation.current;
     controller.current?.cancel();
@@ -151,33 +166,25 @@ export function VoiceIntake({
           if (version !== generation.current) return;
           setPhase('recognizing');
           const abort = (request.current = new AbortController());
-          const timeout = setTimeout(() => abort.abort(), 125000);
+          const timeout = setTimeout(
+            () => abort.abort(),
+            service.kind === 'cloud' ? 65000 : 125000,
+          );
           try {
-            const response = await fetch('/voice/transcribe', {
-              method: 'POST',
-              headers: {
-                'Content-Type': blob.type,
-                'X-Kitchen-Client': clientId,
-              },
-              body: blob,
-              signal: abort.signal,
-            });
-            const result = (await response.json()) as {
-              transcript?: unknown;
-              error?: string;
-            };
-            if (!response.ok)
-              throw new Error(result.error || '识别失败，请重新录制。');
-            if (typeof result.transcript !== 'string')
-              throw new Error('没有收到有效文字，请重试。');
+            const transcript = await transcribeVoice(
+              service,
+              blob,
+              clientId,
+              abort.signal,
+            );
             if (version !== generation.current) return;
-            setText(result.transcript);
-            if (!result.transcript.trim()) {
+            setText(transcript);
+            if (!transcript.trim()) {
               setError('没有听清食材，请靠近麦克风再说一次。');
               setPhase('idle');
               return;
             }
-            analyze(result.transcript);
+            analyze(transcript);
           } catch (e) {
             if (version === generation.current) {
               setError(
@@ -194,6 +201,7 @@ export function VoiceIntake({
       },
       navigator.mediaDevices,
       window.MediaRecorder,
+      service.kind === 'cloud' ? 55000 : 60000,
     );
     void controller.current.start();
   };
@@ -250,7 +258,7 @@ export function VoiceIntake({
             phase !== 'unavailable' && (
               <button
                 className="primary"
-                disabled={busy || phase === 'checking'}
+                disabled={busy || phase === 'checking' || !service}
                 onClick={start}
               >
                 <Mic size={17} />
@@ -269,19 +277,13 @@ export function VoiceIntake({
                 <RotateCcw size={16} />
                 重新连接
               </button>
-              <a
-                className="text-button"
-                href={BRIDGE_URL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                打开本地工作台
-              </a>
             </>
           )}
         </div>
         <small>
-          最多一分钟。本机 AI 转写，录音不上传第三方、不留存；确认后才入库。
+          {service?.kind === 'local'
+            ? '最多一分钟。本机转写；确认后才入库。'
+            : '最多约一分钟。录音将发送至腾讯云转写，工作台不保存录音；确认后才入库。'}
         </small>
       </div>
       {error && (
@@ -289,12 +291,13 @@ export function VoiceIntake({
           {error}
         </p>
       )}
-      {text && !working && (
+      {!working && (
         <label className="field">
-          我听到的是
+          {text ? '识别文字（可以修改）' : '也可以直接输入食材'}
           <textarea
             value={text}
             maxLength={10000}
+            placeholder="两个番茄，一盒鸡蛋，还有半斤猪肉"
             disabled={busy}
             onChange={(e) => {
               setText(e.target.value);
@@ -313,7 +316,7 @@ export function VoiceIntake({
               }
             }}
           >
-            按修改后的文字重新识别食材
+            识别食材
           </button>
         </label>
       )}
