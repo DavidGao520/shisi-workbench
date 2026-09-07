@@ -1699,9 +1699,6 @@ export default function Home() {
                         <ChevronRight size={17} />
                       </button>
                     </div>
-                    <p className="muted">
-                      进度已在本机保存。此时还没有扣减库存。
-                    </p>
                   </div>
                 </section>
               )}
