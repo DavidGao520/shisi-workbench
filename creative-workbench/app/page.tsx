@@ -982,15 +982,15 @@ export default function Home() {
                 : '从手边食材开始'}
             </p>
             <h1>{pages.find((p) => p.id === page)?.name}</h1>
-            <p>
-              {page === 'today'
-                ? '冰箱有啥，今天吃啥。挑一道手边就能做的家常菜。'
-                : page === 'inventory'
-                  ? '先确认，再入库。每一批食材，都由你说了算。'
-                  : page === 'cooking'
-                    ? '一步一步来，做完以后再核对冰箱。'
+            {page !== 'cooking' && (
+              <p>
+                {page === 'today'
+                  ? '冰箱有啥，今天吃啥。挑一道手边就能做的家常菜。'
+                  : page === 'inventory'
+                    ? '先确认，再入库。每一批食材，都由你说了算。'
                     : '在游戏里收集味道，在生活里留住食忆。'}
-            </p>
+              </p>
+            )}
           </div>
         </div>
         {error && (
@@ -1536,9 +1536,6 @@ export default function Home() {
                       人份
                     </p>
                     <h2>{sessionRecipe(s, session).title}</h2>
-                    <p className="muted">
-                      食材与步骤用量按本次人数调整；实际加热时间会受锅具和份量影响，请自行确认熟度。
-                    </p>
                     <button
                       className="text-button"
                       onClick={() =>
