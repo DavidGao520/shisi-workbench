@@ -77,6 +77,8 @@ import cardWhitePepper from '../public/art/cards/white_pepper.webp?inline';
 import cardDriedChili from '../public/art/cards/dried_chili.webp?inline';
 import cardSesameOil from '../public/art/cards/sesame_oil.webp?inline';
 import cardWater from '../public/art/cards/water.webp?inline';
+import cardChickenWings from '../public/art/cards/chicken_wings.webp?inline';
+import cardCola from '../public/art/cards/cola.webp?inline';
 import {
   baiweiPantry,
   type PantryCardFrame,
@@ -181,6 +183,18 @@ const baiweiPantryCardArt: Record<string, PantryCardArt> = Object.fromEntries(
 );
 
 const workbenchSupplementalCardArt: Record<string, PantryCardArt> = {
+  chicken_wings: {
+    frame: meatCardFrame,
+    image: cardChickenWings,
+    kind: 'ingredient',
+    theme: 'meat',
+  },
+  cola: {
+    frame: vegetableCardFrame,
+    image: cardCola,
+    kind: 'ingredient',
+    theme: 'vegetable',
+  },
   oil: {
     frame: spiceCardFrame,
     image: cardOil,

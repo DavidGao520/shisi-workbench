@@ -108,6 +108,19 @@ Subject and materials: a short broad clear glass pitcher with a comfortably roun
 
 </details>
 
+## 2026-09-07 新增：照片库存的鸡翅、可乐原图与生菜展示映射
+
+从 Chinese-Cuisine 提交 `ae825f252ae982ec05d359edff44e226cef2fca2` 提取两张原始 WebP，经逐文件 Git blob / SHA-256 校验并打开查看；不生成、改绘、压缩或裁切。
+
+| 展示用途 | 原作文件 → 工作台文件 | Git blob | SHA-256 |
+| --- | --- | --- | --- |
+| 鸡翅 | `public/assets/cards/鸡翅中.webp` → `public/art/cards/chicken_wings.webp` | `096244f577986b57d78ff1d511d320540fc31480` | `e753e2f9a7bd5d810bc36efadc5647732884936e9644b79665abee8afd8f0c44` |
+| 可乐 | `public/assets/cards/qianshi_cola.webp` → `public/art/cards/cola.webp` | `e6d49ed535772dda4bf36efac5db92ffa168b24d` | `a846457a7d9c90283e39b29558fb2a680fbf88a8472963ec3d79c581fe5b6703` |
+
+两张均为 512×512 透明主体图，分别使用现有荤食框与食材框，以 `?inline` 进入网页和独立 HTML。可乐原图为游戏内“千事可乐”，仅作可乐类别插画，不代表用户库存的实际品牌或包装。当前库存主体图共 65 张游戏原图 + 8 张工作台生成补充图；原作百味图的 63 项食材/调料目录不变。
+
+按用户明确选择，“生菜”复用已导入的 `chinese_cabbage.webp` 白菜插画。该复用只发生在 `lib/pantry-art.ts` 展示映射：名称仍为“生菜”，不合并白菜库存、不替代白菜配方，不冒充生菜专用原画。鸡翅与可乐也支持此前已保存为 `other` 的明确名称；不迁移批次、数量或到期日，不从品牌名称推断含糖量。待确认卡、已确认卡和独立 HTML 共用映射。
+
 以下保留 0.1 的历史来源台账，仅用于解释旧快照和旧素材；不是当前 70 道菜谱的来源或限制。
 
 ## 历史 0.1：从游戏迁移了什么

@@ -185,6 +185,79 @@ function RecipeArt({ recipe }: { recipe: Recipe }) {
     <img src={art[recipe.image]} alt={recipe.title + '游戏插画'} />
   );
 }
+function RecipeRecommendations({
+  rec,
+  inventoryUsed,
+  onOpenRecipe,
+  onOpenInventory,
+}: {
+  rec: ReturnType<typeof recommendations>;
+  inventoryUsed: number;
+  onOpenRecipe: (recipe: Recipe) => void;
+  onOpenInventory: () => void;
+}) {
+  return !rec.length ? (
+    <div className="empty-state">
+      <CookingPot size={34} />
+      <h3>
+        {inventoryUsed ? '暂时没有符合条件的推荐' : '先确认食材，再给你推荐'}
+      </h3>
+      <p>核对现有食材和数量，就能找到适合的一餐。已勾选的调料仍需确认用量。</p>
+      <button className="secondary" onClick={() => onOpenInventory()}>
+        去我的厨房
+      </button>
+    </div>
+  ) : (
+    <div className="recipe-grid">
+      {rec.map(({ recipe: r, matches, missing }) => (
+        <article className="recipe-card" key={r.id}>
+          <button
+            className="dish-cover image-button"
+            onClick={() => onOpenRecipe(r)}
+            aria-label={'查看' + r.title}
+          >
+            <RecipeArt recipe={r} />
+            <span className={'dish-badge ' + (missing.length ? 'amber' : '')}>
+              {missing.length ? '还需确认食材' : '食材已齐'}
+            </span>
+          </button>
+          <div className="recipe-body">
+            <p className="eyebrow">预设家常做法 · 约 {r.minutes} 分钟</p>
+            <h2>{r.title}</h2>
+            <p>{r.subtitle}</p>
+            <div className="match-note">
+              {matches
+                .filter((m) => m.enough)
+                .map((m) => names[m.id])
+                .join(' · ') || '暂无足量匹配'}
+            </div>
+            {missing.length > 0 && (
+              <p className="warning-text">
+                还缺 / 待确认：
+                {missing
+                  .map(
+                    (m) =>
+                      (m.presenceOnly
+                        ? names[m.id] + '已备，核对 '
+                        : names[m.id] + ' ') +
+                      Math.max(0, m.need - m.have) +
+                      ' ' +
+                      m.unit,
+                  )
+                  .join('、')}
+              </p>
+            )}
+            <button className="recipe-link" onClick={() => onOpenRecipe(r)}>
+              跟着做这道菜
+              <ArrowUpRight size={17} />
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 const pages = [
   { id: 'today', name: '今日一餐', icon: CookingPot },
   { id: 'inventory', name: '我的厨房', icon: Refrigerator },
@@ -1256,82 +1329,12 @@ export default function Home({
                 <h2>手边食材，能做这些</h2>
                 <span>规则推荐 · 最多三道</span>
               </div>
-              {!rec.length ? (
-                <div className="empty-state">
-                  <CookingPot size={34} />
-                  <h3>
-                    {inventoryUsed
-                      ? '暂时没有符合条件的推荐'
-                      : '先确认食材，再给你推荐'}
-                  </h3>
-                  <p>
-                    核对现有食材和数量，就能找到适合的一餐。已勾选的调料仍需确认用量。
-                  </p>
-                  <button
-                    className="secondary"
-                    onClick={() => navigate('inventory')}
-                  >
-                    去我的厨房
-                  </button>
-                </div>
-              ) : (
-                <div className="recipe-grid">
-                  {rec.map(({ recipe: r, matches, missing }) => (
-                    <article className="recipe-card" key={r.id}>
-                      <button
-                        className="dish-cover image-button"
-                        onClick={() => openRecipe(r)}
-                        aria-label={'查看' + r.title}
-                      >
-                        <RecipeArt recipe={r} />
-                        <span
-                          className={
-                            'dish-badge ' + (missing.length ? 'amber' : '')
-                          }
-                        >
-                          {missing.length ? '还需确认食材' : '食材已齐'}
-                        </span>
-                      </button>
-                      <div className="recipe-body">
-                        <p className="eyebrow">
-                          预设家常做法 · 约 {r.minutes} 分钟
-                        </p>
-                        <h2>{r.title}</h2>
-                        <p>{r.subtitle}</p>
-                        <div className="match-note">
-                          {matches
-                            .filter((m) => m.enough)
-                            .map((m) => names[m.id])
-                            .join(' · ') || '暂无足量匹配'}
-                        </div>
-                        {missing.length > 0 && (
-                          <p className="warning-text">
-                            还缺 / 待确认：
-                            {missing
-                              .map(
-                                (m) =>
-                                  (m.presenceOnly
-                                    ? names[m.id] + '已备，核对 '
-                                    : names[m.id] + ' ') +
-                                  Math.max(0, m.need - m.have) +
-                                  ' ' +
-                                  m.unit,
-                              )
-                              .join('、')}
-                          </p>
-                        )}
-                        <button
-                          className="recipe-link"
-                          onClick={() => openRecipe(r)}
-                        >
-                          跟着做这道菜
-                          <ArrowUpRight size={17} />
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
+              <RecipeRecommendations
+                rec={rec}
+                inventoryUsed={inventoryUsed}
+                onOpenRecipe={openRecipe}
+                onOpenInventory={() => navigate('inventory')}
+              />
               <div className="section-head">
                 <h2>按菜名找做法</h2>
                 <label className="search">
@@ -1573,14 +1576,29 @@ export default function Home({
                   </div>
                 </section>
               ) : !session ? (
-                <div className="empty-state">
-                  <ChefHat size={40} />
-                  <h2>今天，想做哪一道？</h2>
-                  <p>先选一道菜，确认食材和做法，再一步一步跟着做。</p>
-                  <button className="primary" onClick={() => navigate('today')}>
-                    去选一道菜
-                  </button>
-                </div>
+                <>
+                  <div className="empty-state">
+                    <ChefHat size={40} />
+                    <h2>今天，想做哪一道？</h2>
+                    <p>先选一道菜，确认食材和做法，再一步一步跟着做。</p>
+                    <button
+                      className="primary"
+                      onClick={() => navigate('today')}
+                    >
+                      去选一道菜
+                    </button>
+                  </div>
+                  <div className="section-head">
+                    <h2>手边食材，能做这些</h2>
+                    <span>规则推荐 · 最多三道</span>
+                  </div>
+                  <RecipeRecommendations
+                    rec={rec}
+                    inventoryUsed={inventoryUsed}
+                    onOpenRecipe={openRecipe}
+                    onOpenInventory={() => navigate('inventory')}
+                  />
+                </>
               ) : session.status === 'reviewing' ? (
                 <ReviewForm
                   key={session.id}

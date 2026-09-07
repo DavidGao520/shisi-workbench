@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { access, readFile } from 'node:fs/promises';
 import { IDBFactory } from 'fake-indexeddb';
 import {
@@ -274,6 +275,20 @@ void test('workbench-only staples have distinct inline card art without changing
   );
   const supplementalCards = [
     {
+      id: 'chicken_wings',
+      kind: 'ingredient',
+      theme: 'meat',
+      frame: 'meatCardFrame',
+      image: 'cardChickenWings',
+    },
+    {
+      id: 'cola',
+      kind: 'ingredient',
+      theme: 'vegetable',
+      frame: 'vegetableCardFrame',
+      image: 'cardCola',
+    },
+    {
       id: 'oil',
       kind: 'seasoning',
       theme: 'spice',
@@ -376,4 +391,76 @@ void test('every item in the guided sample pantry has an inline card illustratio
       batch.displayName + ' must have artwork in the web and offline builds',
     );
   }
+});
+
+void test('wings and cola reuse the exact original game artwork bytes', async () => {
+  const originals = {
+    chicken_wings:
+      'e753e2f9a7bd5d810bc36efadc5647732884936e9644b79665abee8afd8f0c44',
+    cola: 'a846457a7d9c90283e39b29558fb2a680fbf88a8472963ec3d79c581fe5b6703',
+  };
+  for (const [id, hash] of Object.entries(originals)) {
+    const bytes = await readFile(
+      new URL('../public/art/cards/' + id + '.webp', import.meta.url),
+    );
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), hash);
+  }
+});
+
+void test('photo artwork aliases work for existing records without changing food identities', () => {
+  for (const [name, artId] of Object.entries({
+    鸡翅: 'chicken_wings',
+    鸡中翅: 'chicken_wings',
+    鸡翅中: 'chicken_wings',
+    可乐: 'cola',
+    可口可乐: 'cola',
+    普通可乐: 'cola',
+    普通含糖可乐: 'cola',
+    生菜: 'chinese_cabbage',
+  })) {
+    assert.equal(pantryArtId('other', ' ' + name + ' '), artId);
+  }
+  assert.equal(pantryArtId('chicken_wings', '鸡翅'), 'chicken_wings');
+  assert.equal(pantryArtId('cola', '普通含糖可乐'), 'cola');
+  assert.equal(pantryArtId('other', '鸡肉'), 'whole_chicken');
+  assert.equal(pantryArtId('fish_fillet', '去骨鱼片'), 'fish');
+  assert.equal(pantryArtId('other', '可乐鸡翅'), 'other');
+  assert.equal(pantryArtId('other', '生菜沙拉'), 'other');
+  assert.equal(pantryArtId('other', 'constructor'), 'other');
+  assert.equal(pantryArtId('lamb_lettuce', '油麦菜'), 'lamb_lettuce');
+  assert.equal(pantryArtId('chinese_cabbage', '白菜'), 'chinese_cabbage');
+
+  const state = emptyState('real');
+  state.inventory = ['生菜', '可口可乐'].map((displayName) => ({
+    id: displayName,
+    displayName,
+    canonicalIngredientId: 'other',
+    amount: 2,
+    unit: '个' as const,
+    revision: 1,
+    confirmed: true as const,
+    createdAt: '2026-09-07',
+    updatedAt: '2026-09-07',
+  }));
+  const before = structuredClone(state);
+  state.inventory.forEach((batch) =>
+    pantryArtId(batch.canonicalIngredientId, batch.displayName),
+  );
+  normalizePantryIdentities(state);
+  assert.deepEqual(
+    state,
+    before,
+    'borrowing illustrations must not rename, reclassify or alter stock',
+  );
+  const soup = recipes.find((recipe) => recipe.id === 'cabbage_tofu_soup')!;
+  assert.equal(
+    matching(state, soup).find((item) => item.id === 'chinese_cabbage')!.have,
+    0,
+  );
+  const wings = recipes.find((recipe) => recipe.id === 'cola_chicken_wings')!;
+  assert.equal(
+    matching(state, wings).find((item) => item.id === 'cola')!.have,
+    0,
+    'brand alone does not establish sugary cola',
+  );
 });

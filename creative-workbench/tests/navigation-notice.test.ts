@@ -80,6 +80,9 @@ function harness(
   ) as ts.VariableDeclaration | undefined;
   if (navigation?.initializer)
     context.navigate = evaluate(navigation.initializer.getText(file));
+  context.onOpenInventory = evaluate(
+    handler('RecipeRecommendations', 'onOpenInventory'),
+  );
   return { state, evaluate, initialViewPending };
 }
 
