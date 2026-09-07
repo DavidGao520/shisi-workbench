@@ -7,6 +7,22 @@ import {
   type Recipe,
 } from '../lib/recipes';
 
+/** Presentation only: keep stored steps, quantities and timer boundaries intact. */
+function StepInstruction({ text }: { text: string }) {
+  const points = text
+    // Keep sentence punctuation; a decimal dot (0.5) is not a sentence boundary.
+    .split(/(?<=[。；;])(?![。；;])|\r?\n/u)
+    .map((point) => point.trim())
+    .filter((point) => /[^。；;\s]/u.test(point));
+  return (
+    <ul className="recipe-step-instruction">
+      {points.map((point, index) => (
+        <li key={index}>{point}</li>
+      ))}
+    </ul>
+  );
+}
+
 /** Details previews are collapsible; the live cooking step stays directly visible. */
 export function RecipeDetailSections({
   recipe,
@@ -84,14 +100,14 @@ export function RecipeInstructions({
                     <span>沿用已处理食材，无新增用料</span>
                   )}
                 </div>
-                <p className="recipe-step-instruction">{step.instruction}</p>
+                <StepInstruction text={step.instruction} />
                 <p className="recipe-step-check">
                   <strong>做到这样：</strong>
                   {step.checkpoint}
                 </p>
               </>
             ) : (
-              <p className="recipe-step-instruction">{plain[index]}</p>
+              <StepInstruction text={plain[index]} />
             )}
           </li>
         );

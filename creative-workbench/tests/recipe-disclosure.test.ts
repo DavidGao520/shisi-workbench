@@ -3,13 +3,138 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { recipes, safetyNote } from '../lib/recipes';
+import {
+  recipes,
+  safetyNote,
+  detailedCookingSteps,
+  cookingSteps,
+} from '../lib/recipes';
 import { legacyRecipes } from '../lib/legacy-recipes';
 import {
   RecipeDetailSections,
   RecipeInstructions,
   RecipeSources,
 } from '../components/recipe-instructions';
+
+function instructionLists(html: string) {
+  return [
+    ...html.matchAll(/<ul class="recipe-step-instruction">([\s\S]*?)<\/ul>/g),
+  ].map((match) => match[1]);
+}
+
+void test('all 456 preset operations use sentence bullets in both preview and live steps without changing recipe data', () => {
+  let steps = 0;
+  for (const recipe of recipes) {
+    const before = structuredClone(recipe);
+    const details = detailedCookingSteps(recipe, 2)!;
+    const preview = renderToStaticMarkup(
+      createElement(RecipeInstructions, { recipe, batches: 2 }),
+    );
+    const lists = instructionLists(preview);
+    assert.equal(lists.length, details.length);
+    details.forEach((step, index) => {
+      const expected = (step.instruction.match(/[^。；;\r\n]+[。；;]*/gu) || [])
+        .map((point) => point.trim())
+        .filter(Boolean)
+        .map((point) => renderToStaticMarkup(createElement('li', null, point)))
+        .join('');
+      assert.equal(lists[index], expected, recipe.id + ' step ' + index);
+      const live = renderToStaticMarkup(
+        createElement(RecipeInstructions, {
+          recipe,
+          batches: 2,
+          stepIndex: index,
+        }),
+      );
+      assert.deepEqual(instructionLists(live), [expected]);
+      assert.ok(live.includes('start="' + (index + 1) + '"'));
+      assert.ok(
+        live.includes(
+          renderToStaticMarkup(createElement('h3', null, step.title)),
+        ),
+      );
+      assert.ok(live.includes(step.checkpoint));
+      assert.ok(live.includes('约 ' + step.minutes + ' 分钟'));
+      steps++;
+    });
+    assert.deepEqual(recipe, before);
+  }
+  assert.equal(steps, 456);
+});
+
+void test('bullets split Chinese sentences, semicolons and newlines without breaking decimals or rendering text as HTML', () => {
+  const recipe = {
+    ...recipes[0],
+    workbuddyVersion: 'test-bullets',
+    steps: [
+      '  切成0.5厘米片。 加盐0.5克；搅拌;\r\n\n静置15分钟。；\n；\n<strong>关火</strong>  ',
+    ],
+  };
+  const expected = [
+    '切成0.5厘米片。',
+    '加盐0.5克；',
+    '搅拌;',
+    '静置15分钟。；',
+    '<strong>关火</strong>',
+  ]
+    .map((point) => renderToStaticMarkup(createElement('li', null, point)))
+    .join('');
+  for (const stepIndex of [undefined, 0]) {
+    const html = renderToStaticMarkup(
+      createElement(RecipeInstructions, { recipe, batches: 2, stepIndex }),
+    );
+    assert.deepEqual(instructionLists(html), [expected]);
+    assert.doesNotMatch(html, /<li>\s*<\/li>|<strong>关火/);
+    assert.ok(
+      html.includes('加盐0.5克'),
+      'WorkBuddy quantities are not scaled',
+    );
+  }
+  const single = { ...recipe, steps: ['没有分隔符的一条操作'] };
+  assert.deepEqual(
+    instructionLists(
+      renderToStaticMarkup(
+        createElement(RecipeInstructions, { recipe: single }),
+      ),
+    ),
+    ['<li>没有分隔符的一条操作</li>'],
+  );
+});
+
+void test('bullet formatting happens after existing quantity scaling and also covers legacy steps', () => {
+  const recipe = structuredClone(recipes[0]);
+  recipe.detailSteps![0].instruction = '加盐0.5克；切成0.5厘米片。等待15分钟。';
+  const html = renderToStaticMarkup(
+    createElement(RecipeInstructions, { recipe, batches: 2, stepIndex: 0 }),
+  );
+  assert.deepEqual(instructionLists(html), [
+    '<li>加盐1 克；</li><li>切成0.5厘米片。</li><li>等待15分钟。</li>',
+  ]);
+  for (const legacy of legacyRecipes) {
+    const lists = instructionLists(
+      renderToStaticMarkup(
+        createElement(RecipeInstructions, { recipe: legacy, batches: 2 }),
+      ),
+    );
+    assert.equal(lists.length, legacy.steps.length);
+    cookingSteps(legacy, 2).forEach((step, index) => {
+      const restored = lists[index].replace(/<\/?li>/g, '');
+      assert.equal(restored, step.replace(/\s+/g, ' ').trim());
+    });
+  }
+  const css = readFileSync(
+    new URL('../components/recipe-instructions.css', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    css,
+    /\.recipe-step-instruction\s*\{[^}]*list-style:\s*disc outside/,
+  );
+  assert.match(
+    css,
+    /\.recipe-step-instruction > li \+ li\s*\{[^}]*margin-top:/,
+  );
+});
 
 void test('all 70 dish previews keep only cooking and references disclosures without a tips panel', () => {
   assert.equal(recipes.length, 70);
@@ -84,7 +209,10 @@ void test('every live recipe step retains its instructions without repeated tips
       }
     }
   }
-  const page = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
+  const page = readFileSync(
+    new URL('../app/page.tsx', import.meta.url),
+    'utf8',
+  );
   assert.doesNotMatch(page, /safetyTips|safetyNote|safety-note|安全提示来源/);
   assert.match(page, /按本步 \{currentStep\.minutes\}/);
   assert.match(page, /Date\.now\(\) \+ currentStep\.minutes \* 60000/);

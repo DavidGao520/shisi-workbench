@@ -116,9 +116,19 @@
   font-weight: 500;
 }
 .recipe-step-instruction {
-  line-height: 1.95;
+  list-style: disc outside;
+  padding-inline-start: 1.35em;
+  line-height: 1.85;
   white-space: pre-wrap;
   margin: 14px 0 10px;
+}
+.recipe-step-instruction > li {
+  display: list-item;
+  padding-inline-start: 0.2em;
+  margin: 0;
+}
+.recipe-step-instruction > li + li {
+  margin-top: 0.45em;
 }
 .recipe-step-check {
   color: #456141;
