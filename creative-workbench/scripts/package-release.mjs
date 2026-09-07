@@ -1,26 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { zipSync, unzipSync } from 'fflate';
+import { releasePaths } from './release-files.mjs';
 
 const root = resolve(import.meta.dirname, '..');
-const paths = [
-  '中华食肆.html',
-  '启动厨房.command',
-  '初始化语音.command',
-  'README.md',
-  'ASSET-SOURCES.md',
-  'IMPLEMENTATION-STATUS.md',
-  'skills/zhonghua-shisi/SKILL.md',
-  'skills/zhonghua-shisi/references/inventory-contract.md',
-  'skills/zhonghua-shisi/references/theme-assets.md',
-  'skills/zhonghua-shisi/references/local-bridge.md',
-  'skills/zhonghua-shisi/references/cooking-handoff.md',
-  'skills/zhonghua-shisi/scripts/kitchen-bridge.mjs',
-  'skills/zhonghua-shisi/scripts/cooking-contract.mjs',
-  'skills/zhonghua-shisi/scripts/local-speech.mjs',
-  'skills/zhonghua-shisi/scripts/transcribe.py',
-  'skills/zhonghua-shisi/scripts/setup-voice.mjs',
-];
+const paths = releasePaths;
 const entries = Object.fromEntries(
   await Promise.all(
     paths.map(async (path) => [
@@ -29,17 +13,14 @@ const entries = Object.fromEntries(
     ]),
   ),
 );
-const archiveEntries = {
-  ...entries,
-  '启动厨房.command': [
-    entries['启动厨房.command'],
-    { os: 3, attrs: 0o100755 << 16 },
-  ],
-  '初始化语音.command': [
-    entries['初始化语音.command'],
-    { os: 3, attrs: 0o100755 << 16 },
-  ],
-};
+const archiveEntries = Object.fromEntries(
+  paths.map((path) => [
+    path,
+    path.endsWith('.command')
+      ? [entries[path], { os: 3, attrs: 0o100755 << 16 }]
+      : entries[path],
+  ]),
+);
 const zipped = zipSync(archiveEntries, { level: 6 });
 // The first entry intentionally has a Chinese name; assert the portable UTF-8 flag.
 if (
@@ -59,7 +40,7 @@ for (const path of paths) {
   )
     throw new Error('Archive round trip failed: ' + path);
 }
-const destination = resolve(root, '中华食肆-创意工作台-v0.4.2.zip');
+const destination = resolve(root, '食肆工作台-评委体验包.zip');
 await writeFile(destination, zipped);
 console.log(
   'Verified UTF-8 ZIP with ' +

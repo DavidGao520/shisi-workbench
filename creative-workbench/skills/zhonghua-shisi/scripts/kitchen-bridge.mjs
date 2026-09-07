@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Local candidate delivery and offline speech transcription. No inventory access.
+// Local candidate delivery and fixed cloud speech relay. No inventory access.
 import { createServer } from 'node:http';
 import {
   randomUUID,
@@ -7,12 +7,20 @@ import {
   createHash,
   timingSafeEqual,
 } from 'node:crypto';
-import { readFile, writeFile, mkdir, rename, lstat } from 'node:fs/promises';
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  rename,
+  lstat,
+  realpath,
+} from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { createLocalSpeech } from './local-speech.mjs';
+import { createCloudSpeech } from './cloud-speech.mjs';
 import { cookingAction, cookingTaskSummary } from './cooking-contract.mjs';
+import { requireNode } from './node-runtime.mjs';
 
 export const PROTOCOL = 'zhonghua-shisi-bridge-1';
 export const PORT = 43117;
@@ -175,7 +183,7 @@ function secretMatches(header, token) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** @param {{ workspace: string, port?: number, now?: () => number, speech?: { status: () => Promise<unknown>, transcribe: (req: any, signal: AbortSignal) => Promise<unknown> } }} options */
+/** @param {{ workspace: string, port?: number, now?: () => number, speech?: { status: (signal?: AbortSignal) => Promise<unknown>, transcribe: (req: any, signal: AbortSignal) => Promise<unknown> } }} options */
 export async function startBridge({
   workspace,
   port = PORT,
@@ -183,7 +191,7 @@ export async function startBridge({
   speech,
 }) {
   const root = resolve(workspace);
-  const voice = speech || createLocalSpeech(root);
+  const voice = speech || createCloudSpeech();
   let html;
   for (const path of [
     join(root, '中华食肆.html'),
@@ -244,6 +252,7 @@ export async function startBridge({
   };
   const active = () =>
     state.active && state.active.expiresAt > now() ? state.active : null;
+  const speechControllers = new Set();
   const server = createServer(async (req, res) => {
     const json = (status, value) => {
       res.writeHead(status, {
@@ -346,17 +355,32 @@ export async function startBridge({
             ),
           ),
         );
-      } else if (req.method === 'GET' && path === '/voice/status') {
-        json(200, await voice.status());
-      } else if (req.method === 'POST' && path === '/voice/transcribe') {
+      } else if (
+        (req.method === 'GET' && path === '/voice/status') ||
+        (req.method === 'POST' && path === '/voice/transcribe')
+      ) {
         const abort = new AbortController();
+        speechControllers.add(abort);
+        abort.signal.addEventListener(
+          'abort',
+          () => {
+            if (!req.readableEnded) req.destroy();
+          },
+          { once: true },
+        );
         const cancel = () => {
           if (!res.writableEnded) abort.abort();
         };
         res.once('close', cancel);
         try {
-          json(200, await voice.transcribe(req, abort.signal));
+          json(
+            200,
+            path === '/voice/status'
+              ? await voice.status(abort.signal)
+              : await voice.transcribe(req, abort.signal),
+          );
         } finally {
+          speechControllers.delete(abort);
           res.removeListener('close', cancel);
         }
       } else if (req.method === 'GET' && path === '/bridge/agent-status') {
@@ -587,7 +611,7 @@ export async function startBridge({
         json(200, { acknowledged: true });
       } else if (req.method === 'POST' && path === '/bridge/stop') {
         json(200, { stopped: true });
-        server.close();
+        void close();
       } else fail('不存在此接口。', 404);
     } catch (e) {
       if (!res.headersSent)
@@ -597,6 +621,14 @@ export async function startBridge({
       else res.end();
     }
   });
+  let closing;
+  const close = () => {
+    for (const controller of speechControllers) controller.abort();
+    closing ||= new Promise((ok, no) =>
+      server.close((e) => (e ? no(e) : ok())),
+    );
+    return closing;
+  };
   server.requestTimeout = 15000;
   await new Promise((ok, no) => {
     server.once('error', no);
@@ -618,8 +650,7 @@ export async function startBridge({
   return {
     origin,
     workspaceId: state.workspaceId,
-    close: () =>
-      new Promise((ok, no) => server.close((e) => (e ? no(e) : ok()))),
+    close,
   };
 }
 
@@ -652,6 +683,7 @@ export async function agentRequest(workspace, path, data) {
 }
 
 async function cli() {
+  requireNode();
   const [command, ...args] = process.argv.slice(2);
   const options = {};
   for (let i = 0; i < args.length; i += 2) {
@@ -684,7 +716,7 @@ async function cli() {
     const child = spawn(
       process.execPath,
       [fileURLToPath(import.meta.url), 'serve', '--workspace', workspace],
-      { detached: true, stdio: 'ignore' },
+      { detached: true, stdio: 'ignore', windowsHide: true },
     );
     child.unref();
     for (let i = 0; i < 30; i++) {
@@ -714,7 +746,8 @@ async function cli() {
       fail('submit 需要 --file 和 --ticket。');
     const raw = await readFile(resolve(options['--file']), 'utf8');
     if (Buffer.byteLength(raw) > MAX_BODY - 100) fail('候选文件过大。', 413);
-    const extraction = JSON.parse(raw);
+    // Windows PowerShell's UTF-8 writer may include a BOM.
+    const extraction = JSON.parse(raw.replace(/^\uFEFF/, ''));
     console.log(
       JSON.stringify(
         await agentRequest(
@@ -738,7 +771,8 @@ async function cli() {
 }
 if (
   process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  (await realpath(process.argv[1]).catch(() => null)) ===
+    (await realpath(fileURLToPath(import.meta.url)))
 ) {
   cli().catch((e) => {
     console.error(

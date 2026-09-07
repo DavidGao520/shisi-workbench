@@ -10,3 +10,14 @@ export const voiceUsage = sqliteTable(
   },
   (table) => [index('voice_usage_reset_idx').on(table.resetAt)],
 );
+
+// Separate photo budget; no image, transcript or inventory is persisted here.
+export const photoUsage = sqliteTable(
+  'photo_usage',
+  {
+    key: text('key').primaryKey(),
+    used: integer('used').notNull(),
+    resetAt: integer('reset_at').notNull(),
+  },
+  (table) => [index('photo_usage_reset_idx').on(table.resetAt)],
+);

@@ -39,6 +39,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
 import { VoiceIntake } from '@/components/voice-intake';
+import { PhotoIntake } from '@/components/photo-intake';
+import { photoServiceForPage } from '@/lib/photo-service';
 import { MealIngredients } from '@/components/meal-ingredients';
 import { MealRatingInput } from '@/components/meal-rating-input';
 import {
@@ -559,15 +561,38 @@ function ReviewForm({
     </section>
   );
 }
-export default function Home() {
+export default function Home({
+  initialDataset = 'real',
+}: {
+  initialDataset?: Dataset;
+}) {
+  const [photoService, setPhotoService] = useState<
+    'local' | 'cloud' | 'unavailable'
+  >('cloud');
+  useEffect(() => {
+    let stopped = false;
+    queueMicrotask(() => {
+      if (!stopped)
+        setPhotoService(
+          photoServiceForPage(
+            location.origin,
+            !!document.querySelector('meta[name="kitchen-workspace"]'),
+          ),
+        );
+    });
+    return () => {
+      stopped = true;
+    };
+  }, []);
   const [page, setPage] = useState('today'),
-    [dataset, setDataset] = useState<Dataset>('real'),
+    [dataset, setDataset] = useState<Dataset>(initialDataset),
     [s, setState] = useState<KitchenState>(),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [error, setError] = useState('');
   const [tourPaused, setTourPaused] = useState(false);
   const [previewStep, setPreviewStep] = useState(0);
+  const initialViewPending = useRef(true);
   const savedTourStep =
     dataset === 'demo' && s?.dataset === 'demo' && !tourPaused
       ? (s.demoExperience?.tourStep ?? null)
@@ -582,12 +607,13 @@ export default function Home() {
   // Manual navigation dismisses old feedback; successful workflows keep their
   // newly created notice when they move to the destination with setPage.
   const navigate = useCallback((nextPage: string) => {
+    initialViewPending.current = false;
     setMessage('');
     setTourPaused(true);
     setPage(nextPage);
   }, []);
   const lock = useRef(false),
-    datasetRef = useRef<Dataset>('real');
+    datasetRef = useRef<Dataset>(initialDataset);
   const [dialog, setDialog] = useState<'manual' | 'workbuddy' | 'voice' | null>(
       null,
     ),
@@ -627,12 +653,18 @@ export default function Home() {
     let cancelled = false;
     void (dataset === 'demo' ? openDemoKitchen(db) : db.read(dataset)).then(
       (data) => {
-        if (!cancelled)
+        if (!cancelled && datasetRef.current === dataset) {
+          if (initialViewPending.current) {
+            initialViewPending.current = false;
+            if (dataset === 'demo')
+              setPage(tourPages[data.demoExperience?.tourStep ?? 0] ?? 'today');
+          }
           setState((previous) =>
             previous?.dataset === dataset && previous.revision > data.revision
               ? previous
               : data,
           );
+        }
       },
       (reason) => {
         if (!cancelled) setError('本机保存不可用：' + String(reason));
@@ -878,6 +910,7 @@ export default function Home() {
         setCalibrationKey(null);
         setTourPaused(false);
         setPreviewStep(0);
+        initialViewPending.current = false;
         datasetRef.current = d;
         setDataset(d);
         setPage(
@@ -903,8 +936,10 @@ export default function Home() {
     >
       <aside className="rail">
         <div className="brand">
-          <span className="brand-seal">食</span>
-          <div>食肆工作台</div>
+          <span className="brand-seal">
+            <span className="brand-seal-glyph">食</span>
+          </span>
+          <div className="brand-title">食肆工作台</div>
         </div>
         <TabsList className="side-tabs">
           {pages.map((p) => (
@@ -929,14 +964,38 @@ export default function Home() {
       </aside>
       <main className="workspace">
         <header className="topbar">
-          <span>
-            {dataset === 'demo' ? '体验样例厨房' : '我的家庭厨房'}{' '}
-            <span className="dot" />
-            {s ? '本机保存' : '正在打开本机数据库'}
-          </span>
-          <div className="actions">
+          <div className="topbar-context">
+            <span>{dataset === 'demo' ? '样例厨房' : '我的家庭厨房'}</span>
+            {!s && <output>正在打开厨房…</output>}
+          </div>
+          <div className="actions topbar-actions">
+            {dataset === 'demo' && (
+              <>
+                <button
+                  className="text-button"
+                  disabled={busy || !s}
+                  onClick={() =>
+                    void moveTour(
+                      tourPaused ? (s?.demoExperience?.tourStep ?? 0) : 0,
+                    )
+                  }
+                >
+                  {tourPaused && s?.demoExperience?.tourStep !== null
+                    ? '继续参观'
+                    : '重新参观'}
+                </button>
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => setReset(true)}
+                >
+                  <RotateCcw size={14} />
+                  恢复初始样例
+                </button>
+              </>
+            )}
             <button
-              className="text-button"
+              className="primary kitchen-switch"
               disabled={busy}
               onClick={() =>
                 changeDataset(dataset === 'real' ? 'demo' : 'real')
@@ -947,45 +1006,14 @@ export default function Home() {
             </button>
           </div>
         </header>
-        {dataset === 'demo' && (
-          <div className="dataset-banner">
-            <strong>体验样例</strong>
-            <span>食材与食忆均为样例，不影响真实厨房。</span>
-            <button
-              className="text-button"
-              disabled={busy || !s}
-              onClick={() =>
-                void moveTour(
-                  tourPaused ? (s?.demoExperience?.tourStep ?? 0) : 0,
-                )
-              }
-            >
-              {tourPaused && s?.demoExperience?.tourStep !== null
-                ? '继续参观'
-                : '重新参观'}
-            </button>
-            <button
-              className="text-button"
-              disabled={busy}
-              onClick={() => setReset(true)}
-            >
-              <RotateCcw size={14} />
-              恢复初始样例
-            </button>
-          </div>
-        )}
         <div className="intro">
           <div>
-            <p className="eyebrow">
-              {dataset === 'demo'
-                ? '练习做一餐，不必真的开火'
-                : '从手边食材开始'}
-            </p>
+            {dataset === 'real' && <p className="eyebrow">从手边食材开始</p>}
             <h1>{pages.find((p) => p.id === page)?.name}</h1>
             {page !== 'cooking' && (
               <p>
                 {page === 'today'
-                  ? '冰箱有啥，今天吃啥。挑一道手边就能做的家常菜。'
+                  ? '冰箱有啥，今天吃啥，挑一道手边就能做的家常菜'
                   : page === 'inventory'
                     ? '先确认，再入库。每一批食材，都由你说了算。'
                     : '在游戏里收集味道，在生活里留住食忆。'}
@@ -1715,9 +1743,7 @@ export default function Home() {
             </TabsContent>
           </>
         )}
-        <footer className="footer">
-          中华食肆 HTML · 本地工作版 <span>菜谱有来源，食忆属于你。</span>
-        </footer>
+        <footer className="footer">菜谱有来源，食忆属于你</footer>
       </main>
       {tourStep !== null &&
         !dialog &&
@@ -1843,14 +1869,18 @@ export default function Home() {
               ? '把手边食材记下来'
               : dialog === 'voice'
                 ? '说一说，食材就记下来了'
-                : '让 WorkBuddy 看看你的厨房'}
+                : photoService === 'local'
+                  ? '让 WorkBuddy 看看你的厨房'
+                  : '拍一张，看看有哪些食材'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'manual'
               ? '先生成候选，再由你核对数量和到期日期。'
               : dialog === 'voice'
                 ? '在这里录音，自动识别食材和数量。核对清单后，确认一次就入库。'
-                : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
+                : photoService === 'local'
+                  ? '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'
+                  : '拍照或选择相册照片，识别后核对食材与数量。'}
           </DialogDescription>
           {error && (
             <p role="alert" className="warning-text">
@@ -1946,6 +1976,23 @@ export default function Home() {
                   setDialog(null);
                   setPage('inventory');
                   setMessage('已确认 ' + count + ' 种食材入库。');
+                }}
+              />
+            )
+          ) : photoService !== 'local' ? (
+            s && (
+              <PhotoIntake
+                key={dataset + ':' + mode}
+                state={s}
+                mode={mode}
+                service={photoService}
+                busy={busy}
+                mutate={mutate}
+                manual={() => setDialog('manual')}
+                done={(count) => {
+                  setDialog(null);
+                  setPage('inventory');
+                  setMessage('识别到 ' + count + ' 种食材，请核对后入库。');
                 }}
               />
             )
@@ -2142,7 +2189,7 @@ export default function Home() {
                 recipe={recipe}
                 batches={detailServings}
               />
-              {!detail?.sessionId && (
+              {!detail?.sessionId && photoService === 'local' && (
                 <details className="paper workbuddy-cooking">
                   <summary>可选：请 WorkBuddy 另写一版做法</summary>
                   {cooking.ticket ? (

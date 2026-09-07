@@ -1,17 +1,17 @@
 import { normalizeVoiceAudio } from './voice-audio';
 
-export type VoiceService = { kind: 'local' | 'cloud'; base: string };
+export type VoiceService = { kind: 'cloud'; base: string };
 export function voiceServiceForPage(
   origin: string,
   hasLocalWorkspace: boolean,
 ): VoiceService {
   if (origin === 'null')
     throw new Error(
-      '请从部署后的 HTTPS 网站打开语音录入；独立 HTML 不包含云端服务。',
+      '请用完整包的启动文件打开厨房，或访问部署后的 HTTPS 网站；单独双击 HTML 不包含语音连接。',
     );
-  // Explicit legacy compatibility, never a silent cloud-to-local fallback.
+  // The ZIP bridge is a transport only; both entries use the hosted ASR engine.
   if (origin === 'http://127.0.0.1:43117' && hasLocalWorkspace)
-    return { kind: 'local', base: '/voice' };
+    return { kind: 'cloud', base: '/voice' };
   return { kind: 'cloud', base: '/api/voice' };
 }
 
@@ -44,11 +44,7 @@ export async function checkVoiceService(
     }),
   );
   if (result.ready !== true)
-    throw new Error(
-      service.kind === 'cloud'
-        ? '云端语音服务尚未开通，可以先直接输入食材。'
-        : '本机语音服务未就绪，请使用部署后的网页版，或检查本地语音服务。',
-    );
+    throw new Error('云端语音服务尚未开通，可以先直接输入食材。');
 }
 
 export async function transcribeVoice(
@@ -57,8 +53,7 @@ export async function transcribeVoice(
   clientId: string,
   signal: AbortSignal,
 ) {
-  const audio =
-    service.kind === 'cloud' ? await normalizeVoiceAudio(blob, signal) : blob;
+  const audio = await normalizeVoiceAudio(blob, signal);
   signal.throwIfAborted();
   const result = await readResult(
     await fetch(service.base + '/transcribe', {

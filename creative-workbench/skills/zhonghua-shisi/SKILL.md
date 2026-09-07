@@ -17,11 +17,13 @@ HTML 的 IndexedDB 才是库存真源。不能从对话记忆、CSV 或旧导出
 
 该任务不同于照片提取，使用独立的 cooking-task / cooking-submit 命令；不要消费照片 ticket。对话必须由用户触发，网页不会主动唤醒 WorkBuddy，不创建自动化任务来假装可以。仅使用用户自己的 WorkBuddy 账号现有能力；不得为这项做法功能下载本地模型、安装推理环境、索取 API Key 或改用第三方模型 API。
 
-## 网页语音入口（0.4）
+## 网页语音入口（本地完整包）
 
-用户要求语音录入时，优先使用厨房网页的「语音录入」，不要让用户切回对话听写或搬运 JSON。网页录音经本机 Whisper 转写，词典 / 数量规则生成可编辑清单，用户点击确认后批量入库；这条链路不是 WorkBuddy 模型调用，不创建照片 ticket。
+用户要求语音录入时，使用厨房网页的「语音录入」，不要让用户切回对话听写或搬运 JSON。网页录音经配套程序中继到工作台已部署的腾讯云语音 API，词典 / 数量规则生成可编辑清单，用户点击确认后批量入库；这条链路不是 WorkBuddy 模型调用，不创建照片 ticket。
 
-首次语音初始化需要 uv、网络和本机模型空间。用户明确要求启用语音时，可在已确认的完整工作台目录运行 `node "Skill目录/scripts/setup-voice.mjs" "完整工作台目录"`。只下载语音依赖 / 模型到该目录的 `.kitchen-voice/`，不得从无关目录寻找账号或密钥。模型准备好后使用原入口，不清空或迁移库存。说明真实的麦克风授权 / 环境错误，不把文件模拟测试当实机验收。
+不需要语音初始化，不安装 Whisper、Python、uv 或模型，不索取 API Key，不读取 `.env` 或浏览器登录凭据。密钥只由工作台云端保管。需要互联网、浏览器麦克风权限和正常运行的云端入口；失败时如实说明网络、访问保护或额度问题，允许手动输入，不尝试下载模型作为回退。当前 ZIP 云端连接的验收状态见包根目录 README。
+
+macOS 与 Windows 使用同一套 Node 脚本，最低 Node.js 22.13。升级时停止旧连接后启动新版，沿用原目录与入口，不清空或迁移库存。说明真实的麦克风授权 / 环境错误，不把模拟测试当实机验收，不绕过系统或云端访问保护。
 
 ## 打开工作台与自动交回
 
@@ -38,7 +40,7 @@ HTML 的 IndexedDB 才是库存真源。不能从对话记忆、CSV 或旧导出
 3. 使用当前 ticket；同一轮候选编号保持不变，重试保留同一个 ticket 和文件。新照片应开启新的接收任务。程序会固定 requestId 与 createdAt，不受模型改写影响。
 4. 图像只输出可见食材；不猜被遮挡内容、重量、保质期、新鲜度、过敏原或熟度。不确定就留空并附 warnings。
 5. 文字 rawMention 必须来自原文。两个番茄可写 2 个；一盒鸡蛋写 1 盒并提示需核对枚数；“剩饭”不推出“少量”或“一碗”。生大米和熟米饭分开。
-6. 将提取对象写到该完整包目录内 .kitchen-bridge/extraction-<ticket>.json，不加 confirmed、库存批次 ID、扣减命令、已完成标记或执行代码。对象包含 schemaVersion、source、warnings、candidates，文字输入另含 transcript；可以省略 requestId / createdAt / dataset / mode，由本地 ticket 绑定。照片未看清任何食材时返回空 candidates，并说明原因，不凑数。
+6. 将提取对象以 **UTF-8** 写到该完整包目录内 .kitchen-bridge/extraction-<ticket>.json，不使用 Windows PowerShell 默认的 `>` / `Out-File` 编码。不加 confirmed、库存批次 ID、扣减命令、已完成标记或执行代码。对象包含 schemaVersion、source、warnings、candidates，文字输入另含 transcript；可以省略 requestId / createdAt / dataset / mode，由本地 ticket 绑定。照片未看清任何食材时返回空 candidates，并说明原因，不凑数。
 7. 按本地交接文档调用 submit。成功提交后说「识别结果已交给工作台，请回到候选区核对」，不要说「已入库」。status 回执 staged 才能说「页面已保存候选」。pending 只是等待页面接收；不得据此声称已完成端到端。
 8. 不要求用户复制 prompt / JSON。若连接失败，保留结果并说明具体阻塞，重试同一 ticket；网页已移除 JSON 导入，手动补充使用普通食材表单。
 

@@ -15,7 +15,7 @@ void test('cooking mode omits the three explanatory sentences without an empty s
   );
   assert.doesNotMatch(source, /进度已在本机保存。此时还没有扣减库存。/);
   assert.match(source, /page !== 'cooking' && \(\s*<p>/);
-  assert.match(source, /冰箱有啥，今天吃啥。挑一道手边就能做的家常菜。/);
+  assert.match(source, /冰箱有啥，今天吃啥，挑一道手边就能做的家常菜/);
   assert.match(source, /先确认，再入库。每一批食材，都由你说了算。/);
   assert.match(source, /在游戏里收集味道，在生活里留住食忆。/);
   assert.match(source, /查看食材与来源/);

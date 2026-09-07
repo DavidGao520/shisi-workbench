@@ -2,6 +2,7 @@ import { access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { voicePython, voiceEnvironment } from './runtime-paths.mjs';
 
 export const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
 const error = (message, status = 400) =>
@@ -37,7 +38,7 @@ export async function readAudio(req) {
 
 export function createLocalSpeech(workspace) {
   const runtime = join(workspace, '.kitchen-voice');
-  const python = join(runtime, 'venv', 'bin', 'python');
+  const python = voicePython(runtime);
   const script = fileURLToPath(new URL('./transcribe.py', import.meta.url));
   let busy = false;
   const ready = async () => {
@@ -65,15 +66,15 @@ export function createLocalSpeech(workspace) {
         return await new Promise((resolve, reject) => {
           const child = spawn(python, [script, runtime], {
             stdio: ['pipe', 'pipe', 'pipe'],
+            windowsHide: true,
             env: {
-              ...process.env,
+              ...voiceEnvironment(workspace),
               HF_HUB_OFFLINE: '1',
-              HF_HUB_DISABLE_TELEMETRY: '1',
-              PYTHONDONTWRITEBYTECODE: '1',
             },
           });
           let out = '',
             finished = false;
+          child.stdout.setEncoding('utf8');
           const finish = (problem, result) => {
             if (finished) return;
             finished = true;

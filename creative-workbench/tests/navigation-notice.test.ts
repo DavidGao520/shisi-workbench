@@ -50,7 +50,9 @@ function harness(
     dialog: null as string | null,
     tourPaused: false,
   };
+  const initialViewPending = { current: true };
   const context: Record<string, unknown> = {
+    initialViewPending,
     setPage: (page: string) => {
       state.page = page;
     },
@@ -78,17 +80,22 @@ function harness(
   ) as ts.VariableDeclaration | undefined;
   if (navigation?.initializer)
     context.navigate = evaluate(navigation.initializer.getText(file));
-  return { state, evaluate };
+  return { state, evaluate, initialViewPending };
 }
 
 void test('switching any tab dismisses the old success notice and returning does not resurrect it', () => {
   for (const destination of ['today', 'inventory', 'cooking', 'archive']) {
-    const { state, evaluate } = harness(
+    const { state, evaluate, initialViewPending } = harness(
       destination === 'archive' ? 'inventory' : 'archive',
     );
     const changeTab = evaluate(handler('Tabs', 'onValueChange'));
     changeTab(destination);
     assert.equal(state.page, destination);
+    assert.equal(
+      initialViewPending.current,
+      false,
+      'initial hydration must not override manual navigation',
+    );
     assert.equal(
       state.tourPaused,
       true,
@@ -159,6 +166,7 @@ void test('kitchen switch hydrates before exposing its target to bridge deliveri
       busy: false,
       lock,
       datasetRef,
+      initialViewPending: { current: true },
       db: {},
       openDemoKitchen: () => hydration,
       tourPages: ['today', 'inventory', 'today', 'cooking', 'archive'],
