@@ -39,6 +39,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { SeasoningChecklist } from '@/components/seasoning-checklist';
 import { VoiceIntake } from '@/components/voice-intake';
+import { PhotoIntake } from '@/components/photo-intake';
+import { photoServiceForPage } from '@/lib/photo-service';
 import { MealIngredients } from '@/components/meal-ingredients';
 import { MealRatingInput } from '@/components/meal-rating-input';
 import {
@@ -555,6 +557,24 @@ function ReviewForm({
   );
 }
 export default function Home() {
+  const [photoService, setPhotoService] = useState<
+    'local' | 'cloud' | 'unavailable'
+  >('cloud');
+  useEffect(() => {
+    let stopped = false;
+    queueMicrotask(() => {
+      if (!stopped)
+        setPhotoService(
+          photoServiceForPage(
+            location.origin,
+            !!document.querySelector('meta[name="kitchen-workspace"]'),
+          ),
+        );
+    });
+    return () => {
+      stopped = true;
+    };
+  }, []);
   const [page, setPage] = useState('today'),
     [dataset, setDataset] = useState<Dataset>('real'),
     [s, setState] = useState<KitchenState>(),
@@ -1662,14 +1682,18 @@ export default function Home() {
               ? '把手边食材记下来'
               : dialog === 'voice'
                 ? '说一说，食材就记下来了'
-                : '让 WorkBuddy 看看你的厨房'}
+                : photoService === 'local'
+                  ? '让 WorkBuddy 看看你的厨房'
+                  : '拍一张，看看有哪些食材'}
           </DialogTitle>
           <DialogDescription>
             {dialog === 'manual'
               ? '先生成候选，再由你核对数量和到期日期。'
               : dialog === 'voice'
                 ? '在这里录音，自动识别食材和数量。核对清单后，确认一次就入库。'
-                : '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'}
+                : photoService === 'local'
+                  ? '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'
+                  : '拍照或选择相册照片，识别后核对食材与数量。'}
           </DialogDescription>
           {error && (
             <p role="alert" className="warning-text">
@@ -1765,6 +1789,23 @@ export default function Home() {
                   setDialog(null);
                   setPage('inventory');
                   setMessage('已确认 ' + count + ' 种食材入库。');
+                }}
+              />
+            )
+          ) : photoService !== 'local' ? (
+            s && (
+              <PhotoIntake
+                key={dataset + ':' + mode}
+                state={s}
+                mode={mode}
+                service={photoService}
+                busy={busy}
+                mutate={mutate}
+                manual={() => setDialog('manual')}
+                done={(count) => {
+                  setDialog(null);
+                  setPage('inventory');
+                  setMessage('识别到 ' + count + ' 种食材，请核对后入库。');
                 }}
               />
             )
@@ -1961,7 +2002,7 @@ export default function Home() {
                 recipe={recipe}
                 batches={detailServings}
               />
-              {!detail?.sessionId && (
+              {!detail?.sessionId && photoService === 'local' && (
                 <details className="paper workbuddy-cooking">
                   <summary>可选：请 WorkBuddy 另写一版做法</summary>
                   {cooking.ticket ? (
