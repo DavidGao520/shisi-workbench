@@ -100,6 +100,76 @@ const runtimeEnv = {
   VOICE_QUOTA_REGION: 'ap-guangzhou',
 };
 
+void test('SCF environment JSON supplies fresh complete role credentials on each warm call', async () => {
+  const cos = fakeCos();
+  const handler = createVoiceHandlerFromEnv(runtimeEnv, {
+    fetchImpl: cos.fetchImpl,
+    send: async () => Response.json({ Response: { Result: '番茄' } }),
+  });
+  assert.equal(
+    JSON.parse(
+      (
+        await handler(
+          { httpMethod: 'GET', path: '/api/voice/status' },
+          {
+            environment: JSON.stringify(context()),
+          },
+        )
+      ).body,
+    ).ready,
+    true,
+  );
+  for (const suffix of ['first', 'second']) {
+    const start = cos.requests.length;
+    const result = await handler(event(), {
+      ...context('stale-top-level'),
+      environment: JSON.stringify(context(suffix)),
+    });
+    assert.equal(result.statusCode, 200);
+    for (const request of cos.requests.slice(start)) {
+      assert.ok(
+        request.headers
+          .get('authorization')!
+          .includes(`q-ak=fixture-id-${suffix}&`),
+      );
+      assert.equal(
+        request.headers.get('x-cos-security-token'),
+        `fixture-token-${suffix}`,
+      );
+    }
+  }
+});
+
+void test('malformed or incomplete environment JSON never mixes sources or falls back to stale env', async () => {
+  const cos = fakeCos();
+  const handler = createVoiceHandlerFromEnv(
+    { ...runtimeEnv, ...context('stale-env') },
+    {
+      fetchImpl: cos.fetchImpl,
+      send: async () => {
+        throw new Error('ASR must not be called');
+      },
+    },
+  );
+  for (const environment of [
+    '',
+    '{',
+    'null',
+    '[]',
+    '42',
+    '{}',
+    JSON.stringify({ ...context(), TENCENTCLOUD_SESSIONTOKEN: '' }),
+    JSON.stringify({ ...context(), TENCENTCLOUD_SECRETID: 42 }),
+  ]) {
+    assert.equal(
+      (await handler(event(), { ...context('stale-top-level'), environment }))
+        .statusCode,
+      503,
+    );
+  }
+  assert.equal(cos.requests.length, 0);
+});
+
 void test('independent handlers competing for the last durable slot admit at most one ASR call', async () => {
   const cos = fakeCos();
   let paid = 0;

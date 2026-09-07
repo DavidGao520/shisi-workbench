@@ -46,9 +46,13 @@ void test('ZIP speech uses only the fixed cloud API and own headers, with no cre
         });
       }
       assert.equal(url, VOICE_ORIGIN + '/api/voice/transcribe');
-      assert.equal(headers.get('content-type'), 'audio/wav');
+      assert.equal(headers.get('content-type'), 'application/json');
       assert.equal([...headers].length, 3);
-      validateVoiceWav(init!.body as Uint8Array);
+      const envelope = JSON.parse(init!.body as string);
+      assert.deepEqual(Object.keys(envelope), ['audio']);
+      const forwarded = Buffer.from(envelope.audio, 'base64');
+      assert.deepEqual(forwarded, wav());
+      validateVoiceWav(forwarded);
       return success();
     },
   });

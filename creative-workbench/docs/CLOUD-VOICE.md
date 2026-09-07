@@ -2,21 +2,20 @@
 
 ## 当前状态
 
+2026-09-07 13:16（北京时间）：**ZIP 独立腾讯 SCF 云语音已接通**。实际中继转写合成普通话成功；每分钟前 5 次成功、第 6 次返回应用 429。默认 ZIP 地址已切换为 `https://1482519311-ite8vah0bd.ap-guangzhou.tencentscf.com`，使用 JSON/Base64 WAV。资源、请求证据及未完成的真机检查见 [SCF 现场验收](SCF-VOICE-ACCEPTANCE.md)。这解决 ZIP 的独立入口，不代表旧 Sites 403 已消失。
+
 已实现云端接口、录音格式转换、候选确认、错误回退和持久化用量限制。
 2026-09-07 已配置线上凭证并实测腾讯云接口，用户反馈线上录音识别正常；其他设备仍需按下方清单验收。不能把模拟接口测试视为所有浏览器均已实测。
 
 公网 HTTPS 页面使用 `/api/voice/status` 和 `/api/voice/transcribe`，不要求
 WorkBuddy、Node、Python 或本地语音模型。新版 ZIP 的 `127.0.0.1:43117` 且含
-工作区标记的入口通过本机 Node `/voice/*` 中继至同一云端 `/api/voice/*`。
+工作区标记的入口通过本机 Node `/voice/*` 中继至独立 SCF 的 `/api/voice/*`。
 两种入口均按云端语音进行 WAV 转换、录音时长限制与隐私说明；没有本机模型回退。
 单独双击 HTML 没有连接程序，语音入口提示使用启动文件或 HTTPS 站点，仍可直接输入文字。
 
-2026-09-07 ZIP 路径验收：云端连接代码已改接现有 API，照片仍用 WorkBuddy。
-本机 Node 请求现有站点 `/api/voice/status` 返回 Cloudflare 403 拦截；Sites 站点访问权限已核实为 public。
-因此尚不能宣称 ZIP 云语音已实测接通，须由维护者解决受支持的 API 访问入口后补做端到端验收。
-不通过伪装浏览器、拷贝登录 Cookie 或将密钥打包来绕过拦截，也不改回下载本机模型。
+ZIP 照片仍用 WorkBuddy，不需要 TokenHub 密钥。H5 的直接照片 API 是另一条路线，当前尚未配置 TokenHub 视觉密钥，不能称为 H5 全功能已启用。本次不伪装浏览器、不拷贝登录 Cookie、不将密钥打包，也不改回下载本机模型。
 
-### ZIP 403 排查记录（2026-09-07，尚未修通）
+### 历史：旧 Sites 入口 403 排查（独立 SCF 已接替 ZIP 路径）
 
 - 当前 ZIP 的 Node 中继是 `fab05dd` 新增路径；此前浏览器直接请求线上 API 的成功记录，不能证明中继已通。服务端语音代码自 `041befd` 后未变。
 - 本机对固定 `/api/voice/status` 的请求收到 HTTP 403、`server: cloudflare`、`content-type: text/html`，页面标题为 `Attention Required! | Cloudflare`；排查编号为 `a3725f3b9b0f5cfd-LAX`。没有上传录音或调用付费转写。
@@ -25,22 +24,22 @@ WorkBuddy、Node、Python 或本地语音模型。新版 ZIP 的 `127.0.0.1:4311
 - 此 Mac 的系统 HTTP/HTTPS 代理已开启，但 Node 22.14.0 的默认 fetch 不读取这份配置。这说明两者可能采用不同网络路径，**尚未证明其与 403 的因果关系**；未切换代理、伪装客户端、复制 Cookie 或尝试绕过 403。
 - 中继现在区分 Cloudflare HTML 403 与普通/API 403，只显示经过长度和字符校验的请求编号；不读取或显示上游错误正文，不自动重试。
 
-下一步须由当前站点的托管平台管理员凭请求编号查询实际防护规则，提供受支持的程序化 API 访问方式；现有 Sites 管理接口仅提供站点访问人群设置，没有该层防护规则管理能力。不可因 public 已开启就宣称 Node 客户端可用。若改为独立 API 托管，应先确认目标服务、授权和费用，再迁移服务端凭证及持久化限额；不能将凭证下发 ZIP 或取消总量限制。
+若未来希望 Node 再直接使用旧 Sites，须由托管平台管理员凭请求编号查询防护规则；现有 Sites 管理接口没有该层规则管理能力。不可因 public 已开启就宣称 Node 客户端可用。当前采用用户已授权的独立 SCF API，密钥仍在服务端，保留持久化限额。
 
-验收仍需：本机 status 返回真实 `ready: true` → 一段真实录音完成腾讯转写 → Mac 和 Windows 解压启动分别验证。当前仅完成定位与错误信息修正，**云语音端到端问题仍未解决**。
+独立 SCF 已通过状态、合成语音真实转写和限额验收；浏览器真实录音及 Mac / Windows 解压后的现场流程仍需分别验证。
 
 依据：[Cloudflare 403 排障说明](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-403/)、[Node 官方代理配置说明](https://nodejs.org/en/learn/http/enterprise-network-configuration)。
 
-### 独立 SCF 修订（2026-09-07，代码就绪，尚未部署）
+### 独立 SCF（2026-09-07，已部署并通过云端验收）
 
 针对 ZIP 的程序化访问准备了独立 SCF Function URL 后端，详见
 [维护者部署与验收](../scf/voice-backend/README.md)。这不修改现有 Sites 服务，也没有证明旧站点的 403 已消失。
 
-- 本机中继支持明确的 JSON/Base64 WAV 传输，已自动测试 60 秒音频逐字节往返；默认目标仍为旧 Sites，待新入口真实验收再切换。
+- 本机中继支持明确的 JSON/Base64 WAV 传输，已自动测试 60 秒音频逐字节往返；默认目标已切换为上述实际验收的 SCF 入口。
 - COS 不再采用单 JSON 计数覆盖写入；改为三个限额窗口的不可覆盖名额对象，跨实例竞争与不确定写入均按不放行处理。每次调用检查专用桶从未开启版本控制及指定的 2 天生命周期规则。
-- COS 访问使用每次 SCF context 的角色临时凭证，不缓存冷启动时的旧令牌。
+- COS 访问逐次解析 SCF `context.environment` 的角色临时凭证，不缓存冷启动时的旧令牌；现场发现并修正了原顶层读取错误。
 - 部署脚本默认离线 `--check`；`--plan` 仅输出限定权限模板；只有 `--apply --accept-costs` 才会部署。COS 桶、生命周期和专用运行角色需由管理员事先准备，不自动授予三套全权限。
-- 本轮未创建云资源、未上传凭证、未调用真实付费 ASR，也未做 Windows 真机验收。不能把模拟接口和本机构建通过表述为已经上线可用。
+- 专用私有桶、生命周期、最小权限运行角色及函数 URL 均已部署；真实腾讯 ASR 调用成功。没有进行 Windows 真机验收；合成语音测试不能冒充真实麦克风验收。
 - 离线验收：`npm test` 共 281 项通过，typecheck、lint:app、Web 构建与单文件 HTML 构建通过；SCF 六文件白名单包可独立加载。客户端 12 个产物未匹配本机已配置的实际密钥，也未发现 TC3 签名实现或服务端密钥变量名；通用 AKID 模式的一处命中已确认位于图片 Base64 内。构建仍有大资源包体积警告，不影响本次通过状态。
 
 ## Sites 服务端配置（维护者一次设置，普通用户不用设置）

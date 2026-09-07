@@ -2,8 +2,8 @@
 // Never take the target/transport from a browser request, environment or upstream response.
 /** @type {Readonly<{origin: string, transport: 'wav' | 'json-base64'}>} */
 export const VOICE_ENDPOINT = Object.freeze({
-  origin: 'https://shisi-kitchen-workbench.yuangao021804.chatgpt.site',
-  transport: 'wav',
+  origin: 'https://1482519311-ite8vah0bd.ap-guangzhou.tencentscf.com',
+  transport: 'json-base64',
 });
 export const VOICE_ORIGIN = VOICE_ENDPOINT.origin;
 export const MAX_WAV_BYTES = 1920044;

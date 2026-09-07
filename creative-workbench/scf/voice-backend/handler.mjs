@@ -207,9 +207,25 @@ export function createVoiceHandlerFromEnv(
     env: processEnv,
     send,
     storeForContext(context) {
-      const secretId = context?.TENCENTCLOUD_SECRETID?.trim();
-      const secretKey = context?.TENCENTCLOUD_SECRETKEY?.trim();
-      const token = context?.TENCENTCLOUD_SESSIONTOKEN?.trim();
+      // SCF Node.js supplies per-invocation role credentials in a JSON string.
+      // Parse afresh on warm calls; never use process.env's cold-start snapshot.
+      let credentials = context;
+      if (context && Object.hasOwn(context, 'environment')) {
+        if (typeof context.environment !== 'string')
+          throw new Error('scf-context-environment-invalid');
+        credentials = JSON.parse(context.environment);
+        if (
+          !credentials ||
+          typeof credentials !== 'object' ||
+          Array.isArray(credentials)
+        )
+          throw new Error('scf-context-environment-invalid');
+      }
+      const value = (key) =>
+        typeof credentials?.[key] === 'string' ? credentials[key].trim() : '';
+      const secretId = value('TENCENTCLOUD_SECRETID');
+      const secretKey = value('TENCENTCLOUD_SECRETKEY');
+      const token = value('TENCENTCLOUD_SESSIONTOKEN');
       if (!secretId || !secretKey || !token)
         throw new Error('scf-context-credentials-required');
       return createCosSlotStore({

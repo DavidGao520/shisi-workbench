@@ -1,6 +1,8 @@
 # 独立 SCF 云语音：维护者部署与验收
 
-状态（2026-09-07）：代码与离线回归已准备；**本轮未创建云资源、未调用真实腾讯转写、未切换评委 ZIP 的地址**。旧 Sites 在浏览器中可用，不代表 ZIP Node 请求可用；之前的 HTML 403 仍须通过部署新入口和真实录音验收来解决。
+状态（2026-09-07）：独立 SCF、私有 COS、专用最小权限角色和公开 Function URL 已部署；服务端配置已启用。默认 ZIP 中继已切换至 `https://1482519311-ite8vah0bd.ap-guangzhou.tencentscf.com`，使用 `json-base64`。本机中继真实腾讯转写合成普通话成功，固定分钟窗口 5 次成功后第 6 次返回应用 429。真实麦克风和 Windows 真机仍需验收，详见 [现场记录](../../docs/SCF-VOICE-ACCEPTANCE.md)。
+
+腾讯默认函数域名仅供测试使用；当前用于比赛体验，不将其承诺为长期生产域名。长期运营应按腾讯要求绑定自定义域名，并重新核对来源白名单与费用告警。
 
 普通评委不需要腾讯密钥、Whisper 或本机语音模型。评委仍通过 Mac / Windows 启动文件运行 ZIP 的 Node 中继，照片流程仍使用 WorkBuddy；此目录不改变照片、UI、菜谱或线上 Sites。
 
@@ -9,7 +11,7 @@
 - Function URL 事件不依赖 `isBase64Encoded`。本机到函数使用明确的 JSON `{ "audio": "<Base64 WAV>" }`；浏览器到本机仍传 `audio/wav`。最长 60 秒 WAV 为 1,920,044 字节，JSON 约 2.56 MB。
 - 不再对单个计数 JSON 读改写。每个分钟、每日、全站名额分别是不可覆盖对象，使用 COS `x-cos-forbid-overwrite: true` 领取。只有明确创建成功才放行；只有 `409/FileAlreadyExists` 才尝试下一个名额，其他错误停止。
 - 函数最大独占内存配额设置为 128 MB，函数内保留最多两个请求的内存护栏；**配额正确性依赖 COS 不可覆盖写入，不依赖“配额 1 就绝对串行”的假设**。
-- 每次调用从 SCF `context` 取当前角色临时凭证，避免暖实例沿用过期令牌；不退回启动时的旧环境凭证。
+- 每次调用解析 SCF `context.environment` JSON 取当前角色临时凭证，避免暖实例沿用过期令牌；不退回启动时的旧环境凭证。现场 Nodejs20.19 的凭证并不位于 context 顶层。
 - 部署工具默认离线。不会自动创建或扩权 CAM 角色，也不要求三个 `FullAccess` 策略。
 
 ## 1. 先准备公开配置和权限模板
@@ -86,7 +88,7 @@ node scripts/deploy-voice-scf.mjs --apply --accept-costs
 ## 5. 真实验收后再交付 ZIP
 
 1. 用本机 Node 请求新地址的 `/api/voice/status`，确认 JSON `ready: true`。该检查验证配置可读，不验证 ASR 凭证实际有效。
-2. 在待验收分支把 `skills/zhonghua-shisi/scripts/cloud-speech.mjs` 的 `VOICE_ENDPOINT` 改为部署返回的**确切 origin** 和 `transport: 'json-base64'`。不加尾斜杠，不把地址交给网页用户输入。默认地址在本轮尚未切换。
+2. 核对 `skills/zhonghua-shisi/scripts/cloud-speech.mjs` 的 `VOICE_ENDPOINT` 为部署返回的**确切 origin** 和 `transport: 'json-base64'`。不加尾斜杠，不把地址交给网页用户输入。当前默认地址已切换；日后更换地址须重新验收。
 3. 经 ZIP 启动入口录制一段真实普通话，检查转写、取消、错误提示和确认前不入库。验证接近 60 秒录音，而非只用控制台空事件代替。
 4. 在同一个固定分钟窗口，包含此前测试在内第六次有效尝试应被限额拒绝，且不再请求 ASR。用隔离验收配置测试每日/全站上限和多实例竞争；不要删除生产当天对象来重置次数。平台并发限制也可能产生 429，须区分应用限额 JSON 与平台拒绝。
 5. 验证暖实例能够在平台临时凭证更新后继续读取 COS；验证 COS 不可用/版本配置异常时返回未就绪或 503，零额外 ASR 请求。
