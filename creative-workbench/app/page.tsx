@@ -51,7 +51,14 @@ import {
   RecipeDetailSections,
   RecipeInstructions,
 } from '@/components/recipe-instructions';
-import { baiweiDishes } from '@/lib/baiwei';
+import { baiweiCollection, baiweiDishes } from '@/lib/baiwei';
+import { KitchenTour } from '@/components/kitchen-tour';
+import {
+  openDemoKitchen,
+  restoreDemoKitchen,
+  saveTourStep,
+  tourPages,
+} from '@/lib/demo-kitchen';
 import '@/components/baiwei-gallery.css';
 import '@/components/recipe-instructions.css';
 import { baiweiImages, baiweiPlate } from '@/lib/baiwei-art';
@@ -98,9 +105,7 @@ import {
   bands,
   finishCooking,
   confirmCandidate,
-  demoImport,
   DEFAULT_SERVINGS,
-  emptyState,
   isExpired,
   mealIngredients,
   parseImport,
@@ -561,10 +566,24 @@ export default function Home() {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [error, setError] = useState('');
+  const [tourPaused, setTourPaused] = useState(false);
+  const [previewStep, setPreviewStep] = useState(0);
+  const savedTourStep =
+    dataset === 'demo' && s?.dataset === 'demo' && !tourPaused
+      ? (s.demoExperience?.tourStep ?? null)
+      : null;
+  const tourStep =
+    savedTourStep !== null && page === tourPages[savedTourStep]
+      ? savedTourStep
+      : null;
+  const tourRecipe =
+    recipes.find((r) => r.id === s?.demoExperience?.recipeId) ||
+    recipes.find((r) => r.id === 'braised_pork')!;
   // Manual navigation dismisses old feedback; successful workflows keep their
   // newly created notice when they move to the destination with setPage.
   const navigate = useCallback((nextPage: string) => {
     setMessage('');
+    setTourPaused(true);
     setPage(nextPage);
   }, []);
   const lock = useRef(false),
@@ -592,17 +611,28 @@ export default function Home() {
   const [now, setNow] = useState(() => Date.now());
   const reload = useCallback(async (d: Dataset) => {
     try {
-      const data = await db.read(d);
-      if (datasetRef.current === d) setState(data);
+      const data = await (d === 'demo' ? openDemoKitchen(db) : db.read(d));
+      if (datasetRef.current === d)
+        setState((previous) =>
+          previous?.dataset === d && previous.revision > data.revision
+            ? previous
+            : data,
+        );
     } catch (e) {
-      setError('本机保存不可用：' + (e as Error).message);
+      if (datasetRef.current === d)
+        setError('本机保存不可用：' + (e as Error).message);
     }
   }, []);
   useEffect(() => {
     let cancelled = false;
-    void db.read(dataset).then(
+    void (dataset === 'demo' ? openDemoKitchen(db) : db.read(dataset)).then(
       (data) => {
-        if (!cancelled) setState(data);
+        if (!cancelled)
+          setState((previous) =>
+            previous?.dataset === dataset && previous.revision > data.revision
+              ? previous
+              : data,
+          );
       },
       (reason) => {
         if (!cancelled) setError('本机保存不可用：' + String(reason));
@@ -612,6 +642,12 @@ export default function Home() {
       cancelled = true;
     };
   }, [dataset]);
+  useEffect(() => {
+    if (tourStep === null || page !== tourPages[tourStep]) return;
+    document
+      .getElementById('tour-stop-' + tourStep)
+      ?.scrollIntoView({ block: 'start' });
+  }, [page, tourStep]);
   useEffect(() => {
     const refresh = () => void reload(datasetRef.current);
     window.addEventListener('focus', refresh);
@@ -633,7 +669,7 @@ export default function Home() {
         setState(result);
         if (msg) setMessage(msg);
       }
-      return true;
+      return datasetRef.current === current;
     } catch (e) {
       setError((e as Error).message || '保存失败，未显示为成功。');
       await reload(current);
@@ -755,6 +791,10 @@ export default function Home() {
       ? detailedCookingSteps(sessionDish, session.servings)?.[session.step]
       : undefined;
   const openRecipe = (r: Recipe, sessionId?: string) => {
+    if (tourStep === 2 && !sessionId) {
+      void moveTour(3, r.id);
+      return;
+    }
     setDetail({ recipeId: r.id, sessionId });
     setFoodChecked('');
     setMealConfirmations([]);
@@ -776,14 +816,13 @@ export default function Home() {
   const calibrationCandidate = calibrationKey
     ? pending.find((candidate) => candidate.key === calibrationKey)
     : undefined;
-  const loadSample = async () => {
-    if (!s || dataset !== 'demo') return;
-    if (
-      await mutate((state) => {
-        stage(state, parseImport(demoImport(), 'demo', 'stocktake'));
-      }, '七项样例已进入候选区，请确认后入库。')
-    )
-      setPage('inventory');
+  const moveTour = async (step: number | null, recipeId?: string) => {
+    if (await mutate((state) => saveTourStep(state, step, recipeId))) {
+      setTourPaused(false);
+      setPreviewStep(0);
+      closeRecipe();
+      if (step !== null) setPage(tourPages[step]);
+    }
   };
   const confirmSample = () =>
     mutate((state) => {
@@ -820,20 +859,38 @@ export default function Home() {
     }, '请核对数量形式、数量和到期日期。');
     if (saved && candidateKey) setCalibrationKey(candidateKey);
   };
-  const changeDataset = (d: Dataset) => {
-    if (!busy) {
-      setState(undefined);
-      setError('');
-      setMessage('');
-      setDialog(null);
-      setDetail(null);
-      setMealConfirmations([]);
-      setFoodChecked('');
-      setSeasoningOpen(false);
-      setCalibrationKey(null);
-      datasetRef.current = d;
-      setDataset(d);
-      setPage('today');
+  const changeDataset = async (d: Dataset) => {
+    if (!busy && !lock.current) {
+      // Keep bridge deliveries on the old dataset until the target is fully
+      // hydrated. No poll may treat a half-initialized demo as an old kitchen.
+      lock.current = true;
+      setBusy(true);
+      try {
+        const data = await (d === 'demo' ? openDemoKitchen(db) : db.read(d));
+        setState(data);
+        setError('');
+        setMessage('');
+        setDialog(null);
+        setDetail(null);
+        setMealConfirmations([]);
+        setFoodChecked('');
+        setSeasoningOpen(false);
+        setCalibrationKey(null);
+        setTourPaused(false);
+        setPreviewStep(0);
+        datasetRef.current = d;
+        setDataset(d);
+        setPage(
+          d === 'demo' && data.demoExperience?.tourStep != null
+            ? tourPages[data.demoExperience.tourStep]
+            : 'today',
+        );
+      } catch (reason) {
+        setError('厨房未切换：' + (reason as Error).message);
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
     }
   };
   return (
@@ -841,7 +898,7 @@ export default function Home() {
       value={page}
       onValueChange={(v) => navigate(String(v))}
       orientation="vertical"
-      className="kitchen-app"
+      className={'kitchen-app' + (tourStep !== null ? ' has-kitchen-tour' : '')}
       style={{ display: 'block' }}
     >
       <aside className="rail">
@@ -893,14 +950,27 @@ export default function Home() {
         {dataset === 'demo' && (
           <div className="dataset-banner">
             <strong>体验样例</strong>
-            <span>独立库存、独立百味图，不影响真实厨房。</span>
+            <span>食材与食忆均为样例，不影响真实厨房。</span>
+            <button
+              className="text-button"
+              disabled={busy || !s}
+              onClick={() =>
+                void moveTour(
+                  tourPaused ? (s?.demoExperience?.tourStep ?? 0) : 0,
+                )
+              }
+            >
+              {tourPaused && s?.demoExperience?.tourStep !== null
+                ? '继续参观'
+                : '重新参观'}
+            </button>
             <button
               className="text-button"
               disabled={busy}
               onClick={() => setReset(true)}
             >
               <RotateCcw size={14} />
-              重置样例
+              恢复初始样例
             </button>
           </div>
         )}
@@ -989,7 +1059,65 @@ export default function Home() {
                   </button>
                 </div>
               )}
-              {!showSeasoningSetup && (
+              {dataset === 'demo' && (
+                <section
+                  id="tour-stop-0"
+                  className={
+                    'start-panel demo-welcome' +
+                    (tourStep === 0 ? ' tour-target' : '')
+                  }
+                >
+                  <div>
+                    <p className="eyebrow">打开冰箱，就能开始</p>
+                    <h2>这间厨房，已经有了些烟火气</h2>
+                    <p>
+                      {inventoryUsed} 项食材和调料 · 百味图已点亮{' '}
+                      {
+                        baiweiCollection(s).filter(
+                          (entry) => entry.history.length,
+                        ).length
+                      }{' '}
+                      / {baiweiDishes.length} 道
+                    </p>
+                    <p className="muted">
+                      随便逛，也可以试着做一餐。所有变化都只留在样例厨房。
+                    </p>
+                    {!s.sessions.some((record) => record.sampleRecord) && (
+                      <p>
+                        已保留你原来的样例内容。想体验备好 22
+                        项食材的版本，可点上方“恢复初始样例”。
+                      </p>
+                    )}
+                    {s.inventory.some((batch) => isExpired(batch)) && (
+                      <p>
+                        部分样例食材已过期，推荐会随库存变化。恢复初始样例可重新备齐今天的三道菜。
+                      </p>
+                    )}
+                  </div>
+                  {tourStep === null && (
+                    <div className="actions">
+                      <button
+                        className="primary"
+                        disabled={busy}
+                        onClick={() =>
+                          void moveTour(s.demoExperience?.tourStep ?? 0)
+                        }
+                      >
+                        {s.demoExperience?.tourStep != null
+                          ? '继续参观厨房'
+                          : '带我逛逛厨房'}
+                      </button>
+                      <button
+                        className="secondary"
+                        onClick={() => navigate('inventory')}
+                      >
+                        去看看冰箱
+                      </button>
+                    </div>
+                  )}
+                </section>
+              )}
+              {dataset === 'real' && !showSeasoningSetup && (
                 <section className="start-panel">
                   <div>
                     <p className="eyebrow">
@@ -1020,7 +1148,7 @@ export default function Home() {
                       语音录入食材
                     </button>
                     <button
-                      className="secondary"
+                      className="primary"
                       onClick={() => {
                         navigate('inventory');
                         setDialog('workbuddy');
@@ -1029,15 +1157,6 @@ export default function Home() {
                       <Camera size={18} />
                       拍照录入食材
                     </button>
-                    {dataset === 'demo' && !s.candidates.length && (
-                      <button
-                        className="secondary"
-                        disabled={busy}
-                        onClick={loadSample}
-                      >
-                        载入七项样例
-                      </button>
-                    )}
                   </div>
                 </section>
               )}
@@ -1058,7 +1177,12 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-              <div className="section-head">
+              <div
+                id="tour-stop-2"
+                className={
+                  'section-head' + (tourStep === 2 ? ' tour-target' : '')
+                }
+              >
                 <h2>手边食材，能做这些</h2>
                 <span>规则推荐 · 最多三道</span>
               </div>
@@ -1177,14 +1301,14 @@ export default function Home() {
               <div className="inventory-tools">
                 <div className="actions">
                   <button
-                    className="primary"
+                    className={dataset === 'demo' ? 'secondary' : 'primary'}
                     onClick={() => setDialog('voice')}
                   >
                     <Mic size={17} />
                     语音录入
                   </button>
                   <button
-                    className="secondary"
+                    className={dataset === 'demo' ? 'secondary' : 'primary'}
                     onClick={() => setDialog('workbuddy')}
                   >
                     <Camera size={17} />
@@ -1231,15 +1355,6 @@ export default function Home() {
                   完整备份
                 </button>
               </div>
-              {dataset === 'demo' && !s.candidates.length && (
-                <button
-                  className="secondary"
-                  onClick={loadSample}
-                  disabled={busy}
-                >
-                  载入七项样例食材
-                </button>
-              )}
               {pending.length > 0 && (
                 <>
                   <div className="section-head">
@@ -1268,7 +1383,12 @@ export default function Home() {
                   </div>
                 </>
               )}
-              <div className="section-head">
+              <div
+                id="tour-stop-1"
+                className={
+                  'section-head' + (tourStep === 1 ? ' tour-target' : '')
+                }
+              >
                 <h2>已确认的厨房库存</h2>
               </div>
               {!s.inventory.length ? (
@@ -1343,7 +1463,46 @@ export default function Home() {
               </div>
             </TabsContent>
             <TabsContent value="cooking">
-              {!session ? (
+              {tourStep === 3 ? (
+                <section
+                  id="tour-stop-3"
+                  className="cooking-layout tour-target"
+                >
+                  <div className="cooking-art">
+                    <RecipeArt recipe={tourRecipe} />
+                    <p className="eyebrow">跟做预览 · 尚未开始演练</p>
+                    <h2>{tourRecipe.title}</h2>
+                    <p>
+                      仅翻看做法，不开启计时、不扣减库存，也不改变正在进行的一餐。
+                    </p>
+                  </div>
+                  <div className="paper step-panel">
+                    <p className="eyebrow">
+                      预览第 {previewStep + 1} / {tourRecipe.steps.length} 步
+                    </p>
+                    <RecipeInstructions
+                      recipe={tourRecipe}
+                      stepIndex={previewStep}
+                    />
+                    <div className="actions">
+                      <button
+                        className="secondary"
+                        disabled={previewStep === 0}
+                        onClick={() => setPreviewStep((value) => value - 1)}
+                      >
+                        上一步预览
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={previewStep === tourRecipe.steps.length - 1}
+                        onClick={() => setPreviewStep((value) => value + 1)}
+                      >
+                        下一步预览
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              ) : !session ? (
                 <div className="empty-state">
                   <ChefHat size={40} />
                   <h2>今天，想做哪一道？</h2>
@@ -1551,6 +1710,7 @@ export default function Home() {
               )}
             </TabsContent>
             <TabsContent value="archive">
+              <div id="tour-stop-4" />
               <BaiweiGallery
                 key={dataset}
                 state={s}
@@ -1565,6 +1725,33 @@ export default function Home() {
           中华食肆 HTML · 本地工作版 <span>菜谱有来源，食忆属于你。</span>
         </footer>
       </main>
+      {tourStep !== null &&
+        !dialog &&
+        !detail &&
+        !calibrationKey &&
+        !seasoningOpen &&
+        !reset &&
+        !clear && (
+          <KitchenTour
+            step={tourStep}
+            busy={busy}
+            onStep={(step) => void moveTour(step)}
+            onSkip={() => void moveTour(null)}
+            onTry={async () => {
+              if (await mutate((state) => saveTourStep(state, null))) {
+                if (session) setPage('cooking');
+                else {
+                  setPage('today');
+                  openRecipe(tourRecipe);
+                }
+              }
+            }}
+            onExit={async () => {
+              if (await mutate((state) => saveTourStep(state, null)))
+                await changeDataset('real');
+            }}
+          />
+        )}
       <Dialog
         open={seasoningOpen}
         onOpenChange={(value) => {
@@ -2081,7 +2268,9 @@ export default function Home() {
                 (x) => x.recipeId === recipe.id && x.status === 'completed',
               ).length > 0 && (
                 <section>
-                  <h3>我的制作历史</h3>
+                  <h3>
+                    {dataset === 'demo' ? '样例制作历史' : '我的制作历史'}
+                  </h3>
                   {s.sessions
                     .filter(
                       (x) =>
@@ -2095,7 +2284,11 @@ export default function Home() {
                             {new Date(x.completedAt!).toLocaleString('zh-CN')}
                           </small>
                           <p>{x.familyMemory || '这一次，把一餐好好做完。'}</p>
-                          <span className="tag">个人记忆 · 用户自述</span>
+                          <span className="tag">
+                            {x.sampleRecord
+                              ? '预置样例食忆 · 非真实做菜记录'
+                              : '个人记忆 · 用户自述'}
+                          </span>
                         </div>
                         <button
                           className="secondary"
@@ -2123,11 +2316,11 @@ export default function Home() {
       >
         <AlertDialogContent>
           <AlertDialogTitle>
-            {reset ? '重置体验样例？' : '清空当前厨房库存？'}
+            {reset ? '恢复初始样例厨房？' : '清空当前厨房库存？'}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {reset
-              ? '只清除样例厨房的库存、候选与演练记录。真实厨房完全保留。'
+              ? '用 22 项已备食材和 35 道样例食忆替换当前样例厨房，并重新开始参观。你在样例中的修改和演练将被清除，不能撤销；如需保留请先导出完整备份。真实厨房完全保留。'
               : '仅清空当前 ' +
                 (dataset === 'demo' ? '样例' : '真实') +
                 ' 厨房的库存和待确认候选，保留已完成百味图。请先导出完整备份；清空本身不能撤销。进行中的一餐必须先完成。'}
@@ -2163,7 +2356,7 @@ export default function Home() {
                       if (doReset) {
                         if (state.dataset !== 'demo')
                           throw new Error('只能重置样例。');
-                        Object.assign(state, emptyState('demo'));
+                        restoreDemoKitchen(state);
                       } else {
                         if (activeSession(state))
                           throw new Error('请先完成正在做的一餐。');
@@ -2175,7 +2368,7 @@ export default function Home() {
                       state.bridgeIgnoredTicketIds = tombstones;
                     },
                     doReset
-                      ? '样例已重置，真实厨房未改变。'
+                      ? '初始样例已恢复，可以重新参观。真实厨房未改变。'
                       : '当前库存已清空，已完成百味图保留。',
                   )
                 ) {
@@ -2188,10 +2381,15 @@ export default function Home() {
                   }
                   setReset(false);
                   setClear(false);
+                  if (doReset) {
+                    setTourPaused(false);
+                    setPreviewStep(0);
+                    setPage('today');
+                  }
                 }
               }}
             >
-              {reset ? '确认重置样例' : '确认清空库存'}
+              {reset ? '确认恢复初始样例' : '确认清空库存'}
             </button>
           </div>
         </AlertDialogContent>

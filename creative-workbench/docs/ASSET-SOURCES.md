@@ -34,7 +34,79 @@
 | `starch` / 淀粉 | `public/art/cards/starch.webp` | 开口牛皮纸袋中的细白淀粉，无字几何纹样 | `cf83e0428797760d79ae9cf7014ae5c92874297f45eb904b39dd3e9caf5b9457` |
 | `cooked_rice` / 熟米饭 | `public/art/cards/cooked_rice.webp` | 米白陶碗中的黏连熟米饭，区别于散装生米 | `bbf1d920f077fe361120822669bf3189eb3ff168d5fa0604c32bc67317b38a31` |
 
-当前库存运行时因此包含 63 张游戏原图与 4 张工作台补充图。四项只扩展 `pantryCardArt`，不改变 `baiweiPantry` 的 63 项原作来源契约，也不把 `rice.webp` 的生米画面用于熟米饭。
+该次补充后，库存运行时包含 63 张游戏原图与 4 张工作台补充图。四项只扩展 `pantryCardArt`，不改变 `baiweiPantry` 的 63 项原作来源契约，也不把 `rice.webp` 的生米画面用于熟米饭。
+
+## 2026-09-07 新增：样例厨房缺失的四张库存插画
+
+当前工作台与本机原作卡图目录未提供白胡椒粉、干辣椒、香油、饮用水对应主体图。使用 Codex 内置 ImageGen 为四项分别生成原创补充素材，不复用花椒、鲜辣椒或食用油冒充，不改变原作 63 项目录。
+
+画风参考仅来自人工查看本项目现有 `starch.webp`、`cooking_wine.webp`、`chili.webp`、`oil.webp` 后写入提示词的风格描述；本次是四次独立的新图生成，没有传入编辑目标。生成的 1254×1254 PNG 均自带真实 alpha，未抠图或改绘；保留透明通道，用 Sharp 缩放为 512×512、quality 90 / effort 6 的 WebP。
+
+| 工作台身份 | 运行时文件 | 画面与卡框 | SHA-256 |
+| --- | --- | --- | --- |
+| `white_pepper` / 白胡椒粉 | `public/art/cards/white_pepper.webp` | 象牙白陶碗中的浅米色胡椒粉与白胡椒粒；橙色调料框 | `af1abd70b07dc4c7290e20c8b8b3a837c8702d2ab25daba221b585fdbe903a27` |
+| `dried_chili` / 干辣椒 | `public/art/cards/dried_chili.webp` | 深红皱皮、干燥棕梗及断开的辣椒荚；橙色调料框 | `87b29a944cf35a7d1b131b275d05bd4a0255c97ad99e3b44a7430300f3cad9f2` |
+| `sesame_oil` / 香油 | `public/art/cards/sesame_oil.webp` | 木塞小玻璃壶中的深琥珀色香油与芝麻；橙色调料框 | `0a5a9e708f225bf4c65d6a995b409d7fd6820bb8aa88221df3534c690cf19d8f` |
+| `water` / 饮用水 | `public/art/cards/water.webp` | 带把玻璃清水壶；绿色食材框 | `4d2b133a0b9402199c36e577d15f7f904e831f6afe7970c33a793c4ab4cfbdca` |
+
+当前库存素材合计 63 张游戏原图 + 8 张工作台补充图。四项扩展 `workbenchSupplementalCardArt` 并使用 `?inline` 打包；待确认、已确认库存和独立 HTML 共用映射。样例厨房的 22 项库存全部有图。图中容器、液面和颗粒仅作身份示意，不代表库存中的实际品牌、包装或数量。参观流程、批次、配方身份和数量逻辑未改。
+
+<details>
+<summary>四次内置 ImageGen 调用的完整最终提示词</summary>
+
+### white_pepper
+
+```text
+Use case: stylized-concept.
+Asset type: square transparent ingredient sprite for 中华食肆, a contemporary Chinese neighborhood restaurant card management game.
+Scene/backdrop: genuinely transparent RGBA background with native alpha, completely empty outside the subject; the sprite will be placed over cream parchment UI.
+Style/medium: detailed hand-painted 2D game ingredient illustration, tactile gently brushed gouache-like textures, rich natural material shading, clean fine warm-brown outer contours, rounded appealing forms, crisp silhouette, soft upper-left highlights. Visually consistent with kitchen card sprites showing a folded tan paper sack of starch, amber cooking wine in a glass bottle, red fresh chilies, and bright yellow oil in a red-capped cruet. This is polished painterly game art, not a photograph, flat vector icon, or 3D render.
+Composition/framing: a single centered isolated subject group in a square image, three-quarter slightly overhead view, fully visible and uncropped; the subject's longest dimension should occupy about 80–85% of the square with generous clear breathing margin. No ground plane or cast-shadow puddle.
+Constraints: native true transparent background, clean antialiased alpha edges, no opaque white background, no black background, no baked checkerboard; no card frame, no decorative backdrop, no text, no brand, no logo, no watermark.
+Primary request: illustrate white pepper powder as a small ivory ceramic bowl heaped with fine beige-white ground pepper powder, with just a few pale cream whole white peppercorns beside the bowl.
+Subject and materials: squat simple ceramic bowl with a subtly warm tan rim and gentle ivory glaze; visible mound of very finely ground warm pale beige powder with a matte, slightly grainy surface; three to five pale cream peppercorns beside its base, subtly wrinkled. The contents should clearly be ground white pepper, not salt crystals, starch, or black pepper. Avoid brilliant pure white crystalline granules, dark black pepper grains, spoons, cloth, or other props.
+```
+
+### dried_chili
+
+```text
+Use case: stylized-concept.
+Asset type: square transparent ingredient sprite for 中华食肆, a contemporary Chinese neighborhood restaurant card management game.
+Scene/backdrop: genuinely transparent RGBA background with native alpha, completely empty outside the subject; the sprite will be placed over cream parchment UI.
+Style/medium: detailed hand-painted 2D game ingredient illustration, tactile gently brushed gouache-like textures, rich natural material shading, clean fine warm-brown outer contours, rounded appealing forms, crisp silhouette, soft upper-left highlights. Visually consistent with kitchen card sprites showing a folded tan paper sack of starch, amber cooking wine in a glass bottle, red fresh chilies, and bright yellow oil in a red-capped cruet. This is polished painterly game art, not a photograph, flat vector icon, or 3D render.
+Composition/framing: a single centered isolated subject group in a square image, three-quarter slightly overhead view, fully visible and uncropped; the subject's longest dimension should occupy about 80–85% of the square with generous clear breathing margin. No ground plane or cast-shadow puddle.
+Constraints: native true transparent background, clean antialiased alpha edges, no opaque white background, no black background, no baked checkerboard; no card frame, no decorative backdrop, no text, no brand, no logo, no watermark.
+Primary request: illustrate a compact cluster or fan of five to six deep red dried chili pods, each with dry tan stems, plus one broken pod revealing a few pale seeds.
+Subject and materials: distinctly dried, thin curled wrinkled chili skins in deep brick red and muted crimson, papery ridges and matte uneven warm highlights, dry woody tan stems; an appealing compact overlapping fan, a broken pod section and only a few pale cream seeds next to it. Preserve legibility at small card size. Absolutely no glossy plump fresh peppers, bright green stems, bowl, plate, cloth, or other props.
+```
+
+### sesame_oil
+
+```text
+Use case: stylized-concept.
+Asset type: square transparent ingredient sprite for 中华食肆, a contemporary Chinese neighborhood restaurant card management game.
+Scene/backdrop: genuinely transparent RGBA background with native alpha, completely empty outside the subject; the sprite will be placed over cream parchment UI.
+Style/medium: detailed hand-painted 2D game ingredient illustration, tactile gently brushed gouache-like textures, rich natural material shading, clean fine warm-brown outer contours, rounded appealing forms, crisp silhouette, soft upper-left highlights. Visually consistent with kitchen card sprites showing a folded tan paper sack of starch, amber cooking wine in a glass bottle, red fresh chilies, and bright yellow oil in a red-capped cruet. This is polished painterly game art, not a photograph, flat vector icon, or 3D render.
+Composition/framing: a single centered isolated subject group in a square image, three-quarter slightly overhead view, fully visible and uncropped; the subject's longest dimension should occupy about 80–85% of the square with generous clear breathing margin. No ground plane or cast-shadow puddle.
+Constraints: native true transparent background, clean antialiased alpha edges, no opaque white background, no black background, no baked checkerboard; no card frame, no decorative backdrop, no text, no brand, no logo, no watermark.
+Primary request: illustrate a small clear glass condiment cruet with a wooden stopper, filled with dark amber toasted sesame oil, with a few sesame seeds beside the base and no label.
+Subject and materials: compact rounded glass cruet with a short neck, a small curved handle and subtle pouring lip, natural warm-brown wooden stopper, dark amber translucent oil with deep caramel-brown shadows and warm copper highlights; fine painterly glass reflections, a few ivory sesame seeds by the base. Its silhouette and colors must remain visibly distinct from a tall bright-yellow cooking-oil jug with a red cap: here use a shorter rounder bottle, wooden stopper, dark toasted amber liquid, completely unlabelled glass. No red cap, no yellow cooking oil, no labels or writing, no extra props.
+```
+
+### water
+
+```text
+Use case: stylized-concept.
+Asset type: square transparent ingredient sprite for 中华食肆, a contemporary Chinese neighborhood restaurant card management game.
+Scene/backdrop: genuinely transparent RGBA background with native alpha, completely empty outside the subject; the sprite will be placed over cream parchment UI.
+Style/medium: detailed hand-painted 2D game ingredient illustration, tactile gently brushed gouache-like textures, rich natural material shading, clean fine warm-brown outer contours, rounded appealing forms, crisp silhouette, soft upper-left highlights. Visually consistent with kitchen card sprites showing a folded tan paper sack of starch, amber cooking wine in a glass bottle, red fresh chilies, and bright yellow oil in a red-capped cruet. This is polished painterly game art, not a photograph, flat vector icon, or 3D render.
+Composition/framing: a single centered isolated subject group in a square image, three-quarter slightly overhead view, fully visible and uncropped; the subject's longest dimension should occupy about 80–85% of the square with generous clear breathing margin. No ground plane or cast-shadow puddle.
+Constraints: native true transparent background, clean antialiased alpha edges, no opaque white background, no black background, no baked checkerboard; no card frame, no decorative backdrop, no text, no brand, no logo, no watermark.
+Primary request: illustrate a simple clear squat glass water jug with a handle and pouring spout, three-quarters full of COLORLESS drinking water.
+Subject and materials: a short broad clear glass pitcher with a comfortably rounded glass handle, open top and modest pouring spout; visible elliptical waterline at three-quarter height, clear colorless water, delicate cool white and pale blue reflective accents along glass rims and edges, fine warm neutral brown outer contour so it remains readable on cream parchment. Interior must read as transparent colorless drinking water; reflections may be faint blue but the liquid must not appear blue, amber, yellow, or milky. No lid, no stopper, no ice, no lemon, no plants, no labels, no writing, no other objects.
+```
+
+</details>
 
 以下保留 0.1 的历史来源台账，仅用于解释旧快照和旧素材；不是当前 70 道菜谱的来源或限制。
 

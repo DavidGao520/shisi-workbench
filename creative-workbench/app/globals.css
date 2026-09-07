@@ -596,6 +596,90 @@ textarea {
 .dataset-banner .text-button {
   margin-left: auto;
 }
+.dataset-banner .text-button + .text-button {
+  margin-left: 0;
+}
+.demo-welcome {
+  min-height: 175px;
+  background: #ececdd;
+}
+.demo-welcome h2 {
+  font-size: clamp(22px, 2.2vw, 32px);
+}
+[id^='tour-stop-'] {
+  scroll-margin-top: 24px;
+}
+.tour-target {
+  outline: 2px solid #b2b58b;
+  outline-offset: 8px;
+  border-radius: 10px;
+}
+.has-kitchen-tour .workspace {
+  padding-bottom: 350px;
+}
+.kitchen-tour {
+  position: fixed;
+  right: 24px;
+  bottom: 20px;
+  z-index: 30;
+  width: min(390px, calc(100vw - 32px));
+  padding: 22px 24px 16px;
+  background: #fff9ed;
+  border: 1px solid #d2bc8f;
+  border-top: 4px solid #a8402e;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px #49392326;
+}
+.kitchen-tour h2 {
+  margin: 8px 0;
+  font-size: 23px;
+  line-height: 1.4;
+}
+.kitchen-tour h2:focus {
+  outline: none;
+}
+.kitchen-tour > p {
+  margin: 0 0 16px;
+  color: #706550;
+  line-height: 1.7;
+  font-size: 14px;
+}
+.tour-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.tour-actions .primary {
+  margin-left: auto;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.tour-skip {
+  display: flex;
+  margin: 10px auto 0;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .kitchen-tour {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    width: calc(100vw - 24px);
+    padding: 12px 16px;
+    max-height: 45dvh;
+    overflow-y: auto;
+  }
+  .kitchen-tour h2 {
+    font-size: 20px;
+  }
+  .kitchen-tour > p {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .has-kitchen-tour .workspace {
+    padding-bottom: 320px;
+  }
+}
 .resume-strip {
   display: flex;
   align-items: center;

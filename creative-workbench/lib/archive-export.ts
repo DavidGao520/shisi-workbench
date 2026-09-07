@@ -51,7 +51,11 @@ export function renderBaiweiEntry(
     escapeHtml(session.completedAt || '') +
     '</small><section><h2>我的食忆</h2><p>' +
     escapeHtml(session.familyMemory || '这一次，把一餐好好做完。') +
-    '</p><small>个人记忆 · 用户自述，不作为历史事实</small></section><section><h2>家常做法的一点来处</h2><p>' +
+    '</p><small>' +
+    (session.sampleRecord
+      ? '预置样例食忆 · 非真实做菜记录'
+      : '个人记忆 · 用户自述，不作为历史事实') +
+    '</small></section><section><h2>家常做法的一点来处</h2><p>' +
     escapeHtml(r.knowledge) +
     '</p><a href="' +
     escapeHtml(r.source) +
