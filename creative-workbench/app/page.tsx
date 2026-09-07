@@ -76,6 +76,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { IndexedDbStore } from '@/lib/store';
+import { formatCountdown } from '@/lib/cooking-timer';
 import {
   candidateReview,
   confirmReviewedCandidate,
@@ -1125,15 +1126,15 @@ export default function Home({
           <div>
             {dataset === 'real' && <p className="eyebrow">从手边食材开始</p>}
             <h1>{pages.find((p) => p.id === page)?.name}</h1>
-            <p>
-              {page === 'today'
-                ? '冰箱有啥，今天吃啥，挑一道手边就能做的家常菜'
-                : page === 'inventory'
-                  ? '先确认，再入库。每一批食材，都由你说了算。'
-                  : page === 'cooking'
-                    ? '一步一步来，做完以后再核对冰箱。'
+            {page !== 'cooking' && (
+              <p>
+                {page === 'today'
+                  ? '冰箱有啥，今天吃啥，挑一道手边就能做的家常菜'
+                  : page === 'inventory'
+                    ? '先确认，再入库。每一批食材，都由你说了算。'
                     : '在游戏里收集味道，在生活里留住食忆。'}
-            </p>
+              </p>
+            )}
           </div>
         </div>
         {error && (
@@ -1624,9 +1625,6 @@ export default function Home({
                       人份
                     </p>
                     <h2>{sessionRecipe(s, session).title}</h2>
-                    <p className="muted">
-                      食材与步骤用量按本次人数调整；实际加热时间会受锅具和份量影响，请自行确认熟度。
-                    </p>
                     <button
                       className="text-button"
                       onClick={() =>
@@ -1652,8 +1650,11 @@ export default function Home({
                               if (!v) return;
                               if (v.status === 'paused') {
                                 v.status = 'cooking';
-                                if (v.timerRemaining)
-                                  v.timerEnd = Date.now() + v.timerRemaining;
+                                if (v.timerRemaining) {
+                                  const resumedAt = Date.now();
+                                  v.timerEnd = resumedAt + v.timerRemaining;
+                                  setNow(resumedAt);
+                                }
                                 delete v.timerRemaining;
                               } else {
                                 v.status = 'paused';
@@ -1712,8 +1713,10 @@ export default function Home({
                                 active.step === session.step &&
                                 active.status === 'cooking'
                               ) {
+                                const startedAt = Date.now();
                                 active.timerEnd =
-                                  Date.now() + currentStep.minutes * 60000;
+                                  startedAt + currentStep.minutes * 60000;
+                                setNow(startedAt);
                               }
                             })
                           }
@@ -1725,16 +1728,16 @@ export default function Home({
                     {!!(session.timerEnd || session.timerRemaining) && (
                       <div className="timer">
                         <Clock3 size={21} />
-                        <strong>
-                          {Math.ceil(
-                            Math.max(
-                              0,
-                              session.timerEnd
-                                ? session.timerEnd - now
-                                : session.timerRemaining || 0,
-                            ) / 60000,
-                          )}{' '}
-                          分钟
+                        <strong
+                          role="timer"
+                          aria-live="off"
+                          title="剩余时间（分:秒）"
+                        >
+                          {formatCountdown(
+                            session.timerEnd
+                              ? session.timerEnd - now
+                              : session.timerRemaining || 0,
+                          )}
                         </strong>
                         <span>
                           {session.timerEnd && now >= session.timerEnd
@@ -1790,9 +1793,6 @@ export default function Home({
                         <ChevronRight size={17} />
                       </button>
                     </div>
-                    <p className="muted">
-                      进度已在本机保存。此时还没有扣减库存。
-                    </p>
                   </div>
                 </section>
               )}

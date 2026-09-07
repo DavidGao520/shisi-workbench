@@ -215,7 +215,9 @@ void test('every live recipe step retains its instructions without repeated tips
   );
   assert.doesNotMatch(page, /safetyTips|safetyNote|safety-note|安全提示来源/);
   assert.match(page, /按本步 \{currentStep\.minutes\}/);
-  assert.match(page, /Date\.now\(\) \+ currentStep\.minutes \* 60000/);
+  assert.match(page, /const startedAt = Date\.now\(\);/);
+  assert.match(page, /startedAt \+ currentStep\.minutes \* 60000/);
+  assert.match(page, /setNow\(startedAt\)/);
   assert.match(page, /checked=\{foodChecked\}/);
 });
 
