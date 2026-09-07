@@ -65,6 +65,7 @@ export type StockAllocation = {
 };
 export type Session = {
   id: string;
+  sampleRecord?: true;
   recipeId: string;
   recipeVersion: string;
   recipeSnapshot?: Recipe;
@@ -107,6 +108,12 @@ export type KitchenState = {
   sessions: Session[];
   reviews: Record<string, Review>;
   preferences: Preferences;
+  demoExperience?: {
+    version: 1;
+    referenceDate: string;
+    tourStep: number | null;
+    recipeId: string;
+  };
   bridgeIgnoredTicketIds?: string[];
   workbuddySteps?: Record<
     string,
