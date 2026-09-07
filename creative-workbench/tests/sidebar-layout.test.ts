@@ -7,6 +7,32 @@ const css = readFileSync(
   'utf8',
 );
 
+void test('desktop layout keeps the approved scale and bounded content width', () => {
+  const block = (selector: string) =>
+    css.match(new RegExp(`${selector}\\s*\\{([^}]+)\\}`))?.[1] ?? '';
+  const bodyRules = [...css.matchAll(/(?:^|\n)body\s*\{([^}]+)\}/g)]
+    .map((match) => match[1]).join('\n');
+  const bodyFontSizes = [...bodyRules.matchAll(/font-size:\s*([^;]+);/g)];
+  assert.equal(bodyFontSizes.at(-1)?.[1], '16px');
+  assert.doesNotMatch(bodyRules, /(?:zoom|transform|scale)\s*:/);
+  assert.match(block('h1'), /font-size:\s*38px/);
+  assert.match(block('\\.rail'), /width:\s*236px/);
+  assert.match(block('\\.workspace'), /margin-left:\s*236px/);
+  assert.match(block('\\.workspace'), /max-width:\s*1640px/);
+  assert.match(block('\\.dish-cover'), /height:\s*195px/);
+  for (const selector of ['body', '\\.rail', '\\.workspace']) {
+    assert.doesNotMatch(block(selector), /(?:zoom|transform|scale)\s*:/);
+  }
+  const entry = readFileSync(
+    new URL('../standalone/index.html', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    entry,
+    /name="viewport" content="width=device-width,initial-scale=1"/,
+  );
+});
+
 void test('sidebar names the workbench while preserving the game attribution', () => {
   const page = readFileSync(
     new URL('../app/page.tsx', import.meta.url),
