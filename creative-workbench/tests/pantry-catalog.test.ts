@@ -23,6 +23,8 @@ import {
   matching,
 } from '../lib/kitchen';
 import { IndexedDbStore } from '../lib/store';
+import { restoreDemoKitchen } from '../lib/demo-kitchen';
+import { pantryArtId } from '../lib/pantry-art';
 
 const ingredientIds = [
   'tomato',
@@ -299,20 +301,52 @@ void test('workbench-only staples have distinct inline card art without changing
       frame: 'vegetableCardFrame',
       image: 'cardCookedRice',
     },
+    {
+      id: 'white_pepper',
+      kind: 'seasoning',
+      theme: 'spice',
+      frame: 'spiceCardFrame',
+      image: 'cardWhitePepper',
+    },
+    {
+      id: 'dried_chili',
+      kind: 'seasoning',
+      theme: 'spice',
+      frame: 'spiceCardFrame',
+      image: 'cardDriedChili',
+    },
+    {
+      id: 'sesame_oil',
+      kind: 'seasoning',
+      theme: 'spice',
+      frame: 'spiceCardFrame',
+      image: 'cardSesameOil',
+    },
+    {
+      id: 'water',
+      kind: 'ingredient',
+      theme: 'vegetable',
+      frame: 'vegetableCardFrame',
+      image: 'cardWater',
+    },
   ] as const;
 
   assert.equal(baiweiPantry.length, 63);
   for (const item of supplementalCards) {
-    await access(
+    const imageBytes = await readFile(
       new URL('../public/art/cards/' + item.id + '.webp', import.meta.url),
     );
+    assert.equal(imageBytes.toString('ascii', 0, 4), 'RIFF');
+    assert.equal(imageBytes.toString('ascii', 8, 12), 'WEBP');
+    assert.equal(imageBytes.toString('ascii', 12, 16), 'VP8X');
+    assert.ok(imageBytes[20] & 0x10, item.id + ' must retain an alpha channel');
+    assert.equal(imageBytes.readUIntLE(24, 3) + 1, 512);
+    assert.equal(imageBytes.readUIntLE(27, 3) + 1, 512);
     assert.ok(
       artSource.includes('/cards/' + item.id + '.webp?inline'),
       item.id + ' must be part of the self-contained build',
     );
-    const cardBlock = artSource
-      .split(`  ${item.id}: {`)[1]
-      ?.split('  },')[0];
+    const cardBlock = artSource.split(`  ${item.id}: {`)[1]?.split('  },')[0];
     assert.ok(cardBlock, item.id + ' must have supplemental card metadata');
     assert.ok(cardBlock.includes(`frame: ${item.frame}`));
     assert.ok(cardBlock.includes(`image: ${item.image}`));
@@ -322,5 +356,24 @@ void test('workbench-only staples have distinct inline card art without changing
       assert.ok(cardBlock.includes('image: cardCookedRice'));
       assert.ok(!cardBlock.includes('image: cardRice,'));
     }
+  }
+});
+
+void test('every item in the guided sample pantry has an inline card illustration', async () => {
+  const state = emptyState('demo');
+  restoreDemoKitchen(state, '2026-09-07');
+  const artSource = await readFile(
+    new URL('../lib/art.ts', import.meta.url),
+    'utf8',
+  );
+  for (const batch of state.inventory) {
+    const id = pantryArtId(batch.canonicalIngredientId, batch.displayName);
+    await access(
+      new URL('../public/art/cards/' + id + '.webp', import.meta.url),
+    );
+    assert.ok(
+      artSource.includes('/cards/' + id + '.webp?inline'),
+      batch.displayName + ' must have artwork in the web and offline builds',
+    );
   }
 });

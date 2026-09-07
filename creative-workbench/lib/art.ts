@@ -73,6 +73,10 @@ import cardOil from '../public/art/cards/oil.webp?inline';
 import cardCookingWine from '../public/art/cards/cooking_wine.webp?inline';
 import cardStarch from '../public/art/cards/starch.webp?inline';
 import cardCookedRice from '../public/art/cards/cooked_rice.webp?inline';
+import cardWhitePepper from '../public/art/cards/white_pepper.webp?inline';
+import cardDriedChili from '../public/art/cards/dried_chili.webp?inline';
+import cardSesameOil from '../public/art/cards/sesame_oil.webp?inline';
+import cardWater from '../public/art/cards/water.webp?inline';
 import {
   baiweiPantry,
   type PantryCardFrame,
@@ -198,6 +202,30 @@ const workbenchSupplementalCardArt: Record<string, PantryCardArt> = {
   cooked_rice: {
     frame: vegetableCardFrame,
     image: cardCookedRice,
+    kind: 'ingredient',
+    theme: 'vegetable',
+  },
+  white_pepper: {
+    frame: spiceCardFrame,
+    image: cardWhitePepper,
+    kind: 'seasoning',
+    theme: 'spice',
+  },
+  dried_chili: {
+    frame: spiceCardFrame,
+    image: cardDriedChili,
+    kind: 'seasoning',
+    theme: 'spice',
+  },
+  sesame_oil: {
+    frame: spiceCardFrame,
+    image: cardSesameOil,
+    kind: 'seasoning',
+    theme: 'spice',
+  },
+  water: {
+    frame: vegetableCardFrame,
+    image: cardWater,
     kind: 'ingredient',
     theme: 'vegetable',
   },
