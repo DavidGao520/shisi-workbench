@@ -1611,19 +1611,8 @@ export default function Home({
                 />
               ) : (
                 <section className="cooking-layout">
-                  <div className="cooking-art">
+                  <div className="cooking-art cooking-art--active">
                     <RecipeArt recipe={sessionRecipe(s, session)} />
-                    <p className="eyebrow">
-                      {dataset === 'demo'
-                        ? '体验演练 · 无需真的开火'
-                        : '已确认的一餐'}{' '}
-                      ·{' '}
-                      {recipePeople(
-                        sessionRecipe(s, session),
-                        session.servings,
-                      )}{' '}
-                      人份
-                    </p>
                     <h2>{sessionRecipe(s, session).title}</h2>
                     <button
                       className="text-button"

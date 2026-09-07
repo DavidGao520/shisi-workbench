@@ -1458,6 +1458,21 @@ textarea {
 .cooking-art {
   padding: 0 8px;
 }
+/* Keep the active dish caption below its art, including on narrow screens. */
+.cooking-art.cooking-art--active {
+  display: block;
+  min-width: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.cooking-art.cooking-art--active > .baiwei-art,
+.cooking-art.cooking-art--active > img {
+  margin: 0 auto 12px;
+}
+.cooking-art--active > .text-button {
+  justify-content: center;
+  text-align: center;
+}
 .step-panel {
   padding: 27px;
 }
