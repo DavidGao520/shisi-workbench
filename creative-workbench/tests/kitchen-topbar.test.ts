@@ -34,6 +34,12 @@ const header = nodes.find(
     node.openingElement.getText(file).includes('topbar'),
 ) as ts.JsxElement;
 assert.ok(header);
+const intro = nodes.find(
+  (node) =>
+    ts.isJsxElement(node) &&
+    node.openingElement.getText(file) === '<div className="intro">',
+) as ts.JsxElement;
+assert.ok(intro);
 
 function harness(overrides: Record<string, unknown> = {}) {
   const actions = { tourStep: -1, reset: false, dataset: '' };
@@ -45,6 +51,13 @@ function harness(overrides: Record<string, unknown> = {}) {
     s: { demoExperience: { tourStep: 3 } },
     busy: false,
     tourPaused: false,
+    page: 'today',
+    pages: [
+      { id: 'today', name: '今日一餐' },
+      { id: 'inventory', name: '我的厨房' },
+      { id: 'cooking', name: '做菜模式' },
+      { id: 'archive', name: '百味图' },
+    ],
     moveTour: (step: number) => {
       actions.tourStep = step;
     },
@@ -67,6 +80,7 @@ function harness(overrides: Record<string, unknown> = {}) {
       context,
     );
   const markup = renderToStaticMarkup(evaluate(header.getText(file)));
+  const introMarkup = renderToStaticMarkup(evaluate(intro.getText(file)));
   function click(label: string) {
     const button = nodes.find(
       (node) =>
@@ -86,12 +100,13 @@ function harness(overrides: Record<string, unknown> = {}) {
     assert.ok(expression);
     evaluate(expression.getText(file))();
   }
-  return { markup, actions, click };
+  return { markup, introMarkup, actions, click };
 }
 
 void test('demo header has one kitchen label and all three actions without the duplicate strip', () => {
   const { markup } = harness();
-  assert.equal(markup.match(/体验样例/g)?.length, 1);
+  assert.equal(markup.match(/<span>样例厨房<\/span>/g)?.length, 1);
+  assert.doesNotMatch(markup, /体验样例厨房/);
   assert.equal(markup.match(/<button/g)?.length, 3);
   for (const label of ['重新参观', '恢复初始样例', '返回我的真实厨房'])
     assert.ok(markup.includes(label));
@@ -102,6 +117,32 @@ void test('demo header has one kitchen label and all three actions without the d
   assert.doesNotMatch(markup, /本机保存|class="dot"|食材与食忆均为样例/);
   assert.doesNotMatch(source, /className="dataset-banner"/);
   assert.doesNotMatch(css, /\.dataset-banner|\.dot\s*\{/);
+});
+
+void test('kitchen switching has the same prominent button treatment in both modes', () => {
+  for (const dataset of ['demo', 'real']) {
+    const { markup } = harness({ dataset });
+    assert.equal(markup.match(/class="primary kitchen-switch"/g)?.length, 1);
+    assert.match(
+      markup,
+      /class="primary kitchen-switch"[^>]*>(?:返回我的真实厨房|先逛逛样例厨房)<\/button>/,
+    );
+  }
+});
+
+void test('sample pages omit the extra eyebrow and today copy uses the requested punctuation', () => {
+  for (const page of ['today', 'inventory', 'cooking', 'archive']) {
+    const { introMarkup } = harness({ page });
+    assert.doesNotMatch(introMarkup, /eyebrow|练习做一餐|不必真的开火/);
+  }
+  assert.match(harness({ dataset: 'real' }).introMarkup, /从手边食材开始/);
+  for (const dataset of ['demo', 'real']) {
+    assert.ok(
+      harness({ dataset }).introMarkup.includes(
+        '<p>冰箱有啥，今天吃啥，挑一道手边就能做的家常菜</p>',
+      ),
+    );
+  }
 });
 
 void test('real kitchen does not show sample management and can still switch to demo', () => {

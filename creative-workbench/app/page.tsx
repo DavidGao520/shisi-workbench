@@ -963,7 +963,7 @@ export default function Home({
       <main className="workspace">
         <header className="topbar">
           <div className="topbar-context">
-            <span>{dataset === 'demo' ? '体验样例厨房' : '我的家庭厨房'}</span>
+            <span>{dataset === 'demo' ? '样例厨房' : '我的家庭厨房'}</span>
             {!s && <output>正在打开厨房…</output>}
           </div>
           <div className="actions topbar-actions">
@@ -993,7 +993,7 @@ export default function Home({
               </>
             )}
             <button
-              className="text-button"
+              className="primary kitchen-switch"
               disabled={busy}
               onClick={() =>
                 changeDataset(dataset === 'real' ? 'demo' : 'real')
@@ -1006,15 +1006,11 @@ export default function Home({
         </header>
         <div className="intro">
           <div>
-            <p className="eyebrow">
-              {dataset === 'demo'
-                ? '练习做一餐，不必真的开火'
-                : '从手边食材开始'}
-            </p>
+            {dataset === 'real' && <p className="eyebrow">从手边食材开始</p>}
             <h1>{pages.find((p) => p.id === page)?.name}</h1>
             <p>
               {page === 'today'
-                ? '冰箱有啥，今天吃啥。挑一道手边就能做的家常菜。'
+                ? '冰箱有啥，今天吃啥，挑一道手边就能做的家常菜'
                 : page === 'inventory'
                   ? '先确认，再入库。每一批食材，都由你说了算。'
                   : page === 'cooking'
