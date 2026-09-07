@@ -3,16 +3,18 @@ import { spawnSync } from 'node:child_process';
 import { access } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requireNode } from './runtime-paths.mjs';
+import { requireNode } from './node-runtime.mjs';
 
 // Shared by macOS and Windows launchers; never interpolate workspace into a shell.
 async function main() {
   requireNode();
   const [action, directory] = process.argv.slice(2);
-  if (!['start', 'stop', 'setup-voice'].includes(action) || !directory)
+  if (action === 'setup-voice')
     throw new Error(
-      '用法：node workbench.mjs start|stop|setup-voice "完整工作台目录"',
+      '新版语音直接使用云端 API，无需初始化或安装本机模型。请启动厨房后点击「语音录入」。',
     );
+  if (!['start', 'stop'].includes(action) || !directory)
+    throw new Error('用法：node workbench.mjs start|stop "完整工作台目录"');
   const workspace = resolve(directory);
   await access(join(workspace, '中华食肆.html')).catch(() => {
     throw new Error(
@@ -20,32 +22,11 @@ async function main() {
     );
   });
   const script = fileURLToPath(
-    new URL(
-      action === 'setup-voice' ? './setup-voice.mjs' : './kitchen-bridge.mjs',
-      import.meta.url,
-    ),
+    new URL('./kitchen-bridge.mjs', import.meta.url),
   );
-  if (action === 'setup-voice') {
-    const check = spawnSync('uv', ['--version'], {
-      windowsHide: true,
-      stdio: 'ignore',
-    });
-    if (check.error || check.status !== 0)
-      throw new Error(
-        '尚未找到 uv。请按 README 安装 uv，重开终端 / WorkBuddy 后再初始化语音。',
-      );
-    console.log(
-      '首次准备语音需要联网下载 Python 依赖与模型，请等待完成；不会读取库存或配置 API Key。',
-    );
-  }
   const run = spawnSync(
     process.execPath,
-    [
-      script,
-      ...(action === 'setup-voice'
-        ? [workspace]
-        : [action, '--workspace', workspace]),
-    ],
+    [script, action, '--workspace', workspace],
     { stdio: 'inherit', windowsHide: true },
   );
   if (run.error || run.status !== 0)
@@ -63,8 +44,6 @@ async function main() {
       );
     else if (process.platform === 'darwin')
       spawnSync('open', ['http://127.0.0.1:43117/']);
-  } else if (action === 'setup-voice') {
-    console.log('语音准备完成。请刷新厨房页面，点击「语音录入」。');
   } else console.log('厨房连接已停止；没有删除库存或记录。');
 }
 

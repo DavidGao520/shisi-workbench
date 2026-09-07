@@ -78,7 +78,7 @@ export function VoiceIntake({
         location.origin,
         !!document.querySelector('meta[name="kitchen-workspace"]'),
       );
-      if (nextService.kind === 'cloud' && !window.OfflineAudioContext)
+      if (!window.OfflineAudioContext)
         throw new Error(
           '此浏览器暂不支持录音处理，请换用 Chrome 或 Safari，或直接输入食材。',
         );
@@ -166,10 +166,7 @@ export function VoiceIntake({
           if (version !== generation.current) return;
           setPhase('recognizing');
           const abort = (request.current = new AbortController());
-          const timeout = setTimeout(
-            () => abort.abort(),
-            service.kind === 'cloud' ? 65000 : 125000,
-          );
+          const timeout = setTimeout(() => abort.abort(), 65000);
           try {
             const transcript = await transcribeVoice(
               service,
@@ -201,7 +198,7 @@ export function VoiceIntake({
       },
       navigator.mediaDevices,
       window.MediaRecorder,
-      service.kind === 'cloud' ? 55000 : 60000,
+      55000,
     );
     void controller.current.start();
   };
@@ -281,9 +278,7 @@ export function VoiceIntake({
           )}
         </div>
         <small>
-          {service?.kind === 'local'
-            ? '最多一分钟。本机转写；确认后才入库。'
-            : '最多约一分钟。录音将发送至腾讯云转写，工作台不保存录音；确认后才入库。'}
+          最多约一分钟。录音将发送至腾讯云转写，工作台不保存录音；确认后才入库。
         </small>
       </div>
       {error && (

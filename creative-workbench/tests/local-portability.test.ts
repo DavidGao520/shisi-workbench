@@ -139,12 +139,19 @@ void test('release manifest contains both platforms, all relative module depende
   assert.equal(new Set(releasePaths).size, releasePaths.length);
   for (const path of [
     'Start-Windows.cmd',
-    'Setup-Voice-Windows.cmd',
     'Stop-Windows.cmd',
     '停止厨房.command',
     'CHINESE-RECIPE-SOURCES.md',
   ])
     assert.ok(releasePaths.includes(path), path);
+  assert.ok(
+    releasePaths.includes('skills/zhonghua-shisi/scripts/cloud-speech.mjs'),
+  );
+  for (const path of releasePaths)
+    assert.doesNotMatch(
+      path,
+      /setup-voice|Setup-Voice|初始化语音|local-speech|runtime-paths|transcribe\.py/,
+    );
   assert.ok(
     releaseFiles.some(
       ([source, dest]) =>

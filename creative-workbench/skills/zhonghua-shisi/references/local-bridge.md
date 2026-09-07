@@ -4,7 +4,9 @@
 
 0.4.2 增加所选菜品的步骤通道。用户说“读取厨房任务，生成做菜步骤”时，按 [cooking-handoff.md](cooking-handoff.md) 读取页面主动准备的菜名/用料并生成步骤，不要求用户分享整份库存，不使用照片 ticket。页面不能主动唤醒 WorkBuddy；必须由用户在自己的对话触发，不擅自添加自动化任务。
 
-0.4 增加独立网页语音通道：`/voice/status` / `/voice/transcribe` 受相同本机来源和请求头检查保护，调用固定的本机 Python / Whisper 程序，不读取库存、不使用照片 ticket、不冒充 WorkBuddy 模型。音频限制 3 MB / 一分钟，最多一个转写子进程，超时 / 取消终止；音频不落盘。语音模型与环境在完整包 `.kitchen-voice/`，不进入分发包。
+网页语音通道 `/voice/status` / `/voice/transcribe` 受相同本机来源和请求头检查保护，固定转交至 `https://shisi-kitchen-workbench.yuangao021804.chatgpt.site/api/voice/status` / `api/voice/transcribe`。本机程序不持有腾讯密钥、不调用本机模型、不读取库存、不使用照片 ticket。浏览器转换为 16 kHz 单声道 PCM16 WAV，最多 1,920,044 字节 / 60 秒；最多一个中继转写，超时或取消中止，无自动重试、无重定向、音频不落盘。状态检查也会随页面断开或停止而取消。
+
+只向固定服务发送自建 Origin / X-Kitchen-Voice / Content-Type 头，不转发 Cookie、Authorization、客户端声称的 IP 或其他任意请求头。云端仍使用实际网络来源执行持久化次数限制，同一现场网络共享额度。云端访问被拦截时向用户显示问题，不找密钥、不复用浏览器凭据、不下载 Whisper。ZIP 能否使用语音取决于云端入口实际可达，不能因代码测试通过就宣称实测成功。
 
 ## 定位与启动
 

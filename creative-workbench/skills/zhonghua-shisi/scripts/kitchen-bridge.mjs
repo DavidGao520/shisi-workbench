@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Local candidate delivery and offline speech transcription. No inventory access.
+// Local candidate delivery and fixed cloud speech relay. No inventory access.
 import { createServer } from 'node:http';
 import {
   randomUUID,
@@ -18,9 +18,9 @@ import {
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { createLocalSpeech } from './local-speech.mjs';
+import { createCloudSpeech } from './cloud-speech.mjs';
 import { cookingAction, cookingTaskSummary } from './cooking-contract.mjs';
-import { requireNode } from './runtime-paths.mjs';
+import { requireNode } from './node-runtime.mjs';
 
 export const PROTOCOL = 'zhonghua-shisi-bridge-1';
 export const PORT = 43117;
@@ -183,7 +183,7 @@ function secretMatches(header, token) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** @param {{ workspace: string, port?: number, now?: () => number, speech?: { status: () => Promise<unknown>, transcribe: (req: any, signal: AbortSignal) => Promise<unknown> } }} options */
+/** @param {{ workspace: string, port?: number, now?: () => number, speech?: { status: (signal?: AbortSignal) => Promise<unknown>, transcribe: (req: any, signal: AbortSignal) => Promise<unknown> } }} options */
 export async function startBridge({
   workspace,
   port = PORT,
@@ -191,7 +191,7 @@ export async function startBridge({
   speech,
 }) {
   const root = resolve(workspace);
-  const voice = speech || createLocalSpeech(root);
+  const voice = speech || createCloudSpeech();
   let html;
   for (const path of [
     join(root, '中华食肆.html'),
@@ -355,9 +355,10 @@ export async function startBridge({
             ),
           ),
         );
-      } else if (req.method === 'GET' && path === '/voice/status') {
-        json(200, await voice.status());
-      } else if (req.method === 'POST' && path === '/voice/transcribe') {
+      } else if (
+        (req.method === 'GET' && path === '/voice/status') ||
+        (req.method === 'POST' && path === '/voice/transcribe')
+      ) {
         const abort = new AbortController();
         speechControllers.add(abort);
         abort.signal.addEventListener(
@@ -372,7 +373,12 @@ export async function startBridge({
         };
         res.once('close', cancel);
         try {
-          json(200, await voice.transcribe(req, abort.signal));
+          json(
+            200,
+            path === '/voice/status'
+              ? await voice.status(abort.signal)
+              : await voice.transcribe(req, abort.signal),
+          );
         } finally {
           speechControllers.delete(abort);
           res.removeListener('close', cancel);
