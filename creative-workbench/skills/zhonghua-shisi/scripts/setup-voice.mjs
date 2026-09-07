@@ -2,18 +2,27 @@
 import { spawnSync } from 'node:child_process';
 import { mkdir, access, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
+import {
+  requireNode,
+  voicePython,
+  voiceEnvironment,
+} from './runtime-paths.mjs';
 
+requireNode();
 const workspace = resolve(process.argv[2] || 'release');
 const runtime = join(workspace, '.kitchen-voice');
 await mkdir(runtime, { recursive: true, mode: 0o700 });
-const python = join(runtime, 'venv', 'bin', 'python');
+const python = voicePython(runtime);
 const run = (command, args) => {
   const result = spawnSync(command, args, {
     stdio: 'inherit',
-    env: { ...process.env, HF_HUB_DISABLE_TELEMETRY: '1' },
+    windowsHide: true,
+    env: voiceEnvironment(workspace),
   });
   if (result.error || result.status !== 0)
-    throw new Error('语音环境准备失败，请确认 uv 和网络可用后重试。');
+    throw new Error(
+      '语音环境准备失败。请确认 uv、网络和磁盘空间；Windows 若提示 DLL 缺失，请按 README 安装微软 VC++ x64 运行库后重试。',
+    );
 };
 try {
   await access(python);

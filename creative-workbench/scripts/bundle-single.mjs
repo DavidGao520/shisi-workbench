@@ -1,12 +1,6 @@
-import {
-  readFile,
-  writeFile,
-  mkdir,
-  copyFile,
-  cp,
-  chmod,
-} from 'node:fs/promises';
-import { resolve, basename } from 'node:path';
+import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
+import { resolve, dirname } from 'node:path';
+import { releaseFiles } from './release-files.mjs';
 const root = resolve(import.meta.dirname, '..');
 const output = resolve(root, 'release');
 await mkdir(output, { recursive: true });
@@ -38,26 +32,15 @@ if (/<(script|link)\b[^>]*(src|href)="(?!data:)/.test(html))
     'External application resource remains in standalone artifact',
   );
 await writeFile(resolve(output, '中华食肆.html'), html);
-for (const file of [
-  'README.md',
-  'docs/ASSET-SOURCES.md',
-  'docs/CHINESE-RECIPE-SOURCES.md',
-  'docs/IMPLEMENTATION-STATUS.md',
-])
-  await copyFile(resolve(root, file), resolve(output, basename(file)));
-await cp(resolve(root, 'skills'), resolve(output, 'skills'), {
-  recursive: true,
-});
-await copyFile(
-  resolve(root, 'scripts/启动厨房.command'),
-  resolve(output, '启动厨房.command'),
-);
-await chmod(resolve(output, '启动厨房.command'), 0o755);
-await copyFile(
-  resolve(root, 'scripts/初始化语音.command'),
-  resolve(output, '初始化语音.command'),
-);
-await chmod(resolve(output, '初始化语音.command'), 0o755);
+for (const [source, destination] of releaseFiles) {
+  const target = resolve(output, destination);
+  await mkdir(dirname(target), { recursive: true });
+  let content = await readFile(resolve(root, source));
+  if (destination.endsWith('.cmd'))
+    content = Buffer.from(content.toString('utf8').replace(/\r?\n/g, '\r\n'));
+  await writeFile(target, content);
+  if (destination.endsWith('.command')) await chmod(target, 0o755);
+}
 console.log(
   'Self-contained HTML written: ' +
     resolve(output, '中华食肆.html') +
