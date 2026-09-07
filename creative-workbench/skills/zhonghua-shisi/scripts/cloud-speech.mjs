@@ -6,7 +6,7 @@ const problem = (message, status = 400) =>
   Object.assign(new Error(message), { status });
 const messages = {
   400: '录音格式不正确，请重新录制。',
-  403: '云端语音连接被网站访问保护拦截，请联系工作台维护者；无需安装本机模型。',
+  403: '云端语音拒绝了这次请求，请联系工作台维护者；无需安装本机模型。',
   413: '录音太大，请分成一分钟以内的几段。',
   415: '录音格式不支持，请在页面重新录制。',
   422: '这段录音无法识别，请重新录制或直接输入食材。',
@@ -61,6 +61,27 @@ async function readWav(req, signal) {
 async function readResult(response, signal) {
   if (!response.ok) {
     await response.body?.cancel();
+    // A Cloudflare header alone is not evidence of a WAF block: the actual API
+    // also runs behind Cloudflare and can return its own JSON 403.
+    if (
+      response.status === 403 &&
+      response.headers.get('server')?.toLowerCase() === 'cloudflare' &&
+      response.headers
+        .get('content-type')
+        ?.split(';')[0]
+        .trim()
+        .toLowerCase() === 'text/html'
+    ) {
+      const ray = response.headers.get('cf-ray') || '';
+      // Only expose the bounded correlation ID, never the upstream HTML or IP.
+      const reference = /^[a-f0-9]{16}(?:-[A-Z]{3})?$/.test(ray)
+        ? `（请求编号 ${ray}）`
+        : '';
+      throw problem(
+        `网站访问层拒绝了语音连接${reference}，需由托管平台排查；无需安装本机模型。`,
+        403,
+      );
+    }
     const status = Object.hasOwn(messages, response.status)
       ? response.status
       : 502;

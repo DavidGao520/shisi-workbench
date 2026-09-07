@@ -16,6 +16,21 @@ WorkBuddy、Node、Python 或本地语音模型。新版 ZIP 的 `127.0.0.1:4311
 因此尚不能宣称 ZIP 云语音已实测接通，须由维护者解决受支持的 API 访问入口后补做端到端验收。
 不通过伪装浏览器、拷贝登录 Cookie 或将密钥打包来绕过拦截，也不改回下载本机模型。
 
+### ZIP 403 排查记录（2026-09-07，尚未修通）
+
+- 当前 ZIP 的 Node 中继是 `fab05dd` 新增路径；此前浏览器直接请求线上 API 的成功记录，不能证明中继已通。服务端语音代码自 `041befd` 后未变。
+- 本机对固定 `/api/voice/status` 的请求收到 HTTP 403、`server: cloudflare`、`content-type: text/html`，页面标题为 `Attention Required! | Cloudflare`；排查编号为 `a3725f3b9b0f5cfd-LAX`。没有上传录音或调用付费转写。
+- 应用的 status 处理器始终返回 JSON / 200；应用自身的 POST 校验失败是 JSON / 403。因此这次 HTML 拒绝发生在应用处理器之外，不能归因为腾讯密钥、语音额度或录音格式。
+- Sites 查询确认站点为 active / public。最近两小时的 Worker 日志有浏览器首页 GET / 200，没有此次 status 请求记录；日志查询不能代替平台防护事件查询。
+- 此 Mac 的系统 HTTP/HTTPS 代理已开启，但 Node 22.14.0 的默认 fetch 不读取这份配置。这说明两者可能采用不同网络路径，**尚未证明其与 403 的因果关系**；未切换代理、伪装客户端、复制 Cookie 或尝试绕过 403。
+- 中继现在区分 Cloudflare HTML 403 与普通/API 403，只显示经过长度和字符校验的请求编号；不读取或显示上游错误正文，不自动重试。
+
+下一步须由当前站点的托管平台管理员凭请求编号查询实际防护规则，提供受支持的程序化 API 访问方式；现有 Sites 管理接口仅提供站点访问人群设置，没有该层防护规则管理能力。不可因 public 已开启就宣称 Node 客户端可用。若改为独立 API 托管，应先确认目标服务、授权和费用，再迁移服务端凭证及持久化限额；不能将凭证下发 ZIP 或取消总量限制。
+
+验收仍需：本机 status 返回真实 `ready: true` → 一段真实录音完成腾讯转写 → Mac 和 Windows 解压启动分别验证。当前仅完成定位与错误信息修正，**云语音端到端问题仍未解决**。
+
+依据：[Cloudflare 403 排障说明](https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-403/)、[Node 官方代理配置说明](https://nodejs.org/en/learn/http/enterprise-network-configuration)。
+
 ## 服务端配置（维护者一次设置，普通用户不用设置）
 
 1. 在腾讯云开通语音识别，确认计费/额度；使用仅有一句话识别调用权限的凭证。

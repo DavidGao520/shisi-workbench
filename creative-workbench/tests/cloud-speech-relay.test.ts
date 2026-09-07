@@ -138,6 +138,107 @@ void test('ZIP keeps meaningful status codes, sanitizes upstream errors and neve
   }
 });
 
+void test('ZIP distinguishes an HTML access-layer refusal from an API 403 without reading error bodies', async () => {
+  for (const example of [
+    {
+      type: 'text/html; charset=UTF-8',
+      server: 'cloudflare',
+      ray: 'a3725f3b9b0f5cfd-LAX',
+      edge: true,
+      reference: true,
+    },
+    {
+      type: 'application/json',
+      server: 'cloudflare',
+      ray: 'a3725f3b9b0f5cfd-LAX',
+      edge: false,
+      reference: false,
+    },
+    {
+      type: 'text/html',
+      server: 'other',
+      ray: 'a3725f3b9b0f5cfd-LAX',
+      edge: false,
+      reference: false,
+    },
+    {
+      type: 'TEXT/HTML',
+      server: 'Cloudflare',
+      ray: 'a3725f3b9b0f5cfd',
+      edge: true,
+      reference: true,
+    },
+    {
+      type: 'text/html',
+      server: 'cloudflare',
+      ray: 'private-arbitrary-header',
+      edge: true,
+      reference: false,
+    },
+    {
+      type: 'text/html',
+      server: 'cloudflare',
+      ray: 'a'.repeat(1024),
+      edge: true,
+      reference: false,
+    },
+    {
+      type: 'text/html',
+      server: 'cloudflare',
+      ray: '',
+      edge: true,
+      reference: false,
+    },
+  ]) {
+    let calls = 0;
+    let cancelled = false;
+    const response = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('private-response-body'));
+        },
+        cancel() {
+          cancelled = true;
+        },
+      }),
+      {
+        status: 403,
+        headers: {
+          'content-type': example.type,
+          server: example.server,
+          'cf-ray': example.ray,
+        },
+      },
+    );
+    response.body!.getReader = () =>
+      assert.fail('must not read the error body');
+    const speech = createCloudSpeech({
+      fetchImpl: async () => {
+        calls++;
+        return response;
+      },
+    });
+    await assert.rejects(speech.status(), (error: unknown) => {
+      const e = error as Error & { status: number };
+      assert.equal(e.status, 403);
+      assert.equal(e.message.includes('网站访问层'), example.edge);
+      assert.equal(e.message.includes('请求编号'), example.reference);
+      if (example.reference) assert.ok(e.message.includes(example.ray));
+      assert.doesNotMatch(
+        e.message,
+        /private-response-body|private-arbitrary-header|a{100}/,
+      );
+      return true;
+    });
+    assert.equal(
+      calls,
+      1,
+      'a refusal must not trigger retries or a route change',
+    );
+    assert.equal(cancelled, true);
+  }
+});
+
 void test('ZIP rejects invalid or excessive API output and requires the cloud engine', async () => {
   for (const response of [
     new Response('<html>not API</html>'),
