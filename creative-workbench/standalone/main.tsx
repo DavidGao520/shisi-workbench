@@ -4,6 +4,6 @@ import Home from '../app/page';
 import '../app/globals.css';
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Home />
+    <Home initialDataset="demo" />
   </React.StrictMode>,
 );

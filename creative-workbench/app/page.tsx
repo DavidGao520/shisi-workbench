@@ -561,7 +561,11 @@ function ReviewForm({
     </section>
   );
 }
-export default function Home() {
+export default function Home({
+  initialDataset = 'real',
+}: {
+  initialDataset?: Dataset;
+}) {
   const [photoService, setPhotoService] = useState<
     'local' | 'cloud' | 'unavailable'
   >('cloud');
@@ -581,13 +585,14 @@ export default function Home() {
     };
   }, []);
   const [page, setPage] = useState('today'),
-    [dataset, setDataset] = useState<Dataset>('real'),
+    [dataset, setDataset] = useState<Dataset>(initialDataset),
     [s, setState] = useState<KitchenState>(),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [error, setError] = useState('');
   const [tourPaused, setTourPaused] = useState(false);
   const [previewStep, setPreviewStep] = useState(0);
+  const initialViewPending = useRef(true);
   const savedTourStep =
     dataset === 'demo' && s?.dataset === 'demo' && !tourPaused
       ? (s.demoExperience?.tourStep ?? null)
@@ -602,12 +607,13 @@ export default function Home() {
   // Manual navigation dismisses old feedback; successful workflows keep their
   // newly created notice when they move to the destination with setPage.
   const navigate = useCallback((nextPage: string) => {
+    initialViewPending.current = false;
     setMessage('');
     setTourPaused(true);
     setPage(nextPage);
   }, []);
   const lock = useRef(false),
-    datasetRef = useRef<Dataset>('real');
+    datasetRef = useRef<Dataset>(initialDataset);
   const [dialog, setDialog] = useState<'manual' | 'workbuddy' | 'voice' | null>(
       null,
     ),
@@ -647,12 +653,18 @@ export default function Home() {
     let cancelled = false;
     void (dataset === 'demo' ? openDemoKitchen(db) : db.read(dataset)).then(
       (data) => {
-        if (!cancelled)
+        if (!cancelled && datasetRef.current === dataset) {
+          if (initialViewPending.current) {
+            initialViewPending.current = false;
+            if (dataset === 'demo')
+              setPage(tourPages[data.demoExperience?.tourStep ?? 0] ?? 'today');
+          }
           setState((previous) =>
             previous?.dataset === dataset && previous.revision > data.revision
               ? previous
               : data,
           );
+        }
       },
       (reason) => {
         if (!cancelled) setError('本机保存不可用：' + String(reason));
@@ -898,6 +910,7 @@ export default function Home() {
         setCalibrationKey(null);
         setTourPaused(false);
         setPreviewStep(0);
+        initialViewPending.current = false;
         datasetRef.current = d;
         setDataset(d);
         setPage(
