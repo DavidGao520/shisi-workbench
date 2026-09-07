@@ -1,6 +1,11 @@
-// Fixed, credential-free relay to the existing hosted API. No local model fallback.
-export const VOICE_ORIGIN =
-  'https://shisi-kitchen-workbench.yuangao021804.chatgpt.site';
+// Maintainer-owned build configuration. Change only after a real SCF acceptance test.
+// Never take the target/transport from a browser request, environment or upstream response.
+/** @type {Readonly<{origin: string, transport: 'wav' | 'json-base64'}>} */
+export const VOICE_ENDPOINT = Object.freeze({
+  origin: 'https://shisi-kitchen-workbench.yuangao021804.chatgpt.site',
+  transport: 'wav',
+});
+export const VOICE_ORIGIN = VOICE_ENDPOINT.origin;
 export const MAX_WAV_BYTES = 1920044;
 const problem = (message, status = 400) =>
   Object.assign(new Error(message), { status });
@@ -112,19 +117,44 @@ async function readResult(response, signal) {
   }
 }
 
-// fetch injection is only for tests; no incoming URL/header/config can change the target.
-export function createCloudSpeech({ fetchImpl = fetch } = {}) {
+// Dependency injection is for tests; kitchen-bridge always uses the fixed default.
+export function createCloudSpeech({
+  fetchImpl = fetch,
+  endpoint = VOICE_ENDPOINT,
+} = {}) {
+  const origin = endpoint.origin;
+  const transport = endpoint.transport;
+  const url = new URL(origin);
+  if (
+    url.origin !== origin ||
+    url.protocol !== 'https:' ||
+    !(
+      (origin === VOICE_ORIGIN && transport === 'wav') ||
+      (/^[a-z0-9-]+\.[a-z0-9-]+\.tencentscf\.com$/.test(url.hostname) &&
+        transport === 'json-base64')
+    )
+  )
+    throw problem('语音接入配置无效，请联系工作台维护者。', 503);
   let busy = false;
   async function request(path, signal, audio) {
     signal.throwIfAborted();
-    const response = await fetchImpl(VOICE_ORIGIN + '/api/voice/' + path, {
+    const jsonAudio = transport === 'json-base64';
+    const response = await fetchImpl(origin + '/api/voice/' + path, {
       method: audio ? 'POST' : 'GET',
       headers: {
-        Origin: VOICE_ORIGIN,
+        Origin: origin,
         'X-Kitchen-Voice': '1',
-        ...(audio ? { 'Content-Type': 'audio/wav' } : {}),
+        ...(audio
+          ? { 'Content-Type': jsonAudio ? 'application/json' : 'audio/wav' }
+          : {}),
       },
-      ...(audio ? { body: audio } : {}),
+      ...(audio
+        ? {
+            body: jsonAudio
+              ? JSON.stringify({ audio: audio.toString('base64') })
+              : audio,
+          }
+        : {}),
       signal,
       redirect: 'error',
       credentials: 'omit',
