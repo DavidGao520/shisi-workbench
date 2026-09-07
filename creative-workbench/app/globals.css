@@ -1302,14 +1302,35 @@ textarea {
   flex-direction: column;
   gap: 8px;
 }
-.instructions {
-  padding-left: 25px;
-  margin: 4px 0;
-  font-size: 15px;
+.workbuddy-photo-prompt {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f7f3e9;
+  font-size: 16px;
 }
-.instructions li {
-  padding-left: 5px;
-  margin: 10px 0;
+.workbuddy-photo-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 14px;
+}
+.workbuddy-photo-prompt-header .text-button {
+  min-height: 44px;
+}
+.workbuddy-photo-prompt-text {
+  user-select: text;
+  overflow-wrap: anywhere;
+}
+.workbuddy-photo-prompt output:empty {
+  display: none;
+}
+.actions.workbuddy-photo-actions {
+  justify-content: center;
 }
 .detail-heading {
   display: flex;

@@ -21,6 +21,7 @@ import {
   Pause,
   Play,
   Search,
+  Copy,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -129,6 +130,47 @@ import {
 } from '@/lib/kitchen';
 
 const db = new IndexedDbStore(databaseName());
+
+function WorkBuddyPhotoPrompt() {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>(
+    'idle',
+  );
+  const prompt =
+    '请使用「中华食肆 Skill」读取工作台当前的照片识别任务，识别这张照片中的食材和数量，并将结果交回待确认区。看不清的内容请留空，等我核对后再入库。';
+  return (
+    <section
+      className="workbuddy-photo-prompt"
+      aria-label="发给 WorkBuddy 的提示词"
+    >
+      <div className="workbuddy-photo-prompt-header">
+        <strong>发给 WorkBuddy</strong>
+        <button
+          type="button"
+          className="text-button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(prompt);
+              setCopyState('copied');
+            } catch {
+              setCopyState('failed');
+            }
+          }}
+        >
+          {copyState === 'copied' ? <Check size={17} /> : <Copy size={17} />}
+          {copyState === 'copied' ? '已复制' : '复制提示词'}
+        </button>
+      </div>
+      <p className="workbuddy-photo-prompt-text">{prompt}</p>
+      <output className={copyState === 'failed' ? 'muted' : 'sr-only'}>
+        {copyState === 'copied'
+          ? '已复制，可粘贴到 WorkBuddy'
+          : copyState === 'failed'
+            ? '未能自动复制，请选中上方提示词手动复制'
+            : ''}
+      </output>
+    </section>
+  );
+}
 
 function RecipeArt({ recipe }: { recipe: Recipe }) {
   const dish = baiweiDishes.find((dish) => dish.id === recipe.id);
@@ -1885,7 +1927,9 @@ export default function Home({
               : dialog === 'voice'
                 ? '在这里录音，自动识别食材和数量。核对清单后，确认一次就入库。'
                 : photoService === 'local'
-                  ? '在 WorkBuddy 对话上传照片，识别结果自动来到候选区，最后由你核对入库。'
+                  ? bridge.status?.active
+                    ? '接收已开启，把照片和下方提示词一起发给 WorkBuddy。'
+                    : '先点「准备接收照片识别」，再把照片和下方提示词一起发给 WorkBuddy。'
                   : '拍照或选择相册照片，识别后核对食材与数量。'}
           </DialogDescription>
           {error && (
@@ -1893,15 +1937,17 @@ export default function Home({
               {error}
             </p>
           )}
-          <Choice
-            label="这次是在盘点，还是补货？"
-            value={mode}
-            onChange={(v) => setMode(v as Mode)}
-            options={[
-              { value: 'stocktake', label: '盘点校准（默认，不自动累加）' },
-              { value: 'restock', label: '补货（明确增加食材）' },
-            ]}
-          />
+          {!(dialog === 'workbuddy' && photoService === 'local') && (
+            <Choice
+              label="这次是在盘点，还是补货？"
+              value={mode}
+              onChange={(v) => setMode(v as Mode)}
+              options={[
+                { value: 'stocktake', label: '盘点校准（默认，不自动累加）' },
+                { value: 'restock', label: '补货（明确增加食材）' },
+              ]}
+            />
+          )}
           {dialog === 'manual' ? (
             <form
               onSubmit={async (e) => {
@@ -2035,25 +2081,15 @@ export default function Home({
                 </>
               ) : (
                 <>
-                  <ol className="instructions">
-                    <li>在这里准备接收，锁定本次厨房和盘点方式。</li>
-                    <li>
-                      在 WorkBuddy 对话上传照片，使用「中华食肆
-                      Skill」识别。也可在对话中发送核对过的食材文字。
-                    </li>
-                    <li>回到这里核对食材与数量。你确认前，库存不会变化。</li>
-                  </ol>
+                  <WorkBuddyPhotoPrompt />
                   {bridge.status?.active && (
                     <p className="muted">
                       本次接收：
                       {bridge.status.active.dataset === 'real'
                         ? '真实厨房'
-                        : '样例厨房'}{' '}
-                      ·{' '}
-                      {bridge.status.active.mode === 'stocktake'
-                        ? '盘点校准'
-                        : '补货'}
-                      。等待有效期 30 分钟；修改上方选项不会改变已开始的任务。
+                        : '样例厨房'}
+                      {bridge.status.active.mode === 'restock' ? ' · 补货' : ''}
+                      。有效期 30 分钟。
                     </p>
                   )}
                   {bridge.problem && (
@@ -2061,7 +2097,7 @@ export default function Home({
                       {bridge.problem}
                     </p>
                   )}
-                  <div className="actions">
+                  <div className="actions workbuddy-photo-actions">
                     <button
                       className="primary"
                       disabled={
@@ -2070,7 +2106,7 @@ export default function Home({
                         !!bridge.status?.active ||
                         !!bridge.status?.otherActive
                       }
-                      onClick={() => void bridge.begin(dataset, mode)}
+                      onClick={() => void bridge.begin(dataset, 'stocktake')}
                     >
                       <Camera size={17} />
                       {bridge.status?.active
@@ -2094,21 +2130,8 @@ export default function Home({
                   </div>
                 </>
               )}
-              <div className="actions">
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setDialog(null);
-                    navigate('inventory');
-                  }}
-                >
-                  查看待确认食材
-                </button>
-              </div>
               <p className="muted">
-                照片只在你主动上传的 WorkBuddy
-                对话中识别，需要其模型能力与网络。此连接只传递候选，不读取照片、账号或正式库存；本页不调用
-                WorkBuddy API。
+                照片在你上传的 WorkBuddy 对话中识别，确认前不会改动库存。
               </p>
             </>
           )}

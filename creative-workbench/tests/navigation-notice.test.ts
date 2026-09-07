@@ -120,7 +120,6 @@ void test('in-page navigation buttons also clear stale notices', () => {
     ['去我的厨房', 'inventory'],
     ['看看今天吃什么', 'today'],
     ['去选一道菜', 'today'],
-    ['查看待确认食材', 'inventory'],
   ]) {
     const { state, evaluate } = harness();
     evaluate(handler('button', 'onClick', label))();
