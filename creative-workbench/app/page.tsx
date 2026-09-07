@@ -936,8 +936,10 @@ export default function Home({
     >
       <aside className="rail">
         <div className="brand">
-          <span className="brand-seal">食</span>
-          <div>食肆工作台</div>
+          <span className="brand-seal">
+            <span className="brand-seal-glyph">食</span>
+          </span>
+          <div className="brand-title">食肆工作台</div>
         </div>
         <TabsList className="side-tabs">
           {pages.map((p) => (
@@ -1747,9 +1749,7 @@ export default function Home({
             </TabsContent>
           </>
         )}
-        <footer className="footer">
-          中华食肆 HTML · 本地工作版 <span>菜谱有来源，食忆属于你。</span>
-        </footer>
+        <footer className="footer">菜谱有来源，食忆属于你</footer>
       </main>
       {tourStep !== null &&
         !dialog &&
