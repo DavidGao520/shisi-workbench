@@ -104,7 +104,11 @@ function History({
               <p className="baiwei-memory">
                 {session.familyMemory || '这一次，把一餐好好做完。'}
               </p>
-              <p className="baiwei-note">个人记忆 · 用户自述</p>
+              <p className="baiwei-note">
+                {session.sampleRecord
+                  ? '预置样例食忆 · 非真实做菜记录'
+                  : '个人记忆 · 用户自述'}
+              </p>
               {recipe && (
                 <button
                   className="recipe-link"

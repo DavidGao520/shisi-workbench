@@ -48,6 +48,7 @@ function harness(
     message: initialMessage,
     error: 'storage error',
     dialog: null as string | null,
+    tourPaused: false,
   };
   const context: Record<string, unknown> = {
     setPage: (page: string) => {
@@ -58,6 +59,9 @@ function harness(
     },
     setDialog: (dialog: string | null) => {
       state.dialog = dialog;
+    },
+    setTourPaused: (paused: boolean) => {
+      state.tourPaused = paused;
     },
     useCallback: (callback: unknown) => callback,
   };
@@ -85,6 +89,11 @@ void test('switching any tab dismisses the old success notice and returning does
     const changeTab = evaluate(handler('Tabs', 'onValueChange'));
     changeTab(destination);
     assert.equal(state.page, destination);
+    assert.equal(
+      state.tourPaused,
+      true,
+      'manual navigation lets the visitor explore freely',
+    );
     assert.equal(state.message, '', `stale notice on ${destination}`);
     changeTab('archive');
     assert.equal(state.message, '');
@@ -128,4 +137,83 @@ void test('automatic completion and intake navigation preserve newly created suc
     source,
     /aria-label="关闭提示"\s+onClick=\{\(\) => setMessage\(''\)\}/,
   );
+});
+
+void test('kitchen switch hydrates before exposing its target to bridge deliveries, and failure stays in real', async () => {
+  const declaration = nodes.find(
+    (node) =>
+      ts.isVariableDeclaration(node) &&
+      node.name.getText(file) === 'changeDataset',
+  ) as ts.VariableDeclaration;
+  for (const fail of [false, true]) {
+    let resolve!: (value: unknown) => void;
+    let reject!: (reason: Error) => void;
+    const hydration = new Promise((yes, no) => {
+      resolve = yes;
+      reject = no;
+    });
+    const lock = { current: false };
+    const datasetRef = { current: 'real' };
+    const observed = { dataset: 'real', page: 'today', busy: false, error: '' };
+    const context: Record<string, unknown> = {
+      busy: false,
+      lock,
+      datasetRef,
+      db: {},
+      openDemoKitchen: () => hydration,
+      tourPages: ['today', 'inventory', 'today', 'cooking', 'archive'],
+      setBusy: (value: boolean) => {
+        observed.busy = value;
+      },
+      setDataset: (value: string) => {
+        observed.dataset = value;
+      },
+      setPage: (value: string) => {
+        observed.page = value;
+      },
+      setError: (value: string) => {
+        observed.error = value;
+      },
+    };
+    for (const setter of [
+      'setState',
+      'setMessage',
+      'setDialog',
+      'setDetail',
+      'setMealConfirmations',
+      'setFoodChecked',
+      'setSeasoningOpen',
+      'setCalibrationKey',
+      'setTourPaused',
+      'setPreviewStep',
+    ])
+      context[setter] = () => {};
+    const switchKitchen = runInNewContext(
+      ts.transpileModule(`(${declaration.initializer!.getText(file)})`, {
+        compilerOptions: { target: ts.ScriptTarget.ES2022 },
+      }).outputText,
+      context,
+    );
+    const pending = switchKitchen('demo');
+    assert.equal(
+      lock.current,
+      true,
+      'receive/mutate must refuse work during hydration',
+    );
+    assert.equal(
+      datasetRef.current,
+      'real',
+      'the new bridge target is not visible yet',
+    );
+    assert.equal(observed.busy, true);
+    if (fail) reject(new Error('storage unavailable'));
+    else resolve({ dataset: 'demo', demoExperience: { tourStep: 3 } });
+    await pending;
+    assert.equal(lock.current, false);
+    assert.equal(observed.busy, false);
+    assert.equal(datasetRef.current, fail ? 'real' : 'demo');
+    assert.equal(observed.dataset, fail ? 'real' : 'demo');
+    assert.equal(observed.page, fail ? 'today' : 'cooking');
+    if (fail) assert.match(observed.error, /厨房未切换/);
+  }
 });
