@@ -1468,6 +1468,8 @@ textarea {
 }
 .timer strong {
   font-size: 21px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .review-form {
   max-width: 760px;

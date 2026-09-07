@@ -75,6 +75,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { IndexedDbStore } from '@/lib/store';
+import { formatCountdown } from '@/lib/cooking-timer';
 import {
   candidateReview,
   confirmReviewedCandidate,
@@ -1589,8 +1590,11 @@ export default function Home({
                               if (!v) return;
                               if (v.status === 'paused') {
                                 v.status = 'cooking';
-                                if (v.timerRemaining)
-                                  v.timerEnd = Date.now() + v.timerRemaining;
+                                if (v.timerRemaining) {
+                                  const resumedAt = Date.now();
+                                  v.timerEnd = resumedAt + v.timerRemaining;
+                                  setNow(resumedAt);
+                                }
                                 delete v.timerRemaining;
                               } else {
                                 v.status = 'paused';
@@ -1649,8 +1653,10 @@ export default function Home({
                                 active.step === session.step &&
                                 active.status === 'cooking'
                               ) {
+                                const startedAt = Date.now();
                                 active.timerEnd =
-                                  Date.now() + currentStep.minutes * 60000;
+                                  startedAt + currentStep.minutes * 60000;
+                                setNow(startedAt);
                               }
                             })
                           }
@@ -1662,16 +1668,16 @@ export default function Home({
                     {!!(session.timerEnd || session.timerRemaining) && (
                       <div className="timer">
                         <Clock3 size={21} />
-                        <strong>
-                          {Math.ceil(
-                            Math.max(
-                              0,
-                              session.timerEnd
-                                ? session.timerEnd - now
-                                : session.timerRemaining || 0,
-                            ) / 60000,
-                          )}{' '}
-                          分钟
+                        <strong
+                          role="timer"
+                          aria-live="off"
+                          title="剩余时间（分:秒）"
+                        >
+                          {formatCountdown(
+                            session.timerEnd
+                              ? session.timerEnd - now
+                              : session.timerRemaining || 0,
+                          )}
                         </strong>
                         <span>
                           {session.timerEnd && now >= session.timerEnd
