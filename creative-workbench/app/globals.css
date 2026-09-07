@@ -165,21 +165,31 @@ small {
   max-width: 1640px;
 }
 .topbar {
-  height: 83px;
+  min-height: 83px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   color: #6e665a;
-  font-size: 13px;
+  font-size: 14px;
 }
-.dot {
-  display: inline-block;
-  height: 6px;
-  width: 6px;
-  border-radius: 50%;
-  background: #668557;
-  margin: 0 6px 2px 15px;
+.topbar-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.topbar > .topbar-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+  gap: 4px 24px;
+}
+.topbar-actions .text-button {
+  min-height: 44px;
+  white-space: nowrap;
 }
 .edition {
   font-size: 12px;
@@ -343,8 +353,14 @@ small {
     padding: 0 18px 36px;
   }
   .topbar {
-    height: 55px;
-    font-size: 12px;
+    min-height: 64px;
+    padding: 10px 0;
+    row-gap: 4px;
+  }
+  .topbar > .topbar-actions {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    column-gap: 20px;
   }
   .edition {
     display: none;
@@ -579,25 +595,6 @@ textarea {
   background: #fbeddf;
   border-color: #dfb798;
   color: #943c24;
-}
-.dataset-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 12px 0;
-  border-bottom: 1px solid #d6be89;
-  font-size: 13px;
-  color: #92702f;
-}
-.dataset-banner strong {
-  font-size: 14px;
-}
-.dataset-banner .text-button {
-  margin-left: auto;
-}
-.dataset-banner .text-button + .text-button {
-  margin-left: 0;
 }
 .demo-welcome {
   min-height: 175px;
@@ -1676,15 +1673,9 @@ textarea {
     font-size: 12px;
   }
   .topbar .text-button {
-    font-size: 12px;
+    font-size: 14px;
   }
   .intro .eyebrow {
-    font-size: 12px;
-  }
-  .dataset-banner {
-    gap: 7px;
-  }
-  .dataset-banner span {
     font-size: 12px;
   }
   .paper {
@@ -1831,9 +1822,6 @@ textarea {
   }
   .quantity-pair {
     grid-template-columns: 1fr 90px;
-  }
-  .dataset-banner .text-button {
-    margin-left: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

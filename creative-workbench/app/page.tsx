@@ -962,12 +962,36 @@ export default function Home({
       </aside>
       <main className="workspace">
         <header className="topbar">
-          <span>
-            {dataset === 'demo' ? '体验样例厨房' : '我的家庭厨房'}{' '}
-            <span className="dot" />
-            {s ? '本机保存' : '正在打开本机数据库'}
-          </span>
-          <div className="actions">
+          <div className="topbar-context">
+            <span>{dataset === 'demo' ? '体验样例厨房' : '我的家庭厨房'}</span>
+            {!s && <output>正在打开厨房…</output>}
+          </div>
+          <div className="actions topbar-actions">
+            {dataset === 'demo' && (
+              <>
+                <button
+                  className="text-button"
+                  disabled={busy || !s}
+                  onClick={() =>
+                    void moveTour(
+                      tourPaused ? (s?.demoExperience?.tourStep ?? 0) : 0,
+                    )
+                  }
+                >
+                  {tourPaused && s?.demoExperience?.tourStep !== null
+                    ? '继续参观'
+                    : '重新参观'}
+                </button>
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => setReset(true)}
+                >
+                  <RotateCcw size={14} />
+                  恢复初始样例
+                </button>
+              </>
+            )}
             <button
               className="text-button"
               disabled={busy}
@@ -980,33 +1004,6 @@ export default function Home({
             </button>
           </div>
         </header>
-        {dataset === 'demo' && (
-          <div className="dataset-banner">
-            <strong>体验样例</strong>
-            <span>食材与食忆均为样例，不影响真实厨房。</span>
-            <button
-              className="text-button"
-              disabled={busy || !s}
-              onClick={() =>
-                void moveTour(
-                  tourPaused ? (s?.demoExperience?.tourStep ?? 0) : 0,
-                )
-              }
-            >
-              {tourPaused && s?.demoExperience?.tourStep !== null
-                ? '继续参观'
-                : '重新参观'}
-            </button>
-            <button
-              className="text-button"
-              disabled={busy}
-              onClick={() => setReset(true)}
-            >
-              <RotateCcw size={14} />
-              恢复初始样例
-            </button>
-          </div>
-        )}
         <div className="intro">
           <div>
             <p className="eyebrow">

@@ -1,0 +1,155 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ts from 'typescript';
+
+const source = readFileSync(
+  new URL('../app/page.tsx', import.meta.url),
+  'utf8',
+);
+const css = readFileSync(
+  new URL('../app/globals.css', import.meta.url),
+  'utf8',
+);
+const file = ts.createSourceFile(
+  'page.tsx',
+  source,
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.TSX,
+);
+const nodes: ts.Node[] = [];
+function visit(node: ts.Node) {
+  nodes.push(node);
+  ts.forEachChild(node, visit);
+}
+visit(file);
+const header = nodes.find(
+  (node) =>
+    ts.isJsxElement(node) &&
+    node.openingElement.tagName.getText(file) === 'header' &&
+    node.openingElement.getText(file).includes('topbar'),
+) as ts.JsxElement;
+assert.ok(header);
+
+function harness(overrides: Record<string, unknown> = {}) {
+  const actions = { tourStep: -1, reset: false, dataset: '' };
+  const context = {
+    React,
+    ArrowUpRight: () => null,
+    RotateCcw: () => null,
+    dataset: 'demo',
+    s: { demoExperience: { tourStep: 3 } },
+    busy: false,
+    tourPaused: false,
+    moveTour: (step: number) => {
+      actions.tourStep = step;
+    },
+    setReset: (value: boolean) => {
+      actions.reset = value;
+    },
+    changeDataset: (dataset: string) => {
+      actions.dataset = dataset;
+    },
+    ...overrides,
+  };
+  const evaluate = (expression: string) =>
+    runInNewContext(
+      ts.transpileModule(`(${expression})`, {
+        compilerOptions: {
+          target: ts.ScriptTarget.ES2022,
+          jsx: ts.JsxEmit.React,
+        },
+      }).outputText,
+      context,
+    );
+  const markup = renderToStaticMarkup(evaluate(header.getText(file)));
+  function click(label: string) {
+    const button = nodes.find(
+      (node) =>
+        ts.isJsxElement(node) &&
+        node.pos >= header.pos &&
+        node.end <= header.end &&
+        node.openingElement.tagName.getText(file) === 'button' &&
+        node.getText(file).includes(label),
+    ) as ts.JsxElement;
+    assert.ok(button);
+    const attribute = button.openingElement.attributes.properties.find(
+      (property) =>
+        ts.isJsxAttribute(property) &&
+        property.name.getText(file) === 'onClick',
+    ) as ts.JsxAttribute;
+    const expression = (attribute.initializer as ts.JsxExpression).expression;
+    assert.ok(expression);
+    evaluate(expression.getText(file))();
+  }
+  return { markup, actions, click };
+}
+
+void test('demo header has one kitchen label and all three actions without the duplicate strip', () => {
+  const { markup } = harness();
+  assert.equal(markup.match(/体验样例/g)?.length, 1);
+  assert.equal(markup.match(/<button/g)?.length, 3);
+  for (const label of ['重新参观', '恢复初始样例', '返回我的真实厨房'])
+    assert.ok(markup.includes(label));
+  assert.ok(markup.indexOf('重新参观') < markup.indexOf('恢复初始样例'));
+  assert.ok(
+    markup.indexOf('恢复初始样例') < markup.indexOf('返回我的真实厨房'),
+  );
+  assert.doesNotMatch(markup, /本机保存|class="dot"|食材与食忆均为样例/);
+  assert.doesNotMatch(source, /className="dataset-banner"/);
+  assert.doesNotMatch(css, /\.dataset-banner|\.dot\s*\{/);
+});
+
+void test('real kitchen does not show sample management and can still switch to demo', () => {
+  const view = harness({ dataset: 'real' });
+  assert.ok(view.markup.includes('我的家庭厨房'));
+  assert.equal(view.markup.match(/<button/g)?.length, 1);
+  assert.doesNotMatch(view.markup, /重新参观|继续参观|恢复初始样例|本机保存/);
+  view.click('先逛逛样例厨房');
+  assert.equal(view.actions.dataset, 'demo');
+});
+
+void test('moved actions preserve restart, resume, confirmation and kitchen switching', () => {
+  const restarted = harness();
+  restarted.click('重新参观');
+  assert.equal(restarted.actions.tourStep, 0);
+  const resumed = harness({ tourPaused: true });
+  assert.ok(resumed.markup.includes('继续参观'));
+  resumed.click('继续参观');
+  assert.equal(resumed.actions.tourStep, 3);
+  resumed.click('恢复初始样例');
+  assert.equal(
+    resumed.actions.reset,
+    true,
+    'only open the existing confirmation',
+  );
+  assert.equal(resumed.actions.dataset, '', 'reset does not switch kitchens');
+  resumed.click('返回我的真实厨房');
+  assert.equal(resumed.actions.dataset, 'real');
+});
+
+void test('loading feedback and busy protection remain while saved status is removed', () => {
+  const loading = harness({ s: undefined });
+  assert.match(loading.markup, /<output>正在打开厨房…<\/output>/);
+  assert.doesNotMatch(harness().markup, /<output>/);
+  assert.equal(harness({ busy: true }).markup.match(/disabled=""/g)?.length, 3);
+});
+
+void test('header can wrap without fixed-height clipping and actions keep usable touch targets', () => {
+  const headerRule = css.match(/\.topbar\s*\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(headerRule, /min-height:\s*83px/);
+  assert.match(headerRule, /flex-wrap:\s*wrap/);
+  assert.doesNotMatch(headerRule, /(?:^|[;\n])\s*height:/);
+  assert.match(
+    css,
+    /\.topbar-actions \.text-button\s*\{[^}]*min-height:\s*44px;[^}]*white-space:\s*nowrap;/,
+  );
+  assert.match(
+    css,
+    /\.topbar > \.topbar-actions\s*\{[^}]*flex-basis:\s*100%;[^}]*justify-content:\s*flex-start;/,
+  );
+});
