@@ -106,6 +106,7 @@ import {
 import { art, getPantryCardArt } from '@/lib/art';
 import {
   activeSession,
+  clearKitchenInventory,
   bands,
   finishCooking,
   confirmCandidate,
@@ -114,6 +115,7 @@ import {
   mealIngredients,
   parseImport,
   quantityText,
+  remainingInventory,
   recommendations,
   rejectCandidate,
   stage,
@@ -983,10 +985,8 @@ export default function Home({
           quantity: { amount: c.amount, unit: c.unit },
         });
     }, '样例食材已由你确认，可以查看三道推荐。');
-  const inventoryUsed =
-    s?.inventory.filter((b) =>
-      b.amount === undefined ? b.amountBand !== '用完' : b.amount > 0,
-    ).length || 0;
+  const inventory = s ? remainingInventory(s) : [];
+  const inventoryUsed = inventory.length;
   const showSeasoningSetup =
     !!s &&
     needsSeasoningOnboarding(s) &&
@@ -1465,7 +1465,7 @@ export default function Home({
               >
                 <h2>已确认的厨房库存</h2>
               </div>
-              {!s.inventory.length ? (
+              {!inventory.length ? (
                 <div className="empty-state">
                   <Refrigerator size={34} />
                   <h3>冰箱还空着</h3>
@@ -1475,7 +1475,7 @@ export default function Home({
                 </div>
               ) : (
                 <div className="inventory-grid">
-                  {s.inventory.map((b) =>
+                  {inventory.map((b) =>
                     getPantryCardArt(b.canonicalIngredientId, b.displayName) ? (
                       <KitchenIngredientCard
                         key={b.id}
@@ -2400,10 +2400,34 @@ export default function Home({
               ? '用 22 项已备食材和 35 道样例食忆替换当前样例厨房，并重新开始参观。你在样例中的修改和演练将被清除，不能撤销；如需保留请先导出完整备份。真实厨房完全保留。'
               : '仅清空当前 ' +
                 (dataset === 'demo' ? '样例' : '真实') +
-                ' 厨房的库存和待确认候选，保留已完成百味图。请先导出完整备份；清空本身不能撤销。进行中的一餐必须先完成。'}
+                ' 厨房的库存和待确认候选，保留已完成百味图。建议先导出完整备份；清空本身不能撤销。'}
           </AlertDialogDescription>
+          {!reset && session && (
+            <p aria-live="polite">
+              暂时不能清空：「{sessionDish?.title || '这道菜'}」
+              {session.status === 'reviewing'
+                ? '已做完，但还没有完成记录。请先将这餐收录百味图。'
+                : session.status === 'paused'
+                  ? '已暂停，还没有结束。请先继续并完成这餐。'
+                  : '还在进行中。请先完成这餐。'}
+              下载备份不会结束这餐。
+            </p>
+          )}
           <div className="actions">
             <AlertDialogCancel>保留数据</AlertDialogCancel>
+            {!reset && session && (
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => {
+                  setClear(false);
+                  setReset(false);
+                  navigate('cooking');
+                }}
+              >
+                {session.status === 'reviewing' ? '完成这餐记录' : '继续这道菜'}
+              </button>
+            )}
             <button
               className="primary"
               disabled={busy || (!reset && !!session)}
@@ -2435,12 +2459,7 @@ export default function Home({
                           throw new Error('只能重置样例。');
                         restoreDemoKitchen(state);
                       } else {
-                        if (activeSession(state))
-                          throw new Error('请先完成正在做的一餐。');
-                        state.inventory = [];
-                        state.candidates = state.candidates.filter(
-                          (c) => c.status !== 'pending',
-                        );
+                        clearKitchenInventory(state);
                       }
                       state.bridgeIgnoredTicketIds = tombstones;
                     },

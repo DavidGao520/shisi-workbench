@@ -208,6 +208,12 @@ export function quantityText(q: Quantity): string {
     ? q.amount + ' ' + (q.unit || '')
     : q.amountBand || '数量待确认';
 }
+/** Hide depleted batches without losing revision history or meal references. */
+export function remainingInventory(s: KitchenState): Batch[] {
+  return s.inventory.filter((batch) =>
+    batch.amount === undefined ? batch.amountBand !== '用完' : batch.amount > 0,
+  );
+}
 export function isExpired(b: Batch, date = today()): boolean {
   return !!b.expiryDate && b.expiryDate < date;
 }
@@ -474,6 +480,12 @@ export function rejectCandidate(s: KitchenState, key: string) {
 }
 export function activeSession(s: KitchenState) {
   return s.sessions.find((x) => x.status !== 'completed');
+}
+/** Call inside the storage transaction so a stale dialog cannot bypass the guard. */
+export function clearKitchenInventory(s: KitchenState) {
+  if (activeSession(s)) fail('请先完成正在做的一餐。');
+  s.inventory = [];
+  s.candidates = s.candidates.filter((c) => c.status !== 'pending');
 }
 export function recipeFor(s: KitchenState, id: string): Recipe {
   const recipe = recipes.find((r) => r.id === id);
