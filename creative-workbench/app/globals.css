@@ -270,6 +270,10 @@ small {
   font-size: 12px;
   color: #817868;
 }
+.section-head.recommendation-heading {
+  justify-content: center;
+  text-align: center;
+}
 .recipe-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

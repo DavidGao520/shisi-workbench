@@ -1075,13 +1075,12 @@ export default function Home({
             <br />
             到生活的一餐
           </p>
-          <small>国宴队 · 中华食肆</small>
         </div>
       </aside>
       <main className="workspace">
         <header className="topbar">
           <div className="topbar-context">
-            <span>{dataset === 'demo' ? '样例厨房' : '我的家庭厨房'}</span>
+            <span>{dataset === 'demo' ? '样例厨房' : '我的厨房'}</span>
             {!s && <output>正在打开厨房…</output>}
           </div>
           <div className="actions topbar-actions">
@@ -1274,11 +1273,9 @@ export default function Home({
                         ? '用手边的，做一顿好的'
                         : '先把食材摆上桌'}
                     </h2>
-                    <p>
-                      {inventoryUsed
-                        ? '只有确认过的食材才会出现在推荐里。'
-                        : '食材、油盐和饮用水都需要确认，不会默认你已经拥有。'}
-                    </p>
+                    {inventoryUsed > 0 && (
+                      <p>只有确认过的食材才会出现在推荐里。</p>
+                    )}
                   </div>
                   <div className="actions">
                     <button
@@ -1324,11 +1321,11 @@ export default function Home({
               <div
                 id="tour-stop-2"
                 className={
-                  'section-head' + (tourStep === 2 ? ' tour-target' : '')
+                  'section-head recommendation-heading' +
+                  (tourStep === 2 ? ' tour-target' : '')
                 }
               >
                 <h2>手边食材，能做这些</h2>
-                <span>规则推荐 · 最多三道</span>
               </div>
               <RecipeRecommendations
                 rec={rec}
@@ -1589,9 +1586,8 @@ export default function Home({
                       去选一道菜
                     </button>
                   </div>
-                  <div className="section-head">
+                  <div className="section-head recommendation-heading">
                     <h2>手边食材，能做这些</h2>
-                    <span>规则推荐 · 最多三道</span>
                   </div>
                   <RecipeRecommendations
                     rec={rec}

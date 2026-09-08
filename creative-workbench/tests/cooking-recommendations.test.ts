@@ -168,7 +168,10 @@ void test('cooking recommendations follow the choose button only in the idle bra
   assert.ok(
     idle.indexOf('去选一道菜') < idle.indexOf('<RecipeRecommendations'),
   );
-  assert.match(idle, /<\/div>\s*<div className="section-head">/);
+  assert.match(
+    idle,
+    /<\/div>\s*<div className="section-head recommendation-heading">/,
+  );
   assert.doesNotMatch(
     idleBranch.whenFalse.getText(file),
     /RecipeRecommendations/,

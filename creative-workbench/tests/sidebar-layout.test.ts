@@ -33,7 +33,7 @@ void test('desktop layout keeps the approved scale and bounded content width', (
   );
 });
 
-void test('sidebar names the workbench while preserving the game attribution', () => {
+void test('sidebar names the workbench without the removed game attribution line', () => {
   const page = readFileSync(
     new URL('../app/page.tsx', import.meta.url),
     'utf8',
@@ -42,7 +42,7 @@ void test('sidebar names the workbench while preserving the game attribution', (
     page,
     /className="brand">\s*<span className="brand-seal">\s*<span className="brand-seal-glyph">食<\/span>\s*<\/span>\s*<div className="brand-title">食肆工作台<\/div>/,
   );
-  assert.ok(page.includes('<small>国宴队 · 中华食肆</small>'));
+  assert.ok(!page.includes('<small>国宴队 · 中华食肆</small>'));
 });
 
 void test('brand aligns compact glyph and title line boxes without shifting the seal', () => {

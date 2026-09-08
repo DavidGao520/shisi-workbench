@@ -147,7 +147,8 @@ void test('sample pages omit the extra eyebrow and today copy uses the requested
 
 void test('real kitchen does not show sample management and can still switch to demo', () => {
   const view = harness({ dataset: 'real' });
-  assert.ok(view.markup.includes('我的家庭厨房'));
+  assert.ok(view.markup.includes('<span>我的厨房</span>'));
+  assert.doesNotMatch(view.markup, /我的家庭厨房/);
   assert.equal(view.markup.match(/<button/g)?.length, 1);
   assert.doesNotMatch(view.markup, /重新参观|继续参观|恢复初始样例|本机保存/);
   view.click('先逛逛样例厨房');
@@ -193,4 +194,77 @@ void test('header can wrap without fixed-height clipping and actions keep usable
     css,
     /\.topbar > \.topbar-actions\s*\{[^}]*flex-basis:\s*100%;[^}]*justify-content:\s*flex-start;/,
   );
+});
+
+void test('both recommendation headings are centered without their old caption or changing other section heads', () => {
+  const headings = nodes.filter(
+    (node) =>
+      ts.isJsxElement(node) &&
+      node.openingElement.tagName.getText(file) === 'div' &&
+      node.children.some(
+        (child) =>
+          ts.isJsxElement(child) &&
+          child.openingElement.tagName.getText(file) === 'h2' &&
+          child.getText(file).includes('手边食材，能做这些'),
+      ),
+  );
+  assert.equal(headings.length, 2);
+  for (const tourStep of [null, 2]) {
+    for (const heading of headings) {
+      const html = renderToStaticMarkup(
+        runInNewContext(
+          ts.transpileModule(`(${heading.getText(file)})`, {
+            compilerOptions: { jsx: ts.JsxEmit.React },
+          }).outputText,
+          { React, tourStep },
+        ),
+      );
+      assert.match(
+        html,
+        /class="section-head recommendation-heading(?: tour-target)?"/,
+      );
+      assert.match(html, /<h2>手边食材，能做这些<\/h2>/);
+      assert.doesNotMatch(html, /<span|规则推荐|最多三道/);
+      if (heading === headings[0]) {
+        assert.match(html, /id="tour-stop-2"/);
+        assert.equal(html.includes('tour-target'), tourStep === 2);
+      }
+    }
+  }
+  assert.equal(source.match(/recommendation-heading/g)?.length, 2);
+  assert.match(
+    css,
+    /\.section-head\.recommendation-heading\s*\{\s*justify-content: center;\s*text-align: center;\s*\}/,
+  );
+  assert.match(css, /\.section-head\s*\{[^}]*justify-content: space-between;/);
+});
+
+void test('requested secondary copy is removed while intake buttons and nonempty guidance remain', () => {
+  assert.doesNotMatch(
+    source,
+    /国宴队 · 中华食肆|规则推荐 · 最多三道|食材、油盐和饮用水都需要确认，不会默认你已经拥有。/,
+  );
+  const panel = nodes.find(
+    (node) =>
+      ts.isJsxElement(node) &&
+      node.openingElement.getText(file) === '<section className="start-panel">',
+  );
+  assert.ok(panel);
+  for (const inventoryUsed of [0, 3]) {
+    const html = renderToStaticMarkup(
+      runInNewContext(
+        ts.transpileModule(`(${panel.getText(file)})`, {
+          compilerOptions: { jsx: ts.JsxEmit.React },
+        }).outputText,
+        { React, inventoryUsed, Mic: () => null, Camera: () => null },
+      ),
+    );
+    assert.match(html, /语音录入食材/);
+    assert.match(html, /拍照录入食材/);
+    assert.equal(
+      html.includes('只有确认过的食材才会出现在推荐里。'),
+      inventoryUsed > 0,
+    );
+    assert.doesNotMatch(html, /<p><\/p>|<\/h2>0/);
+  }
 });
