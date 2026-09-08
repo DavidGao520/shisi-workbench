@@ -138,6 +138,7 @@ export const ingredientAliases: Record<string, string> = {
   香菇: 'shiitake_mushrooms',
   鸡腿: 'chicken_drum',
   鸡中翅: 'chicken_wings',
+  普通含糖可乐: 'cola',
   猪肘: 'pork_shank',
   猪肘子: 'pork_shank',
   肉末: 'pork',

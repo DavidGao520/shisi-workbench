@@ -1078,7 +1078,7 @@
       },
       {
         "id": "cola",
-        "name": "普通含糖可乐",
+        "name": "可乐",
         "amount": 250,
         "unit": "毫升",
         "kind": "food",

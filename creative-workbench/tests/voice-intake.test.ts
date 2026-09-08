@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { IDBFactory } from 'fake-indexeddb';
 import { IndexedDbStore } from '../lib/store';
 import { emptyState } from '../lib/kitchen';
+import { ingredientAliases, names, recipes } from '../lib/recipes';
 import {
   confirmVoiceDraft,
   extractIngredients,
@@ -62,6 +63,34 @@ void test('compendium foods and aromatics keep distinct canonical identities', (
     ],
   );
 });
+void test('cola uses the short display name while preserving the former name and raw input', () => {
+  assert.equal(names.cola, '可乐');
+  assert.equal(ingredientAliases['普通含糖可乐'], 'cola');
+  const cola = recipes
+    .find((recipe) => recipe.id === 'cola_chicken_wings')!
+    .ingredients.find((item) => item.id === 'cola')!;
+  assert.equal(cola.name, '可乐');
+  assert.equal(cola.note, '不使用无糖可乐代替收汁糖分');
+  for (const mention of ['可乐', '普通含糖可乐']) {
+    const { items } = extractIngredients(mention + '250毫升。');
+    assert.equal(items.length, 1);
+    assert.deepEqual(
+      [
+        items[0].displayName,
+        items[0].canonicalIngredientId,
+        items[0].amount,
+        items[0].unit,
+      ],
+      ['可乐', 'cola', 250, '毫升'],
+    );
+    assert.equal(items[0].rawMention, mention + '250毫升');
+  }
+  const { items } = extractIngredients('普通含糖可乐。');
+  assert.equal(items[0].displayName, '可乐');
+  assert.equal(items[0].amount, undefined);
+  assert.equal(extractIngredients('无糖可乐250毫升').items.length, 0);
+});
+
 void test('postfix quantities do not leak into next food', () => {
   assert.deepEqual(
     extractIngredients('鸡蛋有十一个，豆腐半盒').items.map((i) => i.amount),
