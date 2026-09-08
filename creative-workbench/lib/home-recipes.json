@@ -1061,7 +1061,7 @@
     "id": "cola_chicken_wings",
     "title": "可乐鸡翅",
     "baseServings": 2,
-    "yield": "2人份，约8只鸡中翅",
+    "yield": "2人份，约8只鸡翅",
     "equipment": "带盖不粘煎锅、食品温度计",
     "allergens": [
       "大豆",
@@ -1070,7 +1070,7 @@
     "ingredients": [
       {
         "id": "chicken_wings",
-        "name": "鸡中翅",
+        "name": "鸡翅",
         "amount": 400,
         "unit": "克",
         "kind": "food",
@@ -1130,7 +1130,7 @@
             "unit": "克"
           }
         ],
-        "instruction": "鸡中翅吸干表面水分，在肉厚的一面划两道浅口，勿砍碎骨；姜切片。处理后洗手并清洁接触生鸡肉的台面。",
+        "instruction": "鸡翅吸干表面水分，在肉厚的一面划两道浅口，勿砍碎骨；姜切片。处理后洗手并清洁接触生鸡肉的台面。",
         "checkpoint": "鸡翅已解冻到骨边，表面干爽。"
       },
       {

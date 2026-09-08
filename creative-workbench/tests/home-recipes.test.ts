@@ -101,6 +101,27 @@ void test('all 70 dishes have a complete quantitative Chinese-source home recipe
   }
 });
 
+void test('cola chicken uses the same wing label in ingredients and cooking steps', () => {
+  const recipe = recipes.find((item) => item.id === 'cola_chicken_wings')!;
+  const wings = recipe.ingredients.find((item) => item.id === 'chicken_wings')!;
+  assert.deepEqual([wings.name, wings.amount, wings.unit], ['鸡翅', 400, '克']);
+  assert.equal(recipe.yield, '2人份，约8只鸡翅');
+  assert.equal(recipe.detailSteps!.length, 6);
+  const html = renderToStaticMarkup(
+    createElement(RecipeInstructions, { recipe }),
+  );
+  assert.ok(html.includes('鸡翅'));
+  assert.ok(!html.includes('鸡中翅'));
+  assert.ok(cookingSteps(recipe, 1).every((step) => !step.includes('鸡中翅')));
+  for (const name of ['鸡翅', '鸡中翅']) {
+    const item = extractIngredients(name + '400克').items[0];
+    assert.deepEqual(
+      [item.displayName, item.canonicalIngredientId, item.amount, item.unit],
+      ['鸡翅', 'chicken_wings', 400, '克'],
+    );
+  }
+});
+
 void test('every dish renders step time, material amounts, heat, completion cue and clickable Chinese citations', () => {
   for (const recipe of recipes) {
     const html = renderToStaticMarkup(
