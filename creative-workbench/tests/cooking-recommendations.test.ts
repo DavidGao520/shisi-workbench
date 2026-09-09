@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
 import { emptyState, recommendations } from '../lib/kitchen';
 import { restoreDemoKitchen } from '../lib/demo-kitchen';
-import { names, type Recipe } from '../lib/recipes';
+import { names, recipes, type Recipe } from '../lib/recipes';
 
 const source = readFileSync(
   new URL('../app/page.tsx', import.meta.url),
@@ -134,6 +134,32 @@ void test('today and idle cooking render the same three recommendations for the 
   }
 });
 
+void test('both recommendation surfaces show all available ingredient names without quantity warnings', () => {
+  const state = emptyState('real');
+  const recipe = recipes.find((r) => r.id === 'cola_chicken_wings')!;
+  state.inventory = recipe.ingredients.map((i) => ({
+    id: i.id,
+    canonicalIngredientId: i.id,
+    displayName: names[i.id],
+    amountBand: '充足',
+    confirmed: true,
+    revision: 1,
+    createdAt: '2026-09-09',
+    updatedAt: '2026-09-09',
+  }));
+  const view = harness(
+    recommendations(state, '2026-09-09'),
+    state.inventory.length,
+  );
+  for (const element of view.views) {
+    const markup = renderToStaticMarkup(element);
+    assert.match(markup, /可乐鸡翅/);
+    assert.match(markup, /食材已齐/);
+    assert.match(markup, /鸡翅 · 可乐 · 生姜 · 生抽 · 老抽 · 食用油/);
+    assert.doesNotMatch(markup, /还需确认食材|还缺 \/ 待确认|暂无足量匹配/);
+  }
+});
+
 void test('shared recommendations preserve empty and missing-ingredient states', () => {
   for (const inventoryUsed of [0, 2]) {
     const view = harness([], inventoryUsed);
@@ -150,7 +176,9 @@ void test('shared recommendations preserve empty and missing-ingredient states',
   const demo = emptyState('demo');
   restoreDemoKitchen(demo, '2026-09-07');
   const rec = recommendations(demo, '2026-09-07').slice(0, 1);
-  rec[0].missing = [{ ...rec[0].matches[0], enough: false, have: 0 }];
+  rec[0].missing = [
+    { ...rec[0].matches[0], present: false, enough: false, have: 0 },
+  ];
   const view = harness(rec, 1);
   const markup = renderToStaticMarkup(view.views[1]);
   assert.match(markup, /还需确认食材/);

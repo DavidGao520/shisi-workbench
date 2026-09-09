@@ -25,7 +25,7 @@ export function MealIngredients({
               {ingredientName(recipe, i.id)}
               {i.note && <small>{i.note}</small>}
             </span>
-            <strong>
+            <strong title="参考用量，不要求库存精确到克或毫升">
               {i.need} {i.unit}
             </strong>
             <div className="meal-ingredient-status">
@@ -35,7 +35,7 @@ export function MealIngredients({
                     ? `本餐临时备齐 ${temporary.amount} ${temporary.unit}`
                     : '本餐用料'}
                 </small>
-              ) : i.enough ? (
+              ) : i.present ? (
                 <span className="meal-owned">
                   <Check size={16} aria-hidden="true" />
                   已拥有
@@ -46,18 +46,13 @@ export function MealIngredients({
                     type="button"
                     className={`meal-ownership ${i.confirmed ? 'is-owned' : 'needs-confirmation'}`}
                     aria-pressed={i.confirmed}
-                    aria-label={`${ingredientName(recipe, i.id)}：${i.confirmed ? '已拥有，点击取消本餐确认' : '确认拥有本餐所需的'} ${i.mealOnlyAmount} ${i.unit}`}
+                    aria-label={`${ingredientName(recipe, i.id)}：${i.confirmed ? '已拥有，点击取消本餐确认' : '确认拥有'}`}
                     disabled={disabled}
                     onClick={() => onToggle(i.id, i.token)}
                   >
                     {i.confirmed && <Check size={16} aria-hidden="true" />}
                     {i.confirmed ? '已拥有' : '确认拥有'}
                   </button>
-                  {i.have > 0 && (
-                    <small>
-                      另备 {i.mealOnlyAmount} {i.unit}
-                    </small>
-                  )}
                 </>
               )}
             </div>

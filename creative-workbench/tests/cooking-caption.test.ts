@@ -91,6 +91,6 @@ void test('caption alignment is scoped to active cooking and overrides the mobil
   );
   assert.match(
     page,
-    /<h3>需要的食材 · \{recipePeople\(recipe, detailServings\)\} 人份<\/h3>/,
+    /<h3>\s*需要的食材 · \{recipePeople\(recipe, detailServings\)\} 人份参考用量\s*<\/h3>/,
   );
 });

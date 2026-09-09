@@ -53,7 +53,7 @@ function prepared(full = false): KitchenState {
 }
 function ready(s: KitchenState) {
   const confirmed = mealIngredients(s, r, [], date)
-    .filter((i) => !i.enough)
+    .filter((i) => !i.present)
     .map((i) => ({ ingredientId: i.id, token: i.token }));
   startCooking(s, r.id, 'meal', date, RECIPE_VERSION, confirmed);
   s.sessions[0].createdAt = date + 'T12:00:00+08:00';

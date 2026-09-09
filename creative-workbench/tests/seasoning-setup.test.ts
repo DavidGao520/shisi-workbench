@@ -312,11 +312,11 @@ void test('sample reset clears setup metadata without changing the real kitchen'
   assert.deepEqual(await store.read('real'), real);
   store.close();
 });
-void test('owned seasonings keep recipes discoverable, but do not authorize cooking or fake deduction', () => {
+void test('owned seasonings allow discovery and cooking without faking exact deduction', () => {
   const state = mealWithUnknownSeasoning();
   const suggested = recommendations(state, date);
   assert.equal(suggested.length, 3);
-  assert.ok(suggested.every((item) => item.missing.length > 0));
+  assert.ok(suggested.every((item) => item.missing.length === 0));
   const oil = matching(state, recipes[0], date).find(
     (item) => item.id === 'oil',
   )!;
@@ -324,10 +324,8 @@ void test('owned seasonings keep recipes discoverable, but do not authorize cook
   assert.equal(oil.presenceOnly, true);
   assert.equal(oil.have, 0);
   reviewRecipe(state, 'tomato_egg', 'Fixture review');
-  assert.throws(
-    () => startCooking(state, 'tomato_egg', 'not-ready', date),
-    /重新核对/,
-  );
+  startCooking(state, 'tomato_egg', 'ready-by-presence', date);
+  assert.equal(state.sessions[0].mealOnlyIngredients, undefined);
   const plan = remainingPlan(state, recipes[0], 1, date);
   assert.ok(
     plan.every(

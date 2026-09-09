@@ -64,7 +64,7 @@ function batch(
 }
 function confirmed(s: KitchenState): MealConfirmation[] {
   return mealIngredients(s, recipe, [], date)
-    .filter((i) => !i.enough)
+    .filter((i) => !i.present)
     .map((i) => ({ ingredientId: i.id, token: i.token }));
 }
 function start(s: KitchenState, confirmations = confirmed(s), id = 'meal') {
@@ -114,7 +114,7 @@ void test('empty fridge: confirmations unlock one meal without writing candidate
   );
 });
 
-void test('partial stock: only the missing portion is temporary and only original stock is deducted', () => {
+void test('partial stock counts as owned without inventing a temporary shortfall', () => {
   const s = emptyState('real');
   s.inventory = [
     batch('one-egg'),
@@ -123,9 +123,7 @@ void test('partial stock: only the missing portion is temporary and only origina
   ];
   const before = structuredClone(s.inventory);
   const session = ready(s);
-  assert.deepEqual(session.mealOnlyIngredients, [
-    { ingredientId: 'egg', amount: 1, unit: '个' },
-  ]);
+  assert.equal(session.mealOnlyIngredients, undefined);
   assert.deepEqual(s.inventory, before, 'start never deducts or inserts');
   assert.equal(
     session.stockAllocation!.find((i) => i.batchId === 'one-egg')!.amount,
@@ -139,7 +137,7 @@ void test('partial stock: only the missing portion is temporary and only origina
   assert.equal(s.inventory.length, 3);
 });
 
-void test('restocking during cooking cannot be consumed again to cover a temporary portion', () => {
+void test('restocking during cooking is not added to the saved deduction plan', () => {
   const s = emptyState('real');
   s.inventory = [batch('original')];
   const session = ready(s);
@@ -157,7 +155,7 @@ void test('restocking during cooking cannot be consumed again to cover a tempora
       remaining: { amount: 5, unit: '个' },
     },
   ]);
-  assert.equal(mealStockLimit(session, s.inventory[1]), 0);
+  assert.equal(mealStockLimit(session, s.inventory[2]), 0);
   finish(s);
   assert.deepEqual(
     s.inventory.map((b) => b.amount),
@@ -175,10 +173,8 @@ void test('fractional stock and later fractional restocks preserve precision wit
     s.inventory = [batch('oil', 'oil', initial, '毫升')];
     const session = ready(s);
     assert.equal(session.stockAllocation![0].amount, initial);
-    assert.equal(
-      session.mealOnlyIngredients!.find((i) => i.ingredientId === 'oil')!
-        .amount,
-      10 - initial,
+    assert.ok(
+      !session.mealOnlyIngredients!.some((i) => i.ingredientId === 'oil'),
     );
     s.inventory[0].amount! += added;
     s.inventory[0].revision++;
@@ -204,7 +200,9 @@ void test('missing, duplicate, forged and stale confirmations cannot bypass read
   s.inventory.push(batch('arrived'));
   assert.throws(() => start(s, drafts), /重新确认/);
   start(s, confirmed(s));
-  assert.equal(s.sessions[0].mealOnlyIngredients![0].amount, 1);
+  assert.ok(
+    !s.sessions[0].mealOnlyIngredients!.some((i) => i.ingredientId === 'egg'),
+  );
 });
 
 void test('confirmation binds recipe, dataset, version, amounts and relevant inventory only', () => {
@@ -228,7 +226,16 @@ void test('confirmation binds recipe, dataset, version, amounts and relevant inv
   s.inventory.push(batch('unrelated', 'tomato', 100, '克'));
   assert.equal(isReady(), true);
   s.inventory.push(batch('egg'));
-  assert.equal(isReady(), false);
+  assert.equal(
+    isReady(),
+    true,
+    'newly stocked food no longer needs meal-only confirmation',
+  );
+  assert.throws(
+    () => start(s, drafts),
+    /重新确认/,
+    'the transaction still rejects stale explicit tokens',
+  );
 });
 
 void test('expired or imprecise stock is not promoted to exact usable inventory by a meal confirmation', () => {
@@ -244,10 +251,9 @@ void test('expired or imprecise stock is not promoted to exact usable inventory 
   ];
   const before = structuredClone(s.inventory);
   const session = ready(s);
-  assert.equal(
-    session.mealOnlyIngredients!.find((i) => i.ingredientId === 'egg')!.amount,
-    2,
-  );
+  assert.deepEqual(session.mealOnlyIngredients, [
+    { ingredientId: 'salt', amount: 1, unit: '克' },
+  ]);
   assert.deepEqual(sessionRemainingPlan(s, session), []);
   finish(s);
   assert.deepEqual(s.inventory, before);
@@ -265,7 +271,7 @@ void test('cross-midnight expiry invalidates a pre-cook confirmation', () => {
   assert.throws(
     () =>
       startCooking(s, recipe.id, 'later', '2026-09-07', RECIPE_VERSION, drafts),
-    /重新确认/,
+    /重新核对/,
   );
 });
 
@@ -288,10 +294,16 @@ void test('deleted or retyped original batches remain stale instead of being sil
   }
 });
 
-void test('manual consumption cannot double-deduct temporary ingredients; failure is atomic', () => {
+void test('legacy partial meal-only provisions retain atomic double-deduction guards', () => {
   const s = emptyState('real');
   s.inventory = [batch('original'), batch('oil', 'oil', 20, '毫升')];
   const session = ready(s);
+  // Backups of older meals may contain a confirmed shortfall for partial stock.
+  session.mealOnlyIngredients!.push({
+    ingredientId: 'egg',
+    amount: 1,
+    unit: '个',
+  });
   s.inventory[0].amount = 6;
   s.inventory[0].revision++;
   s.inventory.push(batch('new', 'egg', 5));
@@ -338,7 +350,7 @@ void test('IndexedDB reopen keeps meal-only allocation, draft, atomic stale-writ
   store.close();
   store = new IndexedDbStore('meal-only', factory);
   const saved = await store.read('real');
-  assert.equal(saved.sessions[0].mealOnlyIngredients!.length, 3);
+  assert.equal(saved.sessions[0].mealOnlyIngredients!.length, 2);
   await store.change('real', (s) => {
     s.inventory[0].amount = 6;
     s.inventory[0].revision++;
@@ -380,7 +392,8 @@ void test('ingredient actions are red confirmation and green toggle; history sta
   assert.match(green, /已拥有/);
   assert.doesNotMatch(render([], false), /<button|aria-pressed/);
   s.inventory.push(batch('one-egg'));
-  assert.match(render([]), /另备 1 个/);
+  assert.match(render([]), /class="meal-owned"/);
+  assert.doesNotMatch(render([]), /另备 1 个/);
 });
 
 void test('page resets per-meal drafts on open, close and dataset change; final checkbox remains required', async () => {

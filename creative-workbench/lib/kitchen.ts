@@ -217,6 +217,11 @@ export function remainingInventory(s: KitchenState): Batch[] {
 export function isExpired(b: Batch, date = today()): boolean {
   return !!b.expiryDate && b.expiryDate < date;
 }
+function availableInventory(s: KitchenState, date: string): Batch[] {
+  return remainingInventory(s).filter(
+    (b) => b.confirmed && !isExpired(b, date),
+  );
+}
 export function validateDate(d?: string) {
   if (
     d &&
@@ -527,14 +532,17 @@ export function matching(
   servings = DEFAULT_SERVINGS,
 ) {
   return r.ingredients.map((i) => {
-    const eligible = s.inventory.filter(
-      (b) => inventoryIngredientId(b) === i.id && !isExpired(b, date),
+    const eligible = availableInventory(s, date).filter(
+      (b) => inventoryIngredientId(b) === i.id,
     );
     const amount = eligible
       .filter((b) => b.unit === i.unit)
       .reduce((n, b) => n + (b.amount || 0), 0);
     return {
       ...i,
+      // Having an ingredient is enough to discover and start a recipe.
+      // Exact quantities remain separate for reference and compatible stock deductions.
+      present: eligible.length > 0,
       need: i.amount * servings,
       have: amount,
       enough: amount >= i.amount * servings,
@@ -578,7 +586,7 @@ export function mealIngredients(
         ]),
     ]);
     const confirmed =
-      !item.enough &&
+      !item.present &&
       confirmations.some(
         (c) => c.ingredientId === item.id && c.token === token,
       );
@@ -586,22 +594,22 @@ export function mealIngredients(
       ...item,
       token,
       confirmed,
-      ready: item.enough || confirmed,
+      ready: item.present || confirmed,
       mealOnlyAmount: Math.max(0, item.need - item.have),
     };
   });
 }
 export function recommendations(s: KitchenState, date = today()) {
+  const inventory = availableInventory(s, date);
   return recipes
     .map((r) => {
       const matches = matching(s, r, date),
-        missing = matches.filter((i) => !i.enough);
+        missing = matches.filter((i) => !i.present);
       const urgent =
         matches.filter((i) =>
-          s.inventory.some(
+          inventory.some(
             (b) =>
               inventoryIngredientId(b) === i.id &&
-              !isExpired(b, date) &&
               b.expiryDate &&
               Date.parse(b.expiryDate + 'T12:00:00Z') -
                 Date.parse(date + 'T12:00:00Z') <=
@@ -613,18 +621,7 @@ export function recommendations(s: KitchenState, date = today()) {
         0.3 * urgent;
       return { recipe: r, matches, missing, score };
     })
-    .filter(
-      (x) =>
-        x.missing.filter((i) => !i.presenceOnly).length < 2 &&
-        // A stocked condiment cupboard alone must not recommend an absent main food.
-        x.matches.some(
-          (i) =>
-            i.id !== 'water' &&
-            i.kind !== 'seasoning' &&
-            !isSeasoning(i.id) &&
-            (i.have > 0 || i.unknown),
-        ),
-    )
+    .filter((x) => x.matches.length > 0 && x.missing.length === 0)
     .sort(
       (a, b) =>
         b.score - a.score || a.recipe.id.localeCompare(b.recipe.id, 'en'),
@@ -680,7 +677,7 @@ export function startCooking(
   )
     fail('本餐食材确认已变化，请重新确认拥有。');
   if (ingredients.some((item) => !item.ready))
-    fail('食材库存不足或已改变，请重新核对并确认本餐拥有所需食材。');
+    fail('食材库存未备齐或已改变，请重新核对并确认本餐拥有所需食材。');
   const mealOnlyIngredients = ingredients
     .filter((i) => i.confirmed)
     .map((i) => ({
@@ -724,11 +721,8 @@ function allocateStock(
   const result: StockAllocation[] = [];
   for (const ingredient of r.ingredients) {
     let need = ingredient.amount * servings;
-    const candidates = s.inventory
-      .filter(
-        (b) =>
-          inventoryIngredientId(b) === ingredient.id && !isExpired(b, date),
-      )
+    const candidates = availableInventory(s, date)
+      .filter((b) => inventoryIngredientId(b) === ingredient.id)
       .sort(
         (a, b) =>
           (a.expiryDate || '9999').localeCompare(b.expiryDate || '9999') ||

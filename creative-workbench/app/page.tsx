@@ -205,7 +205,7 @@ function RecipeRecommendations({
       <h3>
         {inventoryUsed ? '暂时没有符合条件的推荐' : '先确认食材，再给你推荐'}
       </h3>
-      <p>核对现有食材和数量，就能找到适合的一餐。已勾选的调料仍需确认用量。</p>
+      <p>把手边的食材和调料记进厨房，材料齐了就能推荐，不必填写精确数量。</p>
       <button className="secondary" onClick={() => onOpenInventory()}>
         去我的厨房
       </button>
@@ -230,24 +230,14 @@ function RecipeRecommendations({
             <p>{r.subtitle}</p>
             <div className="match-note">
               {matches
-                .filter((m) => m.enough)
+                .filter((m) => m.present)
                 .map((m) => names[m.id])
-                .join(' · ') || '暂无足量匹配'}
+                .join(' · ') || '暂无匹配食材'}
             </div>
             {missing.length > 0 && (
               <p className="warning-text">
                 还缺 / 待确认：
-                {missing
-                  .map(
-                    (m) =>
-                      (m.presenceOnly
-                        ? names[m.id] + '已备，核对 '
-                        : names[m.id] + ' ') +
-                      Math.max(0, m.need - m.have) +
-                      ' ' +
-                      m.unit,
-                  )
-                  .join('、')}
+                {missing.map((m) => names[m.id]).join('、')}
               </p>
             )}
             <button className="recipe-link" onClick={() => onOpenRecipe(r)}>
@@ -2182,7 +2172,9 @@ export default function Home({
                 </p>
               )}
               {recipe.yield && <p className="muted">{recipe.yield}</p>}
-              <h3>需要的食材 · {recipePeople(recipe, detailServings)} 人份</h3>
+              <h3>
+                需要的食材 · {recipePeople(recipe, detailServings)} 人份参考用量
+              </h3>
               <MealIngredients
                 recipe={recipe}
                 rows={ingredientRows}
@@ -2213,7 +2205,7 @@ export default function Home({
               />
               {!detail?.sessionId && (
                 <p className="meal-provision-note">
-                  冰箱没记录的用料，点“确认拥有”即可。这部分只用于本餐，不加入冰箱；点“已拥有”可取消确认。
+                  材料齐了就能开始，用量仅供参考。冰箱没记录的食材可点“确认拥有”，只用于本餐，不加入库存。
                 </p>
               )}
               <RecipeDetailSections

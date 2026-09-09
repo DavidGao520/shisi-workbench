@@ -194,7 +194,10 @@ void test('all catalog recipes have methods but never bypass real-kitchen stock 
     baiweiCollection(state).filter((entry) => !entry.recipe).length,
     0,
   );
-  assert.throws(() => startCooking(state, 'boiled_fish', 'fake', date), /库存/);
+  assert.throws(
+    () => startCooking(state, 'boiled_fish', 'fake', date),
+    /未备齐/,
+  );
   assert.equal(state.sessions.length, 0);
 });
 
