@@ -2346,9 +2346,7 @@ export default function Home({
                       <div className="history-item" key={x.id}>
                         <div>
                           <strong>
-                            {x.authoredRecord
-                              ? x.authoredRecord.author + '实做'
-                              : mealRatingSummary(x)}
+                            {x.authoredRecord ? '实做' : mealRatingSummary(x)}
                           </strong>
                           <small>{mealRecordDate(x)}</small>
                           <p>{x.familyMemory || '这一次，把一餐好好做完。'}</p>

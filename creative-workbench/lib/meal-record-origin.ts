@@ -1,8 +1,7 @@
 import type { Session } from './kitchen';
 
 export function mealRecordOrigin(session: Session) {
-  if (session.authoredRecord)
-    return session.authoredRecord.author + '实做 · 本人提供照片与食忆';
+  if (session.authoredRecord) return '实做 · 本人提供照片与食忆';
   return session.sampleRecord
     ? '预置样例食忆 · 非真实做菜记录'
     : '个人记忆 · 用户自述';

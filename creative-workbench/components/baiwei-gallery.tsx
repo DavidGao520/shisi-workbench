@@ -208,7 +208,7 @@ export function BaiweiGallery({
                   <span className={'baiwei-status ' + (latest ? 'is-lit' : '')}>
                     {latest && <Check size={15} />}
                     {latest?.authoredRecord
-                      ? `${latest.authoredRecord.author}实做 · 照片与食忆`
+                      ? '实做 · 照片与食忆'
                       : latest
                         ? `${sample ? '样例点亮' : '已点亮'} · 做过 ${history.length} 次`
                         : '还没做过'}

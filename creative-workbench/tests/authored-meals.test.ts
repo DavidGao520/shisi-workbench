@@ -152,7 +152,9 @@ void test('genuine records appear first, remain distinct from fictional examples
   );
   assert.match(gallery, /max="72"/);
   assert.match(gallery, /value="38"/);
-  assert.equal((gallery.match(/高源实做 · 照片与食忆/g) || []).length, 6);
+  assert.equal((gallery.match(/实做 · 照片与食忆/g) || []).length, 6);
+  assert.doesNotMatch(gallery, /高源/);
+  assert.ok(baiweiDishes.every((dish) => !dish.story.includes('高源')));
   for (const entry of entries.slice(0, 6)) {
     const session = entry.history[0];
     assert.ok(session.authoredRecord);
@@ -164,12 +166,12 @@ void test('genuine records appear first, remain distinct from fictional examples
       }),
     );
     assert.match(history, /本人提供照片与食忆/);
-    assert.doesNotMatch(history, /样例演练|未评分|这次做法与记录/);
+    assert.doesNotMatch(history, /样例演练|未评分|这次做法与记录|高源/);
     const exported = renderBaiweiEntry(savedRecipe(session)!, session, 'demo');
     assert.ok(exported.includes(session.photo!));
     assert.match(exported, /预设参考做法/);
     assert.match(exported, /不代表本次实拍完整操作记录/);
-    assert.doesNotMatch(exported, /非真实做菜记录|本次跟做步骤|未评分/);
+    assert.doesNotMatch(exported, /非真实做菜记录|本次跟做步骤|未评分|高源/);
     if (entry.dish.id === 'cola_chicken_wings')
       assert.match(exported, /拍摄日期未记录/);
     else assert.match(exported, /拍摄于 2026-09-/);
