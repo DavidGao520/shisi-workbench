@@ -350,6 +350,7 @@ export function confirmVoiceDraft(
   state: KitchenState,
   dataset: Dataset,
   rows: VoiceRow[],
+  at = new Date().toISOString(),
 ) {
   if (state.dataset !== dataset)
     throw new Error('厨房已切换，请重新核对本次语音。');
@@ -392,16 +393,21 @@ export function confirmVoiceDraft(
       'pending'
     )
       continue;
-    confirmCandidate(state, row.candidate.key, {
-      name: row.name,
-      ingredientId: row.ingredientId,
-      quantity: row.amount.trim()
-        ? { amount: Number(row.amount), unit: row.unit }
-        : { amountBand: row.amountBand },
-      targetId: row.targetId || undefined,
-      targetRevision: row.targetRevision,
-      expiryDate: row.expiryDate,
-    });
+    confirmCandidate(
+      state,
+      row.candidate.key,
+      {
+        name: row.name,
+        ingredientId: row.ingredientId,
+        quantity: row.amount.trim()
+          ? { amount: Number(row.amount), unit: row.unit }
+          : { amountBand: row.amountBand },
+        targetId: row.targetId || undefined,
+        targetRevision: row.targetRevision,
+        expiryDate: row.expiryDate,
+      },
+      at,
+    );
     count++;
   }
   return count;

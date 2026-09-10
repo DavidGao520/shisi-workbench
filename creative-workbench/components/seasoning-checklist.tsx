@@ -114,6 +114,9 @@ export function SeasoningChecklist({
         {seasoningGroups.slice(1).map(group)}
       </details>
       <div className="seasoning-confirm">
+        <p className="muted">
+          新增调料默认7天后到期，可在库存卡中修改；默认日期仅作提醒。
+        </p>
         <div className="actions" aria-live="polite">
           <button
             className="primary"

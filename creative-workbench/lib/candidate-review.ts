@@ -65,6 +65,7 @@ export function confirmReviewedCandidate(
   key: string,
   review: ReturnType<typeof candidateReview>,
   input: { quantity: Quantity; expiryDate?: string },
+  at = new Date().toISOString(),
 ) {
   const candidate = state.candidates.find((c) => c.key === key);
   if (!candidate) throw new Error('候选不存在，请重新读取。');
@@ -80,14 +81,19 @@ export function confirmReviewedCandidate(
     current.targetId !== review.targetId
   )
     throw new Error('库存已变化，请重新核对数量后确认。');
-  confirmCandidate(state, key, {
-    name: current.name,
-    ingredientId: current.ingredientId,
-    quantity: input.quantity,
-    expiryDate: input.expiryDate,
-    targetId: current.targetId,
-    targetRevision: current.targetRevision,
-  });
+  confirmCandidate(
+    state,
+    key,
+    {
+      name: current.name,
+      ingredientId: current.ingredientId,
+      quantity: input.quantity,
+      expiryDate: input.expiryDate,
+      targetId: current.targetId,
+      targetRevision: current.targetRevision,
+    },
+    at,
+  );
 }
 
 export function inventoryEditCandidate(

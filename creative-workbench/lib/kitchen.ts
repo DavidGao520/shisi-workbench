@@ -142,14 +142,25 @@ export type KitchenState = {
 };
 export const uid = () => globalThis.crypto.randomUUID();
 export const DEFAULT_SERVINGS = 1;
-export const today = () => {
-  const d = new Date();
+export const DEFAULT_EXPIRY_DAYS = 7;
+function localDate(d: Date) {
   return [
     d.getFullYear(),
     String(d.getMonth() + 1).padStart(2, '0'),
     String(d.getDate()).padStart(2, '0'),
   ].join('-');
-};
+}
+export const today = () => localDate(new Date());
+
+/** User-selected default reminder, not an inferred shelf life. Add calendar days, not hours. */
+export function defaultExpiryDate(at = new Date().toISOString()): string {
+  if (!Number.isFinite(Date.parse(at))) fail('入库时间无效。');
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(at) ? at : localDate(new Date(at));
+  validateDate(day);
+  const value = new Date(day + 'T12:00:00Z');
+  value.setUTCDate(value.getUTCDate() + DEFAULT_EXPIRY_DAYS);
+  return value.toISOString().slice(0, 10);
+}
 export function emptyState(dataset: Dataset): KitchenState {
   return {
     dataset,
@@ -440,6 +451,13 @@ export function confirmCandidate(
     ? s.inventory.find((x) => x.id === input.targetId)
     : undefined;
   if (input.targetId && !target) fail('原批次已不存在，请重新确认。');
+  // Stocktaking must not silently extend an existing batch's expiry.
+  // Restocking is new stock, so its own effective date governs merge eligibility.
+  const expiryDate =
+    input.expiryDate ||
+    (c.mode === 'stocktake' && target
+      ? target.expiryDate
+      : defaultExpiryDate(at));
   if (target) {
     if (target.revision !== input.targetRevision)
       fail('库存已变化，请重新核对批次。');
@@ -458,7 +476,7 @@ export function confirmCandidate(
         quantity.amount === undefined
       )
         fail('补货合并需要相同的精确单位，否则请新建批次。');
-      if ((target.expiryDate || '') !== (input.expiryDate || ''))
+      if ((target.expiryDate || '') !== expiryDate)
         fail('到期日期不同，请新建批次。');
       quantity.amount += target.amount;
       validateQuantity(quantity);
@@ -468,7 +486,7 @@ export function confirmCandidate(
     delete target.amountBand;
     Object.assign(target, quantity, {
       displayName: name,
-      expiryDate: input.expiryDate,
+      expiryDate,
       revision: target.revision + 1,
       updatedAt: at,
     });
@@ -479,7 +497,7 @@ export function confirmCandidate(
       displayName: name,
       canonicalIngredientId: input.ingredientId,
       revision: 1,
-      expiryDate: input.expiryDate,
+      expiryDate,
       confirmed: true,
       createdAt: at,
       updatedAt: at,

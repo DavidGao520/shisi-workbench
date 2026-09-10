@@ -453,6 +453,7 @@ void test('restock starts a new batch by default and explicit compatible merge a
       amount: 8,
       unit: '个',
       revision: 1,
+      expiryDate: '2099-01-01',
       confirmed: true,
       createdAt: '2026-09-05',
       updatedAt: '2026-09-05',
@@ -462,6 +463,7 @@ void test('restock starts a new batch by default and explicit compatible merge a
   assert.equal(draft.rows[0].targetId, '');
   draft.rows[0].targetId = 'eggs';
   draft.rows[0].targetRevision = 1;
+  draft.rows[0].expiryDate = '2099-01-01';
   await store.change('real', (s) => confirmVoiceDraft(s, 'real', draft.rows));
   await store.change('real', (s) => confirmVoiceDraft(s, 'real', draft.rows));
   assert.equal((await store.read('real')).inventory[0].amount, 11);

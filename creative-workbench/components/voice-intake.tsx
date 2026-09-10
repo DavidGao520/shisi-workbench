@@ -439,7 +439,9 @@ export function VoiceIntake({
                       </div>
                     </div>
                     <label className="field">
-                      到期日期（不知道可留空）
+                      {row.targetId
+                        ? '到期日期（留空不修改）'
+                        : '到期日期（留空默认7天后）'}
                       <input
                         type="date"
                         value={row.expiryDate || ''}
@@ -449,6 +451,7 @@ export function VoiceIntake({
                           })
                         }
                       />
+                      <small>默认日期仅作提醒，请按包装和实际状态调整。</small>
                     </label>
                   </div>
                   <small>

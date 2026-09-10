@@ -468,12 +468,15 @@ function CandidateEditor({
             />
           )}
           <label className="field">
-            到期日期（不知道可留空）
+            {review.targetId
+              ? '到期日期（留空不修改）'
+              : '到期日期（留空默认7天后）'}
             <input
               type="date"
               value={expiry}
               onChange={(e) => setExpiry(e.target.value)}
             />
+            <small>默认日期仅作提醒，请按包装和实际状态调整。</small>
           </label>
         </div>
         {review.problem && <p className="warning-text">{review.problem}</p>}

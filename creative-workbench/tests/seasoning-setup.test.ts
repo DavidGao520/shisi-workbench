@@ -14,6 +14,7 @@ import { names, recipes } from '../lib/recipes';
 import { IndexedDbStore } from '../lib/store';
 import {
   confirmCandidate,
+  defaultExpiryDate,
   emptyState,
   matching,
   parseImport,
@@ -158,7 +159,7 @@ void test('only selected seasonings are saved with existence, never invented qua
     assert.equal(quantityText(item), PRESENT_QUANTITY);
     assert.equal(item.amount, undefined);
     assert.equal(item.unit, undefined);
-    assert.equal(item.expiryDate, undefined);
+    assert.equal(item.expiryDate, defaultExpiryDate(at));
     assert.equal(item.confirmed, true);
   }
   assert.equal(state.candidates.length, 0);

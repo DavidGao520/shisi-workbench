@@ -5,6 +5,7 @@ import {
   seasonings,
 } from './seasonings';
 import {
+  defaultExpiryDate,
   isExpired,
   today,
   uid,
@@ -66,6 +67,7 @@ export function confirmSeasoningSetup(
       amountBand: PRESENT_QUANTITY,
       revision: 1,
       confirmed: true as const,
+      expiryDate: defaultExpiryDate(at),
       createdAt: at,
       updatedAt: at,
     }));
