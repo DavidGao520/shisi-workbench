@@ -5,7 +5,11 @@ import { createHash } from 'node:crypto';
 import { IDBFactory } from 'fake-indexeddb';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { BaiweiGallery, BaiweiHistory } from '../components/baiwei-gallery';
+import {
+  BaiweiDishArt,
+  BaiweiGallery,
+  BaiweiHistory,
+} from '../components/baiwei-gallery';
 import {
   appendAuthoredMeals,
   authoredMealRecipeIds,
@@ -176,6 +180,51 @@ void test('genuine records appear first, remain distinct from fictional examples
       assert.match(exported, /拍摄日期未记录/);
     else assert.match(exported, /拍摄于 2026-09-/);
   }
+});
+
+void test('eggplant uses its own plated illustration while its genuine photo remains a single record thumbnail', () => {
+  const dish = baiweiDishes.find(
+    (item) => item.id === 'green_pepper_eggplant',
+  )!;
+  const photo = provenance.photos.find((item) => item.recipeId === dish.id)!;
+  assert.equal(
+    dish.imageFile,
+    'assets/baiwei/dishes/green_pepper_eggplant.webp',
+  );
+  assert.notEqual(dish.imageFile, photo.imageFile);
+  assert.notEqual(dish.assetKind, 'photo');
+  assert.equal(dish.selfContained, false);
+  const imports = readFileSync(
+    new URL('../lib/baiwei-art.ts', import.meta.url),
+    'utf8',
+  );
+  assert.ok(imports.includes("from '../" + dish.imageFile + "?url'"));
+  assert.ok(!imports.includes("from '../" + photo.imageFile + "?url'"));
+  const art = renderToStaticMarkup(
+    createElement(BaiweiDishArt, {
+      dish,
+      src: '/' + dish.imageFile,
+      plate: '/plate.webp',
+    }),
+  );
+  assert.match(art, /class="baiwei-plate"/);
+  assert.match(art, /alt="青椒茄子工作台插画"/);
+  assert.doesNotMatch(art, /作者实拍/);
+  const state = emptyState('demo');
+  restoreDemoKitchen(state, '2026-09-10');
+  const session = state.sessions.find(
+    (item) => item.recipeId === dish.id && item.authoredRecord,
+  )!;
+  const gallery = renderToStaticMarkup(
+    createElement(BaiweiGallery, {
+      state,
+      images: { [dish.id]: '/' + dish.imageFile },
+      plate: '/plate.webp',
+      onOpenRecipe() {},
+    }),
+  );
+  assert.equal(gallery.split(session.photo!).length - 1, 1);
+  assert.equal(session.familyMemory, '这是我做的最好吃的素菜。');
 });
 
 void test('new home recipes accept truthful later source dates while invalid dates are rejected', () => {

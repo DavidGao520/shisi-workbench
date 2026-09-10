@@ -4,7 +4,7 @@
 
 辣子鸡：已生成，运行时 `assets/baiwei/dishes/spicy_chicken.webp`，Git blob SHA-1 `046280a3f9c0286499fe03bd9ccdf9fc3f9d834f`。原 PNG 1254×1254，透明 RGBA；仅转换 WebP，不去除或改画主体。
 
-青椒茄子：首次请求网络错误，未返回图片。当前展示为作者本人实拍，未称为 AI 插画。
+青椒茄子：首次请求网络错误，未返回图片；用户再次要求补齐后，使用下方相同提示词重新请求一次并成功。运行时 `assets/baiwei/dishes/green_pepper_eggplant.webp`，Git blob SHA-1 `2007e1ca94726f9399237f2dec79698ea76ffb59`。原 PNG 1254×1254，真实 RGBA，四角完全透明；保留 alpha 以 quality 90 转为 WebP，未抠图或改绘。主图已改为独立插画配原作青花盘，实拍只用于实做记录与缩略图，照片和食忆未改动。
 
 以下为完整最终提示词。每个菜品请求使用通用部分加对应菜品段。
 
