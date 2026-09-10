@@ -1,5 +1,6 @@
 // Explicit allowlist: never walk a user's release directory or private runtimes.
 export const releaseFiles = [
+  ['docs/JUDGE-START.txt', '先读我.txt'],
   ['docs/JUDGE-GUIDE.md', 'README.md'],
   ['docs/ASSET-SOURCES.md', 'ASSET-SOURCES.md'],
   ['docs/CHINESE-RECIPE-SOURCES.md', 'CHINESE-RECIPE-SOURCES.md'],

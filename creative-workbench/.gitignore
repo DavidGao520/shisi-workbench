@@ -39,6 +39,7 @@ next-env.d.ts
 /work/
 /dist-local/
 /release/
+/食肆工作台-评委体验包*.zip
 *.tsbuildinfo
 /.kitchen-bridge/
 /release/.kitchen-bridge/

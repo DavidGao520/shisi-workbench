@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "lint:app": "oxlint app lib components/kitchen-ingredient-card.tsx components/kitchen-tour.tsx components/seasoning-checklist.tsx components/voice-intake.tsx components/photo-intake.tsx components/meal-ingredients.tsx components/meal-rating-input.tsx components/baiwei-gallery.tsx tests scripts scf/voice-backend skills/zhonghua-shisi/scripts standalone vite.standalone.config.ts",
     "test": "tsx --test tests/*.test.ts",
-    "package:local": "npm run build:html && node scripts/package-release.mjs",
+    "package:local": "node scripts/package-release.mjs",
     "build:html": "vite build --config vite.standalone.config.ts && node scripts/bundle-single.mjs",
     "kitchen:start": "node skills/zhonghua-shisi/scripts/kitchen-bridge.mjs start --workspace release",
     "kitchen:status": "node skills/zhonghua-shisi/scripts/kitchen-bridge.mjs status --workspace release",
