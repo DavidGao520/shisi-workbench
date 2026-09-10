@@ -70,8 +70,12 @@ import dish67 from '../assets/baiwei/dishes/coconut_rice.webp?url';
 import dish68 from '../assets/baiwei/dishes/sausage_claypot_rice.webp?url';
 import dish69 from '../assets/baiwei/dishes/steamed_cured_sausage.webp?url';
 import plate from '../assets/baiwei/plates/plate_1.webp?url';
+import spicyChicken from '../assets/baiwei/dishes/spicy_chicken.webp?url';
+import greenPepperEggplant from '../assets/demo-meals/green_pepper_eggplant.webp?url';
 export const baiweiPlate = plate;
 export const baiweiImages: Record<string, string> = {
+  spicy_chicken: spicyChicken,
+  green_pepper_eggplant: greenPepperEggplant,
   boiled_fish: dish0,
   braised_pork: dish1,
   braised_trotter: dish2,

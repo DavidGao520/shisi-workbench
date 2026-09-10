@@ -1,0 +1,37 @@
+[
+  {
+    "id": "spicy_chicken",
+    "name": "辣子鸡",
+    "description": "鸡块裹着辣椒与花椒的香气，一口香辣，一口米饭。",
+    "story": "这道辣子鸡因高源的一次真实下厨加入工作台。他留下的食忆是：“那辣子鸡呀，真的是四川人的最爱。”作者实拍与食忆可在样例厨房查看；预设菜谱另外提供家庭煎炒版本，方便继续尝试。",
+    "selfContained": false,
+    "soup": false,
+    "rect": {
+      "left": "9%",
+      "top": "-4%",
+      "width": "82%",
+      "height": "92%"
+    },
+    "imageFile": "assets/baiwei/dishes/spicy_chicken.webp",
+    "imageGitSha": "046280a3f9c0286499fe03bd9ccdf9fc3f9d834f",
+    "origin": "workbench"
+  },
+  {
+    "id": "green_pepper_eggplant",
+    "name": "青椒茄子",
+    "description": "茄子的软糯配上青椒的清香，朴素的一盘也很下饭。",
+    "story": "高源做完青椒茄子后，说这是他做过最好吃的素菜。工作台把这次照片和食忆留下，也准备了一份先蒸后炒的参考做法，让下一次下厨有据可循。",
+    "selfContained": true,
+    "soup": false,
+    "rect": {
+      "left": "0%",
+      "top": "0%",
+      "width": "100%",
+      "height": "100%"
+    },
+    "imageFile": "assets/demo-meals/green_pepper_eggplant.webp",
+    "imageGitSha": "d13aa4f74e1d140278e08e59a6bee1cb49fd5413",
+    "origin": "workbench",
+    "assetKind": "photo"
+  }
+]

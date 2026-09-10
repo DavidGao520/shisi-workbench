@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { IDBFactory } from 'fake-indexeddb';
 import {
   recipes,
+  homeRecipes,
   RECIPE_VERSION,
   cookingSteps,
   detailedCookingSteps,
@@ -38,7 +39,7 @@ import {
 import { renderBaiweiEntry } from '../lib/archive-export';
 import { baiweiDishes, baiweiCollection } from '../lib/baiwei';
 import { validateHomeRecipes } from '../lib/recipe-validation';
-import type { HomeRecipe, Recipe } from '../lib/recipe-types';
+import type { Recipe } from '../lib/recipe-types';
 import {
   candidateReview,
   confirmReviewedCandidate,
@@ -62,10 +63,8 @@ function stocked(recipe: Recipe) {
   return state;
 }
 
-void test('all 70 dishes have a complete quantitative Chinese-source home recipe', () => {
-  const content = JSON.parse(
-    readFileSync(new URL('../lib/home-recipes.json', import.meta.url), 'utf8'),
-  ) as HomeRecipe[];
+void test('all 72 dishes have a complete quantitative Chinese-source home recipe', () => {
+  const content = homeRecipes;
   assert.deepEqual(
     validateHomeRecipes(
       content,
@@ -73,9 +72,9 @@ void test('all 70 dishes have a complete quantitative Chinese-source home recipe
     ),
     [],
   );
-  assert.equal(recipes.length, 70);
+  assert.equal(recipes.length, 72);
   assert.equal(RECIPE_VERSION, '2026-09-06-home.1');
-  assert.equal(new Set(recipes.map((recipe) => recipe.id)).size, 70);
+  assert.equal(new Set(recipes.map((recipe) => recipe.id)).size, 72);
   for (const recipe of recipes) {
     assert.equal(
       recipe.minutes,
@@ -144,7 +143,7 @@ void test('every dish renders step time, material amounts, heat, completion cue 
   }
 });
 
-void test('all 70 recipes complete without any model request and survive IndexedDB reopen', async () => {
+void test('all 72 recipes complete without any model request and survive IndexedDB reopen', async () => {
   const store = new IndexedDbStore('home-cookbook-test', new IDBFactory());
   for (const recipe of recipes) {
     const state = stocked(recipe);

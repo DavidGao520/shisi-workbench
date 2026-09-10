@@ -56,12 +56,19 @@ const images = Object.fromEntries(
   baiweiDishes.map((dish) => [dish.id, `/${dish.id}.webp`]),
 );
 
-void test('catalog has exactly 70 stable game IDs, stories and matching immutable art', () => {
-  assert.equal(baiweiDishes.length, 70);
-  assert.equal(new Set(baiweiDishes.map((dish) => dish.id)).size, 70);
+void test('catalog preserves 70 original game dishes plus 2 explicit workbench additions and matching assets', () => {
+  assert.equal(baiweiDishes.length, 72);
+  assert.equal(new Set(baiweiDishes.map((dish) => dish.id)).size, 72);
   assert.equal(
     readdirSync(new URL('../assets/baiwei/dishes/', import.meta.url)).length,
-    70,
+    baiweiDishes.filter((dish) =>
+      dish.imageFile.startsWith('assets/baiwei/dishes/'),
+    ).length,
+  );
+  assert.equal(baiweiDishes.filter((dish) => !dish.origin).length, 70);
+  assert.deepEqual(
+    baiweiDishes.filter((dish) => dish.origin).map((dish) => dish.id),
+    ['spicy_chicken', 'green_pepper_eggplant'],
   );
   for (const dish of baiweiDishes) {
     assert.ok(dish.name && dish.description && dish.story);
@@ -80,8 +87,11 @@ void test('catalog has exactly 70 stable game IDs, stories and matching immutabl
   }
 });
 
-void test('21 self-contained dishes do not receive a second plate, other 49 do', () => {
-  assert.equal(baiweiDishes.filter((dish) => dish.selfContained).length, 21);
+void test('original plate assignments stay intact and every addition follows its own composition', () => {
+  assert.equal(
+    baiweiDishes.filter((dish) => !dish.origin && dish.selfContained).length,
+    21,
+  );
   assert.equal(baiweiDishes.filter((dish) => dish.soup).length, 14);
   for (const dish of baiweiDishes) {
     const html = renderToStaticMarkup(
@@ -102,7 +112,7 @@ void test('21 self-contained dishes do not receive a second plate, other 49 do',
   );
 });
 
-void test('new kitchen renders all 70 unlit dishes without seeding any data', () => {
+void test('new kitchen renders all 72 unlit dishes without seeding any data', () => {
   const state = emptyState('real');
   const before = structuredClone(state);
   const html = renderToStaticMarkup(
@@ -113,10 +123,10 @@ void test('new kitchen renders all 70 unlit dishes without seeding any data', ()
       onOpenRecipe() {},
     }),
   );
-  assert.equal((html.match(/data-dish-id=/g) || []).length, 70);
-  assert.equal((html.match(/data-lit="false"/g) || []).length, 70);
-  assert.equal((html.match(/is-unlit/g) || []).length, 70);
-  assert.match(html, /value="0" max="70"/);
+  assert.equal((html.match(/data-dish-id=/g) || []).length, 72);
+  assert.equal((html.match(/data-lit="false"/g) || []).length, 72);
+  assert.equal((html.match(/is-unlit/g) || []).length, 72);
+  assert.match(html, /value="0" max="72"/);
   assert.equal(html.includes('data-lit="true"'), false);
   assert.deepEqual(state, before);
 });
@@ -145,7 +155,7 @@ void test('cooking, paused and reviewing never light a dish; only completion doe
     }),
   );
   assert.equal((html.match(/data-lit="true"/g) || []).length, 1);
-  assert.match(html, /value="1" max="70"/);
+  assert.match(html, /value="1" max="72"/);
 });
 
 void test('repeat completion is idempotent; repeated meals preserve sorted individual records', () => {
@@ -168,8 +178,8 @@ void test('repeat completion is idempotent; repeated meals preserve sorted indiv
   assert.deepEqual(state, before);
 });
 
-void test('all 70 preset recipe IDs map to the game catalog, retaining the original soup ID', () => {
-  assert.equal(recipes.length, 70);
+void test('all 72 preset recipe IDs map to the game catalog, retaining the original soup ID', () => {
+  assert.equal(recipes.length, 72);
   assert.equal(RECIPE_VERSION, '2026-09-06-home.1');
   const state = golden();
   finish(state, 'soup', 'tomato_egg_soup');
@@ -201,7 +211,7 @@ void test('all catalog recipes have methods but never bypass real-kitchen stock 
   assert.equal(state.sessions.length, 0);
 });
 
-void test('saved recipes outside the catalog remain reachable without inflating 70-dish progress', () => {
+void test('saved recipes outside the catalog remain reachable without inflating 72-dish progress', () => {
   const state = golden();
   finish(state, 'custom');
   state.sessions[0].recipeId = 'family_special';

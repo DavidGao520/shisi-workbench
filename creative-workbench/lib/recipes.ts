@@ -2,7 +2,9 @@ import { baiweiIngredientNames, baiweiPantryAliases } from './pantry-catalog';
 import { seasoningNames } from './seasonings';
 import { legacyRecipes, LEGACY_RECIPE_VERSION } from './legacy-recipes';
 import homeRecipeData from './home-recipes.json';
-import gameDishes from './baiwei-dishes.json';
+import homeRecipeAdditions from './home-recipe-additions.json';
+import originalGameDishes from './baiwei-dishes.json';
+import workbenchDishes from './workbench-dishes.json';
 import type { Recipe, HomeRecipe } from './recipe-types';
 export type {
   Recipe,
@@ -12,7 +14,11 @@ export type {
 } from './recipe-types';
 
 export const RECIPE_VERSION = '2026-09-06-home.1';
-export const homeRecipes = homeRecipeData as HomeRecipe[];
+export const homeRecipes = [
+  ...homeRecipeData,
+  ...homeRecipeAdditions,
+] as HomeRecipe[];
+const gameDishes = [...originalGameDishes, ...workbenchDishes];
 const familiarFirst = ['tomato_egg', 'green_pepper_egg', 'tomato_egg_soup'];
 export const recipes: Recipe[] = [
   ...familiarFirst,

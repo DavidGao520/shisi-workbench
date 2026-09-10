@@ -50,6 +50,7 @@ import {
   mealRatingSummary,
 } from '@/lib/meal-ratings';
 import { BaiweiGallery, BaiweiDishArt } from '@/components/baiwei-gallery';
+import { mealRecordDate, mealRecordOrigin } from '@/lib/meal-record-origin';
 import {
   RecipeDetailSections,
   RecipeInstructions,
@@ -2344,16 +2345,14 @@ export default function Home({
                     .map((x) => (
                       <div className="history-item" key={x.id}>
                         <div>
-                          <strong>{mealRatingSummary(x)}</strong>
-                          <small>
-                            {new Date(x.completedAt!).toLocaleString('zh-CN')}
-                          </small>
+                          <strong>
+                            {x.authoredRecord
+                              ? x.authoredRecord.author + '实做'
+                              : mealRatingSummary(x)}
+                          </strong>
+                          <small>{mealRecordDate(x)}</small>
                           <p>{x.familyMemory || '这一次，把一餐好好做完。'}</p>
-                          <span className="tag">
-                            {x.sampleRecord
-                              ? '预置样例食忆 · 非真实做菜记录'
-                              : '个人记忆 · 用户自述'}
-                          </span>
+                          <span className="tag">{mealRecordOrigin(x)}</span>
                         </div>
                         <button
                           className="secondary"
@@ -2385,7 +2384,7 @@ export default function Home({
           </AlertDialogTitle>
           <AlertDialogDescription>
             {reset
-              ? '用 22 项已备食材和 35 道样例食忆替换当前样例厨房，并重新开始参观。你在样例中的修改和演练将被清除，不能撤销；如需保留请先导出完整备份。真实厨房完全保留。'
+              ? '用 22 项已备食材、35 条演练样例和 6 条作者实做记录替换当前样例厨房，并重新开始参观。你在样例中的修改和演练将被清除，不能撤销；如需保留请先导出完整备份。真实厨房完全保留。'
               : '仅清空当前 ' +
                 (dataset === 'demo' ? '样例' : '真实') +
                 ' 厨房的库存和待确认候选，保留已完成百味图。建议先导出完整备份；清空本身不能撤销。'}

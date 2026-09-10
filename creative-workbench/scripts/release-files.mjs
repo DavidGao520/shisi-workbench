@@ -4,6 +4,8 @@ export const releaseFiles = [
   ['docs/ASSET-SOURCES.md', 'ASSET-SOURCES.md'],
   ['docs/CHINESE-RECIPE-SOURCES.md', 'CHINESE-RECIPE-SOURCES.md'],
   ['docs/IMPLEMENTATION-STATUS.md', 'IMPLEMENTATION-STATUS.md'],
+  ['docs/demo-meal-provenance.json', 'demo-meal-provenance.json'],
+  ['docs/DISH-ART-PROMPTS-2026-09-10.md', 'DISH-ART-PROMPTS-2026-09-10.md'],
   ...[
     '启动厨房.command',
     '停止厨房.command',

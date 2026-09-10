@@ -1,4 +1,5 @@
 import catalog from './baiwei-dishes.json';
+import workbenchDishes from './workbench-dishes.json';
 import { recipes, storedRecipe } from './recipes';
 import type { KitchenState, Session } from './kitchen';
 
@@ -12,11 +13,13 @@ export type BaiweiDish = {
   rect: { left: string; top: string; width: string; height: string };
   imageFile: string;
   imageGitSha: string;
+  origin?: string;
+  assetKind?: string;
 };
 
 // Catalog assets are public knowledge; completion belongs exclusively to this kitchen.
 // Do not turn game ingredients / prices into real recipes or seed user sessions.
-export const baiweiDishes: BaiweiDish[] = catalog;
+export const baiweiDishes: BaiweiDish[] = [...catalog, ...workbenchDishes];
 
 export function completedHistory(state: KitchenState, recipeId: string) {
   return state.sessions
@@ -26,21 +29,33 @@ export function completedHistory(state: KitchenState, recipeId: string) {
     )
     .sort(
       (a, b) =>
+        (state.dataset === 'demo'
+          ? Number(!!b.authoredRecord) - Number(!!a.authoredRecord)
+          : 0) ||
         (b.completedAt || b.createdAt).localeCompare(
           a.completedAt || a.createdAt,
-        ) || b.id.localeCompare(a.id),
+        ) ||
+        b.id.localeCompare(a.id),
     );
 }
 
 export function baiweiCollection(state: KitchenState) {
-  return baiweiDishes.map((dish) => ({
+  const entries = baiweiDishes.map((dish) => ({
     dish,
     history: completedHistory(state, dish.id),
     recipe: recipes.find((recipe) => recipe.id === dish.id),
   }));
+  // Surface the author's genuine examples first, without reordering a real kitchen.
+  return state.dataset === 'demo'
+    ? entries.sort(
+        (a, b) =>
+          Number(!!b.history[0]?.authoredRecord) -
+          Number(!!a.history[0]?.authoredRecord),
+      )
+    : entries;
 }
 
-// Older personal dishes outside the game catalog must not vanish or inflate x/70.
+// Older personal dishes outside the catalog must not vanish or inflate its progress.
 export function otherBaiweiRecords(state: KitchenState) {
   const catalogIds = new Set(baiweiDishes.map((dish) => dish.id));
   const ids = [

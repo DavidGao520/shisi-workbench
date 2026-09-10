@@ -1,9 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 const root = new URL('../', import.meta.url);
-const dishes = JSON.parse(
+const gameDishes = JSON.parse(
   await readFile(new URL('lib/baiwei-dishes.json', root), 'utf8'),
 );
+const workbenchDishes = JSON.parse(
+  await readFile(new URL('lib/workbench-dishes.json', root), 'utf8'),
+);
+const dishes = [...gameDishes, ...workbenchDishes];
 const provenance = JSON.parse(
   await readFile(new URL('docs/baiwei-provenance.json', root), 'utf8'),
 );
@@ -11,8 +15,14 @@ const html = process.argv.includes('--html')
   ? await readFile(new URL('release/中华食肆.html', root), 'utf8')
   : null;
 const artModule = await readFile(new URL('lib/baiwei-art.ts', root), 'utf8');
-if (dishes.length !== 70 || new Set(dishes.map((dish) => dish.id)).size !== 70)
-  throw new Error('Expected exactly 70 unique game dishes');
+if (
+  gameDishes.length !== 70 ||
+  workbenchDishes.length !== 2 ||
+  new Set(dishes.map((dish) => dish.id)).size !== 72
+)
+  throw new Error(
+    'Expected 70 original game dishes plus 2 distinct workbench additions',
+  );
 const assets = [
   ...dishes.map((dish) => ({ path: dish.imageFile, sha: dish.imageGitSha })),
   {
@@ -36,5 +46,5 @@ for (const asset of assets) {
     throw new Error('Missing offline image: ' + asset.path);
 }
 console.log(
-  `Verified ${assets.length} original game assets${html === null ? '' : ' and all image bytes embedded in standalone HTML'}.`,
+  `Verified 71 original game assets and 2 workbench dish assets${html === null ? '' : ' and all image bytes embedded in standalone HTML'}.`,
 );

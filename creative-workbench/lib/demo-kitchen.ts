@@ -10,6 +10,7 @@ import {
 import { names, recipes, type Recipe } from './recipes';
 import { baiweiDishes } from './baiwei';
 import type { IndexedDbStore } from './store';
+import { appendAuthoredMeals } from './authored-meals';
 
 export const demoRecipeIds = [
   'braised_pork',
@@ -165,18 +166,25 @@ export function restoreDemoKitchen(state: KitchenState, date = today()) {
   });
   state.demoExperience = {
     version: 1,
+    authoredMealsVersion: 1,
     referenceDate: date,
     tourStep: 0,
     recipeId: demoRecipeIds[0],
   };
+  appendAuthoredMeals(state);
 }
 
 export async function openDemoKitchen(store: IndexedDbStore, date = today()) {
   const previous = await store.read('demo');
-  if (previous.demoExperience) return previous;
+  if (previous.demoExperience?.authoredMealsVersion === 1) return previous;
   // Recheck inside the single read/write transaction: two tabs must not seed twice.
   return store.change('demo', (state) => {
-    if (state.demoExperience) return;
+    if (state.demoExperience?.authoredMealsVersion === 1) return;
+    if (state.demoExperience) {
+      appendAuthoredMeals(state);
+      state.demoExperience.authoredMealsVersion = 1;
+      return;
+    }
     const hasLegacyContent =
       state.inventory.length ||
       state.candidates.length ||
@@ -193,10 +201,12 @@ export async function openDemoKitchen(store: IndexedDbStore, date = today()) {
       // protected by the marker above, including intentionally cleared pantries.
       state.demoExperience = {
         version: 1,
+        authoredMealsVersion: 1,
         referenceDate: date,
         tourStep: null,
         recipeId: demoRecipeIds[0],
       };
+      appendAuthoredMeals(state);
     }
   });
 }

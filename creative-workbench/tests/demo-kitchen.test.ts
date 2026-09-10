@@ -59,7 +59,7 @@ void test('entering a fresh demo directly supplies a ready pantry and half-lit h
   assert.ok(
     recommendations(state, date).every((entry) => entry.missing.length === 0),
   );
-  assert.equal(litCount(state), 35);
+  assert.equal(litCount(state), 38);
   assert.equal(activeSession(state), undefined);
   assert.equal(state.demoExperience?.tourStep, 0);
   assert.deepEqual(await store.read('real'), real);
@@ -69,8 +69,10 @@ void test('entering a fresh demo directly supplies a ready pantry and half-lit h
 void test('seed history is coherent, explicitly fictional, exportable, and leaves all three featured dishes unlit', () => {
   const state = emptyState('demo');
   restoreDemoKitchen(state, date);
-  assert.equal(state.sessions.length, 35);
-  for (const session of state.sessions) {
+  assert.equal(state.sessions.length, 41);
+  const fictional = state.sessions.filter((session) => session.sampleRecord);
+  assert.equal(fictional.length, 35);
+  for (const session of fictional) {
     assert.equal(session.status, 'completed');
     assert.equal(session.sampleRecord, true);
     assert.ok(
@@ -109,7 +111,7 @@ void test('three featured meals can finish in any order, consume exact stock, an
         recipes.find((recipe) => recipe.id === id)!.steps.length,
       );
       finishCooking(state, 'try-' + id, { ratings, memory: '我试着做的一餐' });
-      assert.equal(litCount(state), 36 + index);
+      assert.equal(litCount(state), 39 + index);
     });
     for (const batch of state.inventory) {
       const used = demoRecipeIds
@@ -142,7 +144,7 @@ void test('concurrent entry seeds once; edits and saved tour step survive reopen
   const edited = await one.read('demo');
   assert.deepEqual(await openDemoKitchen(two, '2026-09-20'), edited);
   assert.equal(edited.inventory.length, 22);
-  assert.equal(edited.sessions.length, 35);
+  assert.equal(edited.sessions.length, 41);
   one.close();
   two.close();
   const reopened = new IndexedDbStore('two-tabs', factory);
@@ -228,7 +230,7 @@ void test('explicit restore refreshes only the demo, keeps revision monotonic an
   );
   assert.equal(restored.revision, previous.revision + 1);
   assert.equal(restored.inventory.length, 22);
-  assert.equal(litCount(restored), 35);
+  assert.equal(litCount(restored), 38);
   assert.equal(restored.demoExperience?.tourStep, 0);
   assert.equal(restored.demoExperience?.referenceDate, '2026-10-01');
   assert.deepEqual(restored.bridgeIgnoredTicketIds, ['old-photo']);

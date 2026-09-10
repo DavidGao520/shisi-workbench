@@ -17,6 +17,7 @@ import {
 import type { KitchenState, Session } from '@/lib/kitchen';
 import type { Recipe } from '@/lib/recipes';
 import { mealRatingSummary } from '@/lib/meal-ratings';
+import { mealRecordDate, mealRecordOrigin } from '@/lib/meal-record-origin';
 
 type GalleryProps = {
   state: KitchenState;
@@ -53,7 +54,14 @@ export function BaiweiDishArt({
         className="baiwei-food"
         style={dish.rect}
         src={src}
-        alt={dish.name + '游戏插画'}
+        alt={
+          dish.name +
+          (dish.assetKind === 'photo'
+            ? '作者实拍'
+            : dish.origin === 'workbench'
+              ? '工作台插画'
+              : '游戏插画')
+        }
         loading="lazy"
         decoding="async"
         width="256"
@@ -63,14 +71,7 @@ export function BaiweiDishArt({
   );
 }
 
-function dateText(session: Session) {
-  const date = new Date(session.completedAt || session.createdAt);
-  return Number.isNaN(date.getTime())
-    ? '日期未记录'
-    : date.toLocaleDateString('zh-CN');
-}
-
-function History({
+export function BaiweiHistory({
   history,
   sample,
   onOpenRecipe,
@@ -84,7 +85,10 @@ function History({
       {history.map((session) => {
         const recipe = savedRecipe(session);
         return (
-          <li key={session.id}>
+          <li
+            key={session.id}
+            className={session.authoredRecord ? 'is-authored' : undefined}
+          >
             {session.photo && (
               <img
                 className="baiwei-history-photo"
@@ -95,26 +99,38 @@ function History({
             )}
             <div>
               <p className="baiwei-history-meta">
-                <time dateTime={session.completedAt || session.createdAt}>
-                  {dateText(session)}
+                <time
+                  dateTime={
+                    session.authoredRecord
+                      ? session.authoredRecord.photoCapturedAt
+                      : session.completedAt || session.createdAt
+                  }
+                >
+                  {mealRecordDate(session)}
                 </time>
-                <span>{mealRatingSummary(session)}</span>
-                {sample && <span>样例演练</span>}
+                {!session.authoredRecord && (
+                  <span>{mealRatingSummary(session)}</span>
+                )}
+                {sample && !session.authoredRecord && <span>样例演练</span>}
               </p>
               <p className="baiwei-memory">
                 {session.familyMemory || '这一次，把一餐好好做完。'}
               </p>
-              <p className="baiwei-note">
-                {session.sampleRecord
-                  ? '预置样例食忆 · 非真实做菜记录'
-                  : '个人记忆 · 用户自述'}
-              </p>
+              <p className="baiwei-note">{mealRecordOrigin(session)}</p>
               {recipe && (
                 <button
                   className="recipe-link"
-                  onClick={() => onOpenRecipe(recipe, session.id)}
+                  onClick={() =>
+                    onOpenRecipe(
+                      recipe,
+                      session.authoredRecord ? undefined : session.id,
+                    )
+                  }
                 >
-                  查看这次做法与记录 <ArrowUpRight size={16} />
+                  {session.authoredRecord
+                    ? '查看参考做法'
+                    : '查看这次做法与记录'}{' '}
+                  <ArrowUpRight size={16} />
                 </button>
               )}
             </div>
@@ -156,7 +172,9 @@ export function BaiweiGallery({
             aria-label={sample ? '样例菜品点亮进度' : '菜品点亮进度'}
           />
           <p className="baiwei-note">
-            {sample ? '仅为演练，不计入真实厨房' : '亲手做一道，点亮一道'}
+            {sample
+              ? '作者实做与演练样例分开展示，不写入你的真实厨房'
+              : '亲手做一道，点亮一道'}
           </p>
         </div>
       </header>
@@ -166,9 +184,13 @@ export function BaiweiGallery({
           return (
             <li key={dish.id} data-dish-id={dish.id} data-lit={!!latest}>
               <button
-                className={'baiwei-row ' + (latest ? 'is-lit' : '')}
+                className={
+                  'baiwei-row ' +
+                  (latest ? 'is-lit' : '') +
+                  (latest?.authoredRecord ? ' is-authored' : '')
+                }
                 onClick={() => setSelectedId(dish.id)}
-                aria-label={`${dish.name}，${latest ? '已点亮，做过 ' + history.length + ' 次' : '还没做过'}，查看故事与记录`}
+                aria-label={`${dish.name}，${latest ? '已点亮，' + history.length + ' 条记录' : '还没做过'}，查看故事与记录`}
               >
                 <BaiweiDishArt
                   dish={dish}
@@ -178,21 +200,32 @@ export function BaiweiGallery({
                 />
                 <span className="baiwei-row-content">
                   <span className="baiwei-row-title">{dish.name}</span>
-                  <span className="baiwei-description">{dish.description}</span>
+                  <span className="baiwei-description">
+                    {latest?.authoredRecord
+                      ? '“' + latest.familyMemory + '”'
+                      : dish.description}
+                  </span>
                   <span className={'baiwei-status ' + (latest ? 'is-lit' : '')}>
                     {latest && <Check size={15} />}
-                    {latest
-                      ? `${sample ? '样例点亮' : '已点亮'} · 做过 ${history.length} 次`
-                      : '还没做过'}
+                    {latest?.authoredRecord
+                      ? `${latest.authoredRecord.author}实做 · 照片与食忆`
+                      : latest
+                        ? `${sample ? '样例点亮' : '已点亮'} · 做过 ${history.length} 次`
+                        : '还没做过'}
                   </span>
                   {latest && (
                     <span className="baiwei-note">
-                      最近一次 {dateText(latest)}
-                      {' · ' + mealRatingSummary(latest)}
+                      {mealRecordDate(latest)}
+                      {!latest.authoredRecord &&
+                        ' · ' + mealRatingSummary(latest)}
                     </span>
                   )}
                   <span className="baiwei-row-link">
-                    {latest ? '翻开故事与做菜记录' : '读读这道菜的故事'}{' '}
+                    {latest?.authoredRecord
+                      ? '看实拍与食忆'
+                      : latest
+                        ? '翻开故事与做菜记录'
+                        : '读读这道菜的故事'}{' '}
                     <ArrowUpRight size={16} />
                   </span>
                 </span>
@@ -200,7 +233,9 @@ export function BaiweiGallery({
                   <img
                     className="baiwei-latest-photo"
                     src={latest.photo}
-                    alt="最近一次的成品照"
+                    alt={
+                      latest.authoredRecord ? '作者实拍' : '最近一次的成品照'
+                    }
                     loading="lazy"
                   />
                 )}
@@ -213,14 +248,14 @@ export function BaiweiGallery({
         <section className="baiwei-other">
           <h2>其他家常味</h2>
           <p className="baiwei-note">
-            已有的做菜记录也留在这里，不计入这 70 道的点亮进度。
+            已有的做菜记录也留在这里，不计入这 {entries.length} 道的点亮进度。
           </p>
           {other.map((entry) => (
             <section key={entry.id}>
               <h3>
                 {entry.title} · {entry.history.length} 次
               </h3>
-              <History
+              <BaiweiHistory
                 history={entry.history}
                 sample={sample}
                 onOpenRecipe={openRecipe}
@@ -259,7 +294,11 @@ export function BaiweiGallery({
               <section className="baiwei-story">
                 <h3>这道菜的故事</h3>
                 <p>{selected.dish.story}</p>
-                <p className="baiwei-note">《中华食肆》游戏原作故事 · 国宴队</p>
+                <p className="baiwei-note">
+                  {selected.dish.origin === 'workbench'
+                    ? '工作台新增菜品说明 · 非游戏原作故事'
+                    : '《中华食肆》游戏原作故事 · 国宴队'}
+                </p>
               </section>
               {selected.recipe ? (
                 <button
@@ -275,11 +314,11 @@ export function BaiweiGallery({
               )}
               <section>
                 <h3>
-                  {sample ? '我的演练记录' : '我的做菜记录'} ·{' '}
-                  {selected.history.length} 次
+                  {sample ? '做菜记录与样例' : '我的做菜记录'} ·{' '}
+                  {selected.history.length} 条
                 </h3>
                 {selected.history.length > 0 && (
-                  <History
+                  <BaiweiHistory
                     history={selected.history}
                     sample={sample}
                     onOpenRecipe={openRecipe}

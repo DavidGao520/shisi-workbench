@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "addedAt": "2026-09-10",
+  "note": "照片及食忆由高源本人提供。拍摄时间取自照片元数据，不等于工作台记录的烹饪完成时间；无元数据的可乐鸡翅不补写日期。未提供评分或实际用量，保持为空。",
+  "photos": [
+    {
+      "recipeId": "twice_cooked_pork",
+      "author": "高源",
+      "sourceFilename": "回锅肉.HEIC",
+      "photoCapturedAt": "2026-09-09T12:01:07+08:00",
+      "imageFile": "assets/demo-meals/twice_cooked_pork.webp",
+      "sha256": "59754f522050feabe53cfe7079694ee056364b8d6e546a9c74fbb058025e7951",
+      "width": 900,
+      "height": 1200,
+      "bytes": 102842,
+      "treatment": "仅格式转换、按 EXIF 转正和等比例压缩；保留完整构图；已移除 EXIF/GPS 元数据；未进行 AI 编辑"
+    },
+    {
+      "recipeId": "spicy_chicken",
+      "author": "高源",
+      "sourceFilename": "辣子鸡.HEIC",
+      "photoCapturedAt": "2026-09-08T12:16:54+08:00",
+      "imageFile": "assets/demo-meals/spicy_chicken.webp",
+      "sha256": "8d648d73b3b535f2b6550f8c997aad5adfc6f327a43d11654fc48778e9bd0ebd",
+      "width": 900,
+      "height": 1200,
+      "bytes": 124782,
+      "treatment": "仅格式转换、按 EXIF 转正和等比例压缩；保留完整构图；已移除 EXIF/GPS 元数据；未进行 AI 编辑"
+    },
+    {
+      "recipeId": "green_pepper_eggplant",
+      "author": "高源",
+      "sourceFilename": "青椒茄子.HEIC",
+      "photoCapturedAt": "2026-09-08T12:17:41+08:00",
+      "imageFile": "assets/demo-meals/green_pepper_eggplant.webp",
+      "sha256": "0f12a62a59c0dcf51802760924602f3844fa849bcf82957a7017c61f682981bc",
+      "width": 900,
+      "height": 1200,
+      "bytes": 110844,
+      "treatment": "仅格式转换、按 EXIF 转正和等比例压缩；保留完整构图；已移除 EXIF/GPS 元数据；未进行 AI 编辑"
+    },
+    {
+      "recipeId": "sweet_sour_ribs",
+      "author": "高源",
+      "sourceFilename": "糖醋排骨.HEIC",
+      "photoCapturedAt": "2026-09-10T12:25:32+08:00",
+      "imageFile": "assets/demo-meals/sweet_sour_ribs.webp",
+      "sha256": "721f63cc659cc10383721ec9a5d84a1c1a667738ce17f8e00a7db8cabdc4b461",
+      "width": 900,
+      "height": 1200,
+      "bytes": 156332,
+      "treatment": "仅格式转换、按 EXIF 转正和等比例压缩；保留完整构图；已移除 EXIF/GPS 元数据；未进行 AI 编辑"
+    },
+    {
+      "recipeId": "green_pepper_pork",
+      "author": "高源",
+      "sourceFilename": "IMG_1940.HEIC",
+      "photoCapturedAt": "2026-09-08T12:17:21+08:00",
+      "imageFile": "assets/demo-meals/green_pepper_pork.webp",
+      "sha256": "849b6cc5da05af95dab079b8c2f9c0169689aabd2c792871a450f9a482c5614b",
+      "width": 900,
+      "height": 1200,
+      "bytes": 87214,
+      "treatment": "仅格式转换、按 EXIF 转正和等比例压缩；保留完整构图；已移除 EXIF/GPS 元数据；未进行 AI 编辑"
+    },
+    {
+      "recipeId": "cola_chicken_wings",
+      "author": "高源",
+      "sourceFilename": "real-finished-cola-chicken-wings.jpg",
+      "photoCapturedAt": null,
+      "imageFile": "assets/demo-meals/cola_chicken_wings.webp",
+      "sha256": "4c29297ef7269b7e2716b8f79c1e0ba25ae5f764a98fbc3e3eb8b0372885c2ca",
+      "width": 900,
+      "height": 1200,
+      "bytes": 129518,
+      "treatment": "仅格式转换、按 EXIF 转正和等比例压缩；保留完整构图；已移除 EXIF/GPS 元数据；未进行 AI 编辑"
+    }
+  ]
+}

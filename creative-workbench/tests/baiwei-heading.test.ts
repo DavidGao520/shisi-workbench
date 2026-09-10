@@ -12,7 +12,7 @@ void test('gallery leaves the page title to its shell and retains collection pro
   assert.ok(!html.includes('<h1'));
   assert.ok(!html.includes('中华食肆 · 食肆菜单'));
   assert.match(html, /aria-label="百味图"/);
-  assert.match(html, /value="0" max="70"/);
+  assert.match(html, /value="0" max="72"/);
   assert.match(html, /亲手做一道，点亮一道/);
-  assert.equal((html.match(/data-dish-id=/g) || []).length, 70);
+  assert.equal((html.match(/data-dish-id=/g) || []).length, 72);
 });

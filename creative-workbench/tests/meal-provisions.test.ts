@@ -24,7 +24,7 @@ import {
 
 const date = '2026-09-06';
 const recipe = recipes.find((r) => r.id === 'golden_egg')!;
-void test('all 70 preset dishes can complete with explicit meal-only provisions and no inventory writes', () => {
+void test('all 72 preset dishes can complete with explicit meal-only provisions and no inventory writes', () => {
   const s = emptyState('real');
   for (const r of recipes) {
     const drafts = mealIngredients(s, r, [], date).map((i) => ({
@@ -42,7 +42,7 @@ void test('all 70 preset dishes can complete with explicit meal-only provisions 
     assert.deepEqual(s.inventory, []);
     assert.deepEqual(s.candidates, []);
   }
-  assert.equal(archive(s).length, 70);
+  assert.equal(archive(s).length, 72);
 });
 function batch(
   id: string,

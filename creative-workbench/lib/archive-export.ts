@@ -8,6 +8,7 @@ import {
 } from './recipes';
 import type { Session, Dataset } from './kitchen';
 import { mealRatingSummary } from './meal-ratings';
+import { mealRecordDate, mealRecordOrigin } from './meal-record-origin';
 const escapeHtml = (s: string) =>
   s.replace(
     /[&<>"']/g,
@@ -46,15 +47,21 @@ export function renderBaiweiEntry(
     '</h1>' +
     picture +
     '<p>' +
-    escapeHtml(mealRatingSummary(session)) +
+    escapeHtml(
+      session.authoredRecord
+        ? mealRecordOrigin(session)
+        : mealRatingSummary(session),
+    ) +
     '</p><small>' +
-    escapeHtml(session.completedAt || '') +
+    escapeHtml(
+      session.authoredRecord
+        ? mealRecordDate(session)
+        : session.completedAt || '',
+    ) +
     '</small><section><h2>我的食忆</h2><p>' +
     escapeHtml(session.familyMemory || '这一次，把一餐好好做完。') +
     '</p><small>' +
-    (session.sampleRecord
-      ? '预置样例食忆 · 非真实做菜记录'
-      : '个人记忆 · 用户自述，不作为历史事实') +
+    escapeHtml(mealRecordOrigin(session)) +
     '</small></section><section><h2>家常做法的一点来处</h2><p>' +
     escapeHtml(r.knowledge) +
     '</p><a href="' +
@@ -63,10 +70,14 @@ export function renderBaiweiEntry(
     (r.workbuddyVersion ? '基础配方参考：' : '做法来源：') +
     escapeHtml(r.author) +
     '</a></section>' +
-    '<section><h2>本次跟做步骤</h2><small>' +
-    (r.workbuddyVersion
-      ? 'WorkBuddy 对话生成，经用户核对；链接是基础配方参考。'
-      : '预设家庭改编，计时是估算；保留本餐开始时的做法。') +
+    '<section><h2>' +
+    (session.authoredRecord ? '预设参考做法' : '本次跟做步骤') +
+    '</h2><small>' +
+    (session.authoredRecord
+      ? '实拍与食忆由作者本人提供；以下为工作台参考配方，不代表本次实拍完整操作记录。份量为参考配方份量，非实测用量。'
+      : r.workbuddyVersion
+        ? 'WorkBuddy 对话生成，经用户核对；链接是基础配方参考。'
+        : '预设家庭改编，计时是估算；保留本餐开始时的做法。') +
     '</small><p>' +
     recipePeople(r, session.servings) +
     ' 人份</p><ul>' +

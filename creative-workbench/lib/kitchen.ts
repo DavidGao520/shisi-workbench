@@ -66,6 +66,12 @@ export type StockAllocation = {
 export type Session = {
   id: string;
   sampleRecord?: true;
+  /** Imported author testimony, not a recorded in-app cooking session. */
+  authoredRecord?: {
+    author: string;
+    photoCapturedAt?: string;
+    addedAt: string;
+  };
   recipeId: string;
   recipeVersion: string;
   recipeSnapshot?: Recipe;
@@ -110,6 +116,7 @@ export type KitchenState = {
   preferences: Preferences;
   demoExperience?: {
     version: 1;
+    authoredMealsVersion?: 1;
     referenceDate: string;
     tourStep: number | null;
     recipeId: string;

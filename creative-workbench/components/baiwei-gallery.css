@@ -210,6 +210,27 @@
   font-size: 14px;
   color: var(--green);
 }
+.baiwei-row.is-authored {
+  min-height: 242px;
+}
+.baiwei-row.is-authored .baiwei-latest-photo {
+  width: 76px;
+  height: 100px;
+  object-fit: contain;
+  background: var(--paper);
+  left: 85px;
+  bottom: 12px;
+}
+.baiwei-history > .is-authored {
+  flex-direction: column;
+}
+.baiwei-history > .is-authored .baiwei-history-photo {
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  flex: none;
+  object-fit: contain;
+}
 .baiwei-memory {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -267,6 +288,11 @@
     height: 40px;
     left: 64px;
     bottom: 20px;
+  }
+  .baiwei-row.is-authored .baiwei-latest-photo {
+    width: 56px;
+    height: 76px;
+    left: 48px;
   }
   .baiwei-dialog > .baiwei-art {
     width: 190px;

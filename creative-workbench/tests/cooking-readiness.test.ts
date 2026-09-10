@@ -33,8 +33,8 @@ const disabled = (context: Record<string, unknown>): boolean =>
   runInNewContext(`(${gate[1]})`, { ...context });
 const date = '2026-09-06';
 
-void test('all 70 preset start buttons unlock while WorkBuddy is waiting, without cancelling its request', () => {
-  assert.equal(recipes.length, 70);
+void test('all 72 preset start buttons unlock while WorkBuddy is waiting, without cancelling its request', () => {
+  assert.equal(recipes.length, 72);
   for (const dataset of ['real', 'demo'] as const) {
     for (const recipe of recipes) {
       const state = emptyState(dataset);

@@ -96,7 +96,7 @@ const freshSession = (): TimerSession => ({
 });
 
 void test('all preset steps expose only their own duration timer, without custom minutes', () => {
-  assert.equal(recipes.length, 70);
+  assert.equal(recipes.length, 72);
   for (const recipe of recipes) {
     for (const step of recipe.detailSteps || []) {
       const { html, controls } = renderTimer(step.minutes, freshSession());

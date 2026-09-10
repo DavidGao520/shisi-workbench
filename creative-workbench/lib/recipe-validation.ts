@@ -108,7 +108,10 @@ export function validateHomeRecipes(
       );
       check(
         source.language === 'zh' &&
-          source.accessedAt === '2026-09-06' &&
+          /^\d{4}-\d{2}-\d{2}$/.test(source.accessedAt) &&
+          !Number.isNaN(Date.parse(source.accessedAt)) &&
+          new Date(source.accessedAt).toISOString().slice(0, 10) ===
+            source.accessedAt &&
           source.title &&
           source.author &&
           source.site &&

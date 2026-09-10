@@ -22,7 +22,7 @@ function instructionLists(html: string) {
   ].map((match) => match[1]);
 }
 
-void test('all 456 preset operations use sentence bullets in both preview and live steps without changing recipe data', () => {
+void test('all 469 preset operations use sentence bullets in both preview and live steps without changing recipe data', () => {
   let steps = 0;
   for (const recipe of recipes) {
     const before = structuredClone(recipe);
@@ -59,7 +59,7 @@ void test('all 456 preset operations use sentence bullets in both preview and li
     });
     assert.deepEqual(recipe, before);
   }
-  assert.equal(steps, 456);
+  assert.equal(steps, 469);
 });
 
 void test('bullets split Chinese sentences, semicolons and newlines without breaking decimals or rendering text as HTML', () => {
@@ -136,8 +136,8 @@ void test('bullet formatting happens after existing quantity scaling and also co
   );
 });
 
-void test('all 70 dish previews keep only cooking and references disclosures without a tips panel', () => {
-  assert.equal(recipes.length, 70);
+void test('all 72 dish previews keep only cooking and references disclosures without a tips panel', () => {
+  assert.equal(recipes.length, 72);
   for (const recipe of recipes) {
     const html = renderToStaticMarkup(
       createElement(RecipeDetailSections, { recipe, batches: 2 }),

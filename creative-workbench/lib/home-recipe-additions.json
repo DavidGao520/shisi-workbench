@@ -1,0 +1,341 @@
+[
+  {
+    "id": "spicy_chicken",
+    "title": "辣子鸡",
+    "baseServings": 2,
+    "yield": "2人份，约1盘家常煎炒辣子鸡",
+    "equipment": "26厘米以上不粘煎锅、锅铲、食品温度计",
+    "allergens": ["大豆", "小麦"],
+    "ingredients": [
+      {
+        "id": "boneless_chicken_thigh",
+        "name": "去骨鸡腿肉",
+        "amount": 400,
+        "unit": "克",
+        "kind": "food",
+        "note": "完全解冻，已去骨；不以带骨重量直接替代"
+      },
+      {
+        "id": "dried_chili",
+        "name": "干辣椒",
+        "amount": 15,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "sichuan_pepper",
+        "name": "花椒",
+        "amount": 2,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "garlic",
+        "name": "蒜",
+        "amount": 15,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "ginger",
+        "name": "姜",
+        "amount": 10,
+        "unit": "克",
+        "kind": "seasoning",
+        "note": "腌肉5克，炒香5克"
+      },
+      {
+        "id": "spring_onion",
+        "name": "小葱",
+        "amount": 15,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "soy_sauce",
+        "name": "生抽",
+        "amount": 10,
+        "unit": "毫升",
+        "kind": "seasoning"
+      },
+      {
+        "id": "cooking_wine",
+        "name": "料酒",
+        "amount": 10,
+        "unit": "毫升",
+        "kind": "seasoning"
+      },
+      {
+        "id": "starch",
+        "name": "淀粉",
+        "amount": 10,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "salt",
+        "name": "盐",
+        "amount": 1,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "sugar",
+        "name": "白糖",
+        "amount": 2,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "oil",
+        "name": "食用油",
+        "amount": 35,
+        "unit": "毫升",
+        "kind": "seasoning",
+        "note": "煎鸡肉25毫升，炒香料10毫升；为用油计划，非实测吸油量"
+      }
+    ],
+    "steps": [
+      {
+        "title": "切好鸡丁",
+        "minutes": 5,
+        "heat": "不开火",
+        "uses": [
+          { "id": "boneless_chicken_thigh", "amount": 400, "unit": "克" }
+        ],
+        "instruction": "鸡腿肉400克吸干，切约1.5厘米块；处理后洗手并清洁刀板。",
+        "checkpoint": "鸡肉完全解冻，大小接近。"
+      },
+      {
+        "title": "拌料冷藏腌肉",
+        "minutes": 20,
+        "heat": "不开火，冷藏",
+        "uses": [
+          { "id": "ginger", "amount": 5, "unit": "克" },
+          { "id": "soy_sauce", "amount": 10, "unit": "毫升" },
+          { "id": "cooking_wine", "amount": 10, "unit": "毫升" },
+          { "id": "starch", "amount": 10, "unit": "克" },
+          { "id": "salt", "amount": 1, "unit": "克" }
+        ],
+        "instruction": "上步鸡丁拌入姜末5克、生抽10毫升、料酒10毫升、淀粉10克和盐1克，盖好冷藏腌20分钟。",
+        "checkpoint": "腌料均匀包裹，没有干粉团。"
+      },
+      {
+        "title": "备好炒香用料",
+        "minutes": 4,
+        "heat": "不开火",
+        "uses": [
+          { "id": "dried_chili", "amount": 15, "unit": "克" },
+          { "id": "sichuan_pepper", "amount": 2, "unit": "克" },
+          { "id": "ginger", "amount": 5, "unit": "克" },
+          { "id": "garlic", "amount": 15, "unit": "克" },
+          { "id": "spring_onion", "amount": 15, "unit": "克" }
+        ],
+        "instruction": "干辣椒15克剪段，姜5克、蒜15克切片，小葱15克切段；花椒2克另放，全部保持干爽。",
+        "checkpoint": "葱段单放，香料表面无水。"
+      },
+      {
+        "title": "平铺煎鸡丁",
+        "minutes": 11,
+        "heat": "中火转中小火",
+        "uses": [{ "id": "oil", "amount": 25, "unit": "毫升" }],
+        "instruction": "油25毫升预热约1分钟，腌好鸡丁单层入锅；转中小火煎约10分钟，间隔翻面。",
+        "checkpoint": "鸡丁表面微黄，不拥挤堆叠。"
+      },
+      {
+        "title": "检查鸡肉熟度",
+        "minutes": 2,
+        "heat": "中小火",
+        "uses": [],
+        "instruction": "测几块较厚鸡丁的中心，达到75℃并保持至少30秒才盛出；未达到就继续加热复测。",
+        "checkpoint": "中心温度合格，再移到洁净盘。"
+      },
+      {
+        "title": "炒香辣椒花椒",
+        "minutes": 2,
+        "heat": "小火",
+        "uses": [{ "id": "oil", "amount": 10, "unit": "毫升" }],
+        "instruction": "锅中补油10毫升，放备好的姜蒜、干辣椒和花椒，小火翻动约2分钟；葱段暂不下锅。",
+        "checkpoint": "闻到香味，辣椒尚未焦黑。"
+      },
+      {
+        "title": "合炒装盘",
+        "minutes": 2,
+        "heat": "中小火",
+        "uses": [{ "id": "sugar", "amount": 2, "unit": "克" }],
+        "instruction": "熟鸡丁回锅，加白糖2克和备好的全部葱段，翻匀约2分钟后装盘；不再添盐。",
+        "checkpoint": "鸡丁裹上香料，葱香散出。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "辣子鸡丁",
+        "url": "https://china-kitchen.lkk.com.cn/zh-CN/recipe/0/1e/recipe-830",
+        "author": "清炒的",
+        "site": "李锦记中国官网·美食小博",
+        "language": "zh",
+        "accessedAt": "2026-09-10",
+        "supports": "菜谱参考：腌鸡肉、先熟制鸡块，再与干辣椒花椒及葱姜蒜合炒的顺序。"
+      },
+      {
+        "title": "烹煮及翻热",
+        "url": "https://www.cfs.gov.hk/sc_chi/trade_zone/safe_kitchen/Cooking_and_reheating.html",
+        "author": "香港食物安全中心",
+        "site": "香港食物安全中心",
+        "language": "zh",
+        "accessedAt": "2026-09-10",
+        "supports": "食品安全参考：食物中心75℃或以上持续至少30秒，以及最厚处测温和探针清洁。"
+      }
+    ],
+    "adaptation": "家庭定量改编：改用去骨鸡腿肉和煎炒，省去黑胡椒及芝麻，加入生抽。份量、用油和时间均为家庭估算，未实测；口感不同于原方油炸版。个人成品中的青椒等变化不代表按本配方试做。",
+    "safetyTips": [
+      "鸡肉需完全解冻；盛熟食的盘子不可直接沿用盛生鸡肉的容器。",
+      "计时和表面颜色不能替代中心测温，探针每次使用前后清洁消毒。",
+      "生抽及料酒按实际包装核对大豆、小麦等过敏原。干辣椒和花椒主要用于增香，可挑出不吃。"
+    ]
+  },
+  {
+    "id": "green_pepper_eggplant",
+    "title": "青椒茄子",
+    "baseServings": 2,
+    "yield": "2人份，约1盘青椒炒茄子",
+    "equipment": "带蒸屉的蒸锅、炒锅、锅铲",
+    "allergens": ["大豆", "小麦"],
+    "ingredients": [
+      {
+        "id": "eggplant",
+        "name": "茄子",
+        "amount": 400,
+        "unit": "克",
+        "kind": "food",
+        "note": "去蒂后的净重"
+      },
+      {
+        "id": "green_pepper",
+        "name": "青椒",
+        "amount": 150,
+        "unit": "克",
+        "kind": "food",
+        "note": "去蒂去籽后的净重，选不辣或微辣品种"
+      },
+      {
+        "id": "garlic",
+        "name": "蒜",
+        "amount": 12,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "spring_onion",
+        "name": "小葱",
+        "amount": 5,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "oil",
+        "name": "食用油",
+        "amount": 20,
+        "unit": "毫升",
+        "kind": "seasoning"
+      },
+      {
+        "id": "soy_sauce",
+        "name": "生抽",
+        "amount": 12,
+        "unit": "毫升",
+        "kind": "seasoning"
+      },
+      {
+        "id": "salt",
+        "name": "盐",
+        "amount": 1,
+        "unit": "克",
+        "kind": "seasoning"
+      },
+      {
+        "id": "water",
+        "name": "饮用水",
+        "amount": 840,
+        "unit": "毫升",
+        "kind": "food",
+        "note": "800毫升用于蒸锅产汽，不加入成菜；40毫升用于合炒"
+      }
+    ],
+    "steps": [
+      {
+        "title": "切好蔬菜",
+        "minutes": 6,
+        "heat": "不开火",
+        "uses": [
+          { "id": "eggplant", "amount": 400, "unit": "克" },
+          { "id": "green_pepper", "amount": 150, "unit": "克" },
+          { "id": "garlic", "amount": 12, "unit": "克" },
+          { "id": "spring_onion", "amount": 5, "unit": "克" }
+        ],
+        "instruction": "茄子400克洗净切约1厘米粗条；青椒150克切块，蒜12克切末，小葱5克切碎，分别放好。",
+        "checkpoint": "茄条粗细接近，青椒无蒂籽。"
+      },
+      {
+        "title": "烧开蒸锅水",
+        "minutes": 5,
+        "heat": "大火",
+        "uses": [{ "id": "water", "amount": 800, "unit": "毫升" }],
+        "instruction": "蒸锅加入水800毫升，盖好烧开；确认水位低于蒸屉，蒸汽稳定后再放茄子。",
+        "checkpoint": "水已沸腾，蒸屉不接触水面。"
+      },
+      {
+        "title": "先蒸软茄子",
+        "minutes": 7,
+        "heat": "中大火",
+        "uses": [],
+        "instruction": "把切好的全部茄条平铺蒸屉，加盖蒸约7分钟；能轻松夹弯再取出，未软继续蒸。",
+        "checkpoint": "茄条已软，夹起仍保持形状。"
+      },
+      {
+        "title": "炒香葱蒜",
+        "minutes": 1,
+        "heat": "中小火",
+        "uses": [{ "id": "oil", "amount": 20, "unit": "毫升" }],
+        "instruction": "炒锅放油20毫升，加入备好的全部葱蒜，翻动约1分钟，刚出香味就进行下一步。",
+        "checkpoint": "葱蒜有香气，尚未焦黄。"
+      },
+      {
+        "title": "炒熟青椒",
+        "minutes": 3,
+        "heat": "中火",
+        "uses": [],
+        "instruction": "加入切好的全部青椒，翻炒约3分钟；青椒稍软后放入蒸好的全部茄子，轻轻翻匀。",
+        "checkpoint": "青椒稍软，茄条没有搅碎。"
+      },
+      {
+        "title": "调味合炒",
+        "minutes": 2,
+        "heat": "中火",
+        "uses": [
+          { "id": "soy_sauce", "amount": 12, "unit": "毫升" },
+          { "id": "salt", "amount": 1, "unit": "克" },
+          { "id": "water", "amount": 40, "unit": "毫升" }
+        ],
+        "instruction": "加入生抽12毫升、盐1克和水40毫升，轻推煮约2分钟，蔬菜热透、汁稍收浓后装盘。",
+        "checkpoint": "茄子柔软入味，青椒已熟。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "青椒炒茄子【超级美味又下饭】",
+        "url": "https://m.xiachufang.com/recipe/107112667/",
+        "author": "秋天的童话wAng",
+        "site": "下厨房",
+        "language": "zh",
+        "accessedAt": "2026-09-10",
+        "supports": "菜谱参考：茄子先蒸软，再与青椒、葱蒜一起炒并调味。"
+      }
+    ],
+    "adaptation": "家庭定量改编：按2人份重写，省去蚝油和小米辣，加入定量水防粘。蒸锅用水另列用途；份量及全部时间为家庭估算，未实测，不沿用原作者的健康功效表述。",
+    "safetyTips": [
+      "揭蒸锅盖时向远离身体的一侧打开，防止蒸汽烫伤；留意水位，避免烧干。",
+      "生抽可能含大豆、小麦，按实际包装核对；青椒辣度因品种而异。"
+    ]
+  }
+]
