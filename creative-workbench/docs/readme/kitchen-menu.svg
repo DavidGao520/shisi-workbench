@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 236" width="960" height="236" role="img" aria-labelledby="title desc">
+  <title id="title">Shisi Workbench house menu</title>
+  <desc id="desc">A forest-green menu beside a vermilion bowl of rice and a pair of chopsticks. From a game card to your dinner table.</desc>
+  <defs>
+    <pattern id="checks" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M0 0h14v14H0zm14 14h14v14H14z" fill="#b85c2e" opacity=".09"/>
+    </pattern>
+    <clipPath id="ticket"><rect width="960" height="236" rx="16"/></clipPath>
+  </defs>
+  <g clip-path="url(#ticket)">
+    <rect width="960" height="236" fill="#193f37"/>
+    <path fill="#ffd799" d="M659 0h301v236H659z"/>
+    <path fill="url(#checks)" d="M659 0h301v236H659z"/>
+    <path d="M645 10v216" fill="none" stroke="#b5c7ae" stroke-dasharray="3 7"/>
+    <g font-family="Verdana, Arial, sans-serif">
+      <circle cx="36" cy="32" r="5" fill="#ffa36c"/>
+      <text x="50" y="37" font-size="14" font-weight="bold" letter-spacing="2.5" fill="#d9eacb">SHISI KITCHEN  /  HOUSE MENU</text>
+      <g font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="bold" fill="#fff6df">
+        <text x="32" y="99">From a game card</text>
+        <text x="32" y="152">to your dinner table.</text>
+      </g>
+      <g font-size="13" font-weight="bold" text-anchor="middle" fill="#203e35">
+        <rect x="34" y="181" width="112" height="30" rx="15" fill="#ffc66f"/>
+        <text x="90" y="201">72 RECIPES</text>
+        <rect x="156" y="181" width="119" height="30" rx="15" fill="#b7dcc2"/>
+        <text x="215.5" y="201">LOCAL FIRST</text>
+        <rect x="285" y="181" width="121" height="30" rx="15" fill="#ffa78b"/>
+        <text x="345.5" y="201">WORKBUDDY</text>
+      </g>
+    </g>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="811" cy="192" rx="81" ry="8" fill="#d59a64"/>
+      <path d="m813 124 78-91m-65 96 86-86" fill="none" stroke="#673b31" stroke-width="6"/>
+      <path d="M726,122 c2,-14 12,-23 25,-24 c3,-13 16,-21 29,-18 c8,-14 27,-16 39,-7 c14,-10 31,-4 37,10 c18,-2 30,15 29,37z" fill="#fffcdf" stroke="#704736" stroke-width="3"/>
+      <g fill="none" stroke="#d6bb88" stroke-width="3"><path d="m753 110 6-4m18-9 6-4m31 10 7 1m24-4 6-3m16 15 5 1"/></g>
+      <g fill="none" stroke="#3b7950" stroke-width="5"><path d="m782 110 9-4m14-19 6 3m18 20 8-3"/></g>
+      <path d="M720 119h173c-5 34-28 56-62 66h-47c-35-13-56-34-64-66z" fill="#bf4a35" stroke="#703a2e" stroke-width="3"/>
+      <path d="M726 131h161" fill="none" stroke="#ffe0a5" stroke-width="5"/>
+      <path d="m751 142 9 8 9-8 9 8 9-8 9 8 9-8 9 8 9-8 9 8 9-8 9 8 9-8" fill="none" stroke="#ffe0a5" stroke-width="3"/>
+      <path d="M782 181h49l-3 9h-43z" fill="#813d31"/>
+      <g fill="none" stroke="#8e7950" stroke-width="3"><path d="M759 77c-12-10 10-13-1-24m27 9c-10-8 8-12 0-20"/></g>
+    </g>
+  </g>
+</svg>
